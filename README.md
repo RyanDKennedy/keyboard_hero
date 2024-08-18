@@ -1,9 +1,9 @@
-#Syengine
+# Syengine
 
-##Description
+## Description
 This is a game engine that I am making to learn xcb, vulkan, ecs pattern, and other technologies.
 
-##Building
+## Building
     git clone
     cd syengine
     mkdir build
