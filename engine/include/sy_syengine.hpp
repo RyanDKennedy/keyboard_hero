@@ -15,16 +15,18 @@ struct SyPlatformInfo
     void (*app_run)(SyAppInfo*);
     void (*app_destroy)(SyAppInfo*);
     bool end_engine; // mark this true to end engine
+    bool reload_dll;
 };
 
 // used to communicate engine <--> app
 struct SyAppInfo
 {
-    SyArena persistent_arena;
-    SyArena frame_arena;
-    SyEcs ecs;
-    SyInputInfo input_info;
-    double delta_time;    
+    SyArena persistent_arena; // init platform
+    SyArena frame_arena; // init platform
+    SyEcs ecs; // init platform
+    SyInputInfo input_info; // init platform
+    double delta_time; // init platform
+    bool stop_game; // init engine
 };
 
 void engine_init(SyPlatformInfo *platform_info, SyAppInfo *app_info);

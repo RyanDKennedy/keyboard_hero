@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
+#include <string.h>
 
 #include <unistd.h>
 #include <sys/time.h>
@@ -14,33 +15,22 @@
 
 size_t get_current_time_us();
 double get_us_diff_in_ms(size_t a, size_t b);
-void load_app_functions(SyPlatformInfo *platform_info);
-
-void load_app_functions(SyPlatformInfo *platform_info)
-{
-    if (platform_info->dll_handle != nullptr)
-    {
-	dlclose(platform_info->dll_handle);
-    }
-
-    char *error;
-    platform_info->dll_handle = dlopen("app/libapp.so", RTLD_LAZY);
-    SY_ERROR_COND(platform_info->dll_handle == NULL, "failed to load shared object. %s", dlerror());
-    dlerror();
-
-    platform_info->app_init = (void (*)(SyAppInfo*))dlsym(platform_info->dll_handle, "app_init");
-    SY_ERROR_COND((error = dlerror()) != NULL, "failed to load symbol %s", error);
-
-    platform_info->app_run = (void (*)(SyAppInfo*))dlsym(platform_info->dll_handle, "app_run");
-    SY_ERROR_COND((error = dlerror()) != NULL, "failed to load symbol %s", error);
-
-    platform_info->app_destroy = (void (*)(SyAppInfo*))dlsym(platform_info->dll_handle, "app_destroy");
-    SY_ERROR_COND((error = dlerror()) != NULL, "failed to load symbol %s", error);
-}
-
+void load_app_functions(SyPlatformInfo *platform_info, const char *dll_file);
 
 int main(int argc, char *argv[])
 {
+    // parse command arguments
+    const char *dll_file = "./libapp.so";
+
+    for (size_t i = 1; i < argc; ++i)
+    {
+	const char *dllequals = "dll=";
+	if (strlen(argv[i]) > strlen(dllequals) &&memcmp(argv[i], dllequals, strlen(dllequals)) == 0)
+	{
+	    dll_file = argv[i] + strlen(dllequals);
+	}
+    }
+
     SyPlatformInfo platform_info; // Stuff used to communicate platform <--> engine
     SyXCBInfo xcb_info;
     SyAppInfo app_info; // Stuff used to communicate engine <--> app
@@ -51,10 +41,15 @@ int main(int argc, char *argv[])
     { // Platform Info Init
 	// App Dyanamic function load
 	platform_info.dll_handle = nullptr;
-	load_app_functions(&platform_info);
+	platform_info.app_init = nullptr;
+	platform_info.app_run = nullptr;
+	platform_info.app_destroy = nullptr;
+	load_app_functions(&platform_info, dll_file);
+	SY_OUTPUT_INFO("Loaded the dll app functions.");
 
 	// Flags Init
 	platform_info.end_engine = false;
+	platform_info.reload_dll = false;
     }
     
     { // App Info Init
@@ -105,6 +100,16 @@ int main(int argc, char *argv[])
 
 	// Calls engine
 	engine_run(&platform_info, &app_info);
+
+	if (platform_info.reload_dll)
+	{
+	    platform_info.reload_dll = false;
+	    load_app_functions(&platform_info, dll_file);
+	    SY_OUTPUT_INFO("Reloaded the dll app functions.");
+	    sleep(1);
+	}
+
+
     }
 
     // Destroys engine
@@ -120,10 +125,39 @@ int main(int argc, char *argv[])
 	app_info.ecs.destroy();
     }
 
+    { // Cleanup Platform Info
+	dlclose(platform_info.dll_handle);
+
+    }
+
     // Cleanup Linux
     cleanup_window(&xcb_info);
 
     return 0;
+}
+
+void load_app_functions(SyPlatformInfo *platform_info, const char *dll_file)
+{
+    if (platform_info->dll_handle != nullptr)
+    {
+	dlclose(platform_info->dll_handle);
+    }
+
+    char *error;
+    platform_info->dll_handle = dlmopen(LM_ID_NEWLM, dll_file, RTLD_NOW); // This needs to be dlmopen(LM_ID_NEWLM, ...) otherwise the gnu unique symbols inside of the elf .so make it marked as nodelete which means that when you do dlclose(...) it doesn't unload it, so then when you do dlopen(...) after it just gives you the same code instead of the new code. Read man ld section about unique/nounique
+    SY_ERROR_COND(platform_info->dll_handle == NULL, "failed to load shared object. %s", dlerror());
+    dlerror();
+
+    platform_info->app_init = (void (*)(SyAppInfo*))dlsym(platform_info->dll_handle, "app_init");
+    SY_ERROR_COND((error = dlerror()) != NULL, "failed to load symbol %s", error);
+
+    platform_info->app_run = (void (*)(SyAppInfo*))dlsym(platform_info->dll_handle, "app_run");
+    SY_ERROR_COND((error = dlerror()) != NULL, "failed to load symbol %s", error);
+
+    platform_info->app_destroy = (void (*)(SyAppInfo*))dlsym(platform_info->dll_handle, "app_destroy");
+    SY_ERROR_COND((error = dlerror()) != NULL, "failed to load symbol %s", error);
+
+
 }
 
 size_t get_current_time_us()

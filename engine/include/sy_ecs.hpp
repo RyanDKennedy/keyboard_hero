@@ -65,6 +65,8 @@ struct SyEcs
     const char *m_registered_type_names[g_sy_ecs_max_component_types];
     size_t m_registered_type_ids[g_sy_ecs_max_component_types];
 
+    
+
     /**
      * @brief Initialize ecs.
      */
@@ -85,13 +87,10 @@ struct SyEcs
      */
     void destroy()
     {
-	for (size_t i = 0; i < g_sy_ecs_max_component_types; ++i)
+	for (size_t i = 0; i < m_current_type_id; ++i)
 	{
-	    if (m_component_used_arr[i].m_memory != nullptr)
-	    {
-		m_component_used_arr[i].destroy();
-		m_component_data_arr[i].destroy();
-	    }
+	    m_component_used_arr[i].destroy();
+	    m_component_data_arr[i].destroy();
 	}
 	
 	m_entity_used.destroy();
