@@ -36,7 +36,7 @@
 },
 {
   "directory": "/media/kenne/T7/programming/engines/syengine/build/app",
-  "command": "/usr/bin/c++ -Dapp_EXPORTS  -fPIC -o CMakeFiles/app.dir/app.cpp.o -c /media/kenne/T7/programming/engines/syengine/app/app.cpp",
+  "command": "/usr/bin/c++ -Dapp_EXPORTS -I/media/kenne/T7/programming/engines/syengine/engine/include -fPIC -o CMakeFiles/app.dir/app.cpp.o -c /media/kenne/T7/programming/engines/syengine/app/app.cpp",
   "file": "/media/kenne/T7/programming/engines/syengine/app/app.cpp"
 }
 ]

@@ -4,6 +4,7 @@
 
 #include <unistd.h>
 #include <sys/time.h>
+#include <dlfcn.h>
 
 #include "sy_linux_window.hpp"
 #include "sy_linux_input.hpp"
@@ -13,33 +14,64 @@
 
 size_t get_current_time_us();
 double get_us_diff_in_ms(size_t a, size_t b);
+void load_app_functions(SyPlatformInfo *platform_info);
+
+void load_app_functions(SyPlatformInfo *platform_info)
+{
+    if (platform_info->dll_handle != nullptr)
+    {
+	dlclose(platform_info->dll_handle);
+    }
+
+    char *error;
+    platform_info->dll_handle = dlopen("app/libapp.so", RTLD_LAZY);
+    SY_ERROR_COND(platform_info->dll_handle == NULL, "failed to load shared object. %s", dlerror());
+    dlerror();
+
+    platform_info->app_init = (void (*)(SyAppInfo*))dlsym(platform_info->dll_handle, "app_init");
+    SY_ERROR_COND((error = dlerror()) != NULL, "failed to load symbol %s", error);
+
+    platform_info->app_run = (void (*)(SyAppInfo*))dlsym(platform_info->dll_handle, "app_run");
+    SY_ERROR_COND((error = dlerror()) != NULL, "failed to load symbol %s", error);
+
+    platform_info->app_destroy = (void (*)(SyAppInfo*))dlsym(platform_info->dll_handle, "app_destroy");
+    SY_ERROR_COND((error = dlerror()) != NULL, "failed to load symbol %s", error);
+}
+
 
 int main(int argc, char *argv[])
 {
-    SyenginePlatformInfo platform_info;
+    SyPlatformInfo platform_info; // Stuff used to communicate platform <--> engine
     SyXCBInfo xcb_info;
+    SyAppInfo app_info; // Stuff used to communicate engine <--> app
 
     // Linux Init
     init_window(&xcb_info, 600, 600, "Syengine");
 
     { // Platform Info Init
-	// Input Init
-	memset(&platform_info.input_info, 0, sizeof(SyInputInfo));
-	poll_events(&xcb_info, &platform_info.input_info);
-	
-	// Arena/Allocation Init
-	SY_ERROR_COND(platform_info.persistent_arena.initialize(4096) != 0, "Failed to allocate data for persistent arena.");
-	SY_ERROR_COND(platform_info.frame_arena.initialize(4096) != 0, "Failed to allocate data for frame arena.");
-	
-	// ECS Init
-	platform_info.ecs.initialize();
-	
+	// App Dyanamic function load
+	platform_info.dll_handle = nullptr;
+	load_app_functions(&platform_info);
+
 	// Flags Init
 	platform_info.end_engine = false;
     }
     
+    { // App Info Init
+	// Input Init
+	memset(&app_info.input_info, 0, sizeof(SyInputInfo));
+	poll_events(&xcb_info, &app_info.input_info);
+	
+	// Arena/Allocation Init
+	SY_ERROR_COND(app_info.persistent_arena.initialize(4096) != 0, "Failed to allocate data for persistent arena.");
+	SY_ERROR_COND(app_info.frame_arena.initialize(4096) != 0, "Failed to allocate data for frame arena.");
+	
+	// ECS Init
+	app_info.ecs.initialize();
+    }
+
     // Init Engine
-    init_engine(&platform_info);
+    engine_init(&platform_info, &app_info);
 
     // RENDER LOOP
 
@@ -59,33 +91,33 @@ int main(int argc, char *argv[])
 		usleep(frame_limit_frame_time_in_ms * 1000.0 - (delta_time_frame_end - delta_time_frame_start));
 		size_t old_start = delta_time_frame_start;
 		delta_time_frame_start = get_current_time_us();
-		platform_info.delta_time = get_us_diff_in_ms(delta_time_frame_start, old_start);
+		app_info.delta_time = get_us_diff_in_ms(delta_time_frame_start, old_start);
 	    }
 	    else
 	    {
 		delta_time_frame_start = delta_time_frame_end;
-		platform_info.delta_time = diff;
+		app_info.delta_time = diff;
 	    }
 	}
 
 	// Input
-	poll_events(&xcb_info, &platform_info.input_info);
+	poll_events(&xcb_info, &app_info.input_info);
 
 	// Calls engine
-	run_engine(&platform_info);
+	engine_run(&platform_info, &app_info);
     }
 
     // Destroys engine
-    destroy_engine(&platform_info);
+    engine_destroy(&platform_info, &app_info);
 
     
-    { // Cleanup Platform Info
+    { // Cleanup App Info
 	// Arena/Allocation Cleanup
-	platform_info.persistent_arena.destroy();
-	platform_info.frame_arena.destroy();
+	app_info.persistent_arena.destroy();
+	app_info.frame_arena.destroy();
     
 	// ECS Cleanup
-	platform_info.ecs.destroy();
+	app_info.ecs.destroy();
     }
 
     // Cleanup Linux

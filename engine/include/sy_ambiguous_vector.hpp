@@ -18,7 +18,10 @@ struct SyAmbiguousVector
     /**
      * @brief Useless constructor.
      */
-    SyAmbiguousVector();
+    SyAmbiguousVector()
+    {
+	m_memory = nullptr;
+    }
     
     /**
      * @brief Initializes the vector and requires you to state what type this vector is going to actually contain.
@@ -36,13 +39,20 @@ struct SyAmbiguousVector
     /**
      * @brief Destroys the vector.
      */
-    void destroy();
+    void destroy()
+    {
+	free(m_memory);
+    }
 
     /**
      * @brief Copies the data into a new patch of memory which can be a different size.
      * @param size The size of the new memory.
      */
-    void reallocate(size_t size);
+    void reallocate(size_t size)
+    {
+	m_memory = realloc(m_memory, size * m_element_size);
+	m_alloc_length = size;
+    }
 
     /**
      * @brief Adds an element to the back of the array.
@@ -90,6 +100,9 @@ struct SyAmbiguousVector
      * @brief Returns the amount of elements currently inside of the vector.
      * @return The amount of elements currently inside of the vector.
      */
-    size_t size() const;
+    size_t size()
+    {
+	return m_filled_length;
+    }
 
 };

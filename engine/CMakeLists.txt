@@ -3,8 +3,6 @@ project(syengine)
 # PLATFORM UNSPECIFIC FILES
 set(SY_SOURCE_FILES
     ${CMAKE_CURRENT_SOURCE_DIR}/src/sy_syengine.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/sy_ecs.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/sy_ambiguous_vector.cpp
 )
 
 # PLATFORM UNSPECIFIC FILES

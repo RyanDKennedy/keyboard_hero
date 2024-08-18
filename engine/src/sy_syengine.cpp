@@ -4,36 +4,42 @@
 #include <chrono>
 #include <thread>
 
+#include "sy_ecs.hpp"
 #include "sy_macros.hpp"
 
-void init_engine(SyenginePlatformInfo *platform_info)
+// FIXME
+
+
+void engine_init(SyPlatformInfo *platform_info, SyAppInfo *app_info)
 {
     SY_OUTPUT_INFO("Starting Engine");
     
-    platform_info->ecs.register_type<int>();
+    SY_ECS_REGISTER_TYPE(app_info->ecs, double);
+    SY_ECS_REGISTER_TYPE(app_info->ecs, int);
 
-    printf("int id: %lu\n", platform_info->ecs.get_type_id<int>());
-
+    platform_info->app_init(app_info);
 }
 
-void run_engine(SyenginePlatformInfo *platform_info)
+void engine_run(SyPlatformInfo *platform_info, SyAppInfo *app_info)
 {
-    platform_info->frame_arena.free_all();
+    app_info->frame_arena.free_all();
 
-    SyInputInfo &input = platform_info->input_info;
+    SyInputInfo &input = app_info->input_info;
 
     if (input.enter)
     {
-	printf("FPS: %lf\n", 1000.0 / platform_info->delta_time);
+	printf("FPS: %lf\n", 1000.0 / app_info->delta_time);
     }
 
     if (input.escape || input.window_should_close)
     {
 	platform_info->end_engine = true;
     }
+
+    platform_info->app_run(app_info);
 }
 
-void destroy_engine(SyenginePlatformInfo *platform_info)
+void engine_destroy(SyPlatformInfo *platform_info, SyAppInfo *app_info)
 {
     SY_OUTPUT_INFO("Ending Engine");
 }
