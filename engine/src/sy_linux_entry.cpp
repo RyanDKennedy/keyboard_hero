@@ -4,6 +4,7 @@
 #include <string.h>
 
 #include <unistd.h>
+#include <getopt.h>
 #include <sys/time.h>
 #include <dlfcn.h>
 
@@ -22,12 +23,32 @@ int main(int argc, char *argv[])
     // parse command arguments
     const char *dll_file = "./libapp.so";
 
-    for (size_t i = 1; i < argc; ++i)
     {
-	const char *dllequals = "dll=";
-	if (strlen(argv[i]) > strlen(dllequals) &&memcmp(argv[i], dllequals, strlen(dllequals)) == 0)
+	opterr = 0;
+	option long_options[] =
 	{
-	    dll_file = argv[i] + strlen(dllequals);
+	    {"dll", required_argument, 0, 'd'},
+	    {0, 0, 0, 0}
+	};
+	int option_index = 0;
+	int flag_value;
+	while ( (flag_value = getopt_long(argc, argv, "d:", long_options, &option_index)) != -1 )
+	{
+	    switch (flag_value)
+	    {
+		case 'd':
+		{
+		    dll_file = optarg;
+		    break;
+		}
+
+		case '?':
+		{
+		    SY_ERROR("Invalid Argument: -%c", optopt);
+		    break;
+		}
+
+	    }
 	}
     }
 

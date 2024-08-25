@@ -1,8 +1,6 @@
 #include "sy_syengine.hpp"
 
 #include <stdio.h>
-#include <chrono>
-#include <thread>
 
 #include "sy_ecs.hpp"
 #include "sy_macros.hpp"

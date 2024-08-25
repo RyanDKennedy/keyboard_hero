@@ -10,6 +10,6 @@ add_library(${PROJECT_NAME} MODULE
 
 target_include_directories(${PROJECT_NAME}
     PUBLIC
-    ${CMAKE_SOURCE_DIR}/engine/include/
+    ${CMAKE_SOURCE_DIR}/engine/src/
 )
 
