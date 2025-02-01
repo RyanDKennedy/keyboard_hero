@@ -1,42 +1,37 @@
 [
 {
-  "directory": "/media/kenne/T7/programming/engines/syengine/build/engine",
-  "command": "/usr/bin/c++  -I/media/kenne/T7/programming/engines/syengine/engine/include  -o CMakeFiles/syengine.dir/src/sy_syengine.cpp.o -c /media/kenne/T7/programming/engines/syengine/engine/src/sy_syengine.cpp",
-  "file": "/media/kenne/T7/programming/engines/syengine/engine/src/sy_syengine.cpp"
+  "directory": "/home/kenne/programming/syengine/build/engine",
+  "command": "/usr/bin/c++  -I/home/kenne/programming/syengine/engine/src -g -o CMakeFiles/syengine.dir/src/sy_syengine.cpp.o -c /home/kenne/programming/syengine/engine/src/sy_syengine.cpp",
+  "file": "/home/kenne/programming/syengine/engine/src/sy_syengine.cpp"
 },
 {
-  "directory": "/media/kenne/T7/programming/engines/syengine/build/engine",
-  "command": "/usr/bin/c++  -I/media/kenne/T7/programming/engines/syengine/engine/include  -o CMakeFiles/syengine.dir/src/sy_ecs.cpp.o -c /media/kenne/T7/programming/engines/syengine/engine/src/sy_ecs.cpp",
-  "file": "/media/kenne/T7/programming/engines/syengine/engine/src/sy_ecs.cpp"
+  "directory": "/home/kenne/programming/syengine/build/engine",
+  "command": "/usr/bin/c++  -I/home/kenne/programming/syengine/engine/src -g -o CMakeFiles/syengine.dir/src/sy_arena.cpp.o -c /home/kenne/programming/syengine/engine/src/sy_arena.cpp",
+  "file": "/home/kenne/programming/syengine/engine/src/sy_arena.cpp"
 },
 {
-  "directory": "/media/kenne/T7/programming/engines/syengine/build/engine",
-  "command": "/usr/bin/c++  -I/media/kenne/T7/programming/engines/syengine/engine/include  -o CMakeFiles/syengine.dir/src/sy_ambiguous_vector.cpp.o -c /media/kenne/T7/programming/engines/syengine/engine/src/sy_ambiguous_vector.cpp",
-  "file": "/media/kenne/T7/programming/engines/syengine/engine/src/sy_ambiguous_vector.cpp"
+  "directory": "/home/kenne/programming/syengine/build/engine",
+  "command": "/usr/bin/c++  -I/home/kenne/programming/syengine/engine/src -g -o CMakeFiles/syengine.dir/src/sy_linux_entry.cpp.o -c /home/kenne/programming/syengine/engine/src/sy_linux_entry.cpp",
+  "file": "/home/kenne/programming/syengine/engine/src/sy_linux_entry.cpp"
 },
 {
-  "directory": "/media/kenne/T7/programming/engines/syengine/build/engine",
-  "command": "/usr/bin/c++  -I/media/kenne/T7/programming/engines/syengine/engine/include  -o CMakeFiles/syengine.dir/src/sy_linux_entry.cpp.o -c /media/kenne/T7/programming/engines/syengine/engine/src/sy_linux_entry.cpp",
-  "file": "/media/kenne/T7/programming/engines/syengine/engine/src/sy_linux_entry.cpp"
+  "directory": "/home/kenne/programming/syengine/build/engine",
+  "command": "/usr/bin/c++  -I/home/kenne/programming/syengine/engine/src -g -o CMakeFiles/syengine.dir/src/sy_linux_window.cpp.o -c /home/kenne/programming/syengine/engine/src/sy_linux_window.cpp",
+  "file": "/home/kenne/programming/syengine/engine/src/sy_linux_window.cpp"
 },
 {
-  "directory": "/media/kenne/T7/programming/engines/syengine/build/engine",
-  "command": "/usr/bin/c++  -I/media/kenne/T7/programming/engines/syengine/engine/include  -o CMakeFiles/syengine.dir/src/sy_linux_window.cpp.o -c /media/kenne/T7/programming/engines/syengine/engine/src/sy_linux_window.cpp",
-  "file": "/media/kenne/T7/programming/engines/syengine/engine/src/sy_linux_window.cpp"
+  "directory": "/home/kenne/programming/syengine/build/engine",
+  "command": "/usr/bin/c++  -I/home/kenne/programming/syengine/engine/src -g -o CMakeFiles/syengine.dir/src/sy_linux_input.cpp.o -c /home/kenne/programming/syengine/engine/src/sy_linux_input.cpp",
+  "file": "/home/kenne/programming/syengine/engine/src/sy_linux_input.cpp"
 },
 {
-  "directory": "/media/kenne/T7/programming/engines/syengine/build/engine",
-  "command": "/usr/bin/c++  -I/media/kenne/T7/programming/engines/syengine/engine/include  -o CMakeFiles/syengine.dir/src/sy_linux_input.cpp.o -c /media/kenne/T7/programming/engines/syengine/engine/src/sy_linux_input.cpp",
-  "file": "/media/kenne/T7/programming/engines/syengine/engine/src/sy_linux_input.cpp"
+  "directory": "/home/kenne/programming/syengine/build/app",
+  "command": "/usr/bin/c++ -Dapp_EXPORTS -I/home/kenne/programming/syengine/engine/src -g -fPIC -o CMakeFiles/app.dir/app.cpp.o -c /home/kenne/programming/syengine/app/app.cpp",
+  "file": "/home/kenne/programming/syengine/app/app.cpp"
 },
 {
-  "directory": "/media/kenne/T7/programming/engines/syengine/build/engine",
-  "command": "/usr/bin/c++  -I/media/kenne/T7/programming/engines/syengine/engine/include  -o CMakeFiles/syengine.dir/src/sy_linux_arena.cpp.o -c /media/kenne/T7/programming/engines/syengine/engine/src/sy_linux_arena.cpp",
-  "file": "/media/kenne/T7/programming/engines/syengine/engine/src/sy_linux_arena.cpp"
-},
-{
-  "directory": "/media/kenne/T7/programming/engines/syengine/build/app",
-  "command": "/usr/bin/c++ -Dapp_EXPORTS -I/media/kenne/T7/programming/engines/syengine/engine/include -fPIC -o CMakeFiles/app.dir/app.cpp.o -c /media/kenne/T7/programming/engines/syengine/app/app.cpp",
-  "file": "/media/kenne/T7/programming/engines/syengine/app/app.cpp"
+  "directory": "/home/kenne/programming/syengine/build/app",
+  "command": "/usr/bin/c++ -Dapp_EXPORTS -I/home/kenne/programming/syengine/engine/src -g -fPIC -o CMakeFiles/app.dir/__/engine/src/sy_arena.cpp.o -c /home/kenne/programming/syengine/engine/src/sy_arena.cpp",
+  "file": "/home/kenne/programming/syengine/engine/src/sy_arena.cpp"
 }
 ]

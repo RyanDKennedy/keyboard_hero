@@ -6,6 +6,7 @@
 extern "C"
 void app_init(SyAppInfo *app_info)
 {
+    // FIXME
     SY_ECS_REGISTER_TYPE(app_info->ecs, int);
 
 }
@@ -16,7 +17,7 @@ void app_run(SyAppInfo *app_info)
     if (app_info->input_info.q)
 	app_info->stop_game = true;
     if (app_info->input_info.h)
-	printf("a\n");
+	printf("FPS %f\n", 1.0 / app_info->delta_time);
 }
 
 extern "C"
