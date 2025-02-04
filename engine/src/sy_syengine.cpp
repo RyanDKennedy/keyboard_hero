@@ -20,10 +20,19 @@ void engine_init(SyPlatformInfo *platform_info, SyAppInfo *app_info)
 
     app_info->delta_time = 0.0;
 
+    app_info->global_mem_size = 2048;
+    app_info->global_mem = app_info->persistent_arena.alloc(app_info->global_mem_size);
+
     // FIXME
     SY_ECS_REGISTER_TYPE(app_info->ecs, int);
 
     platform_info->app_init(app_info);
+
+    // stop the game signal
+    if (app_info->stop_game == true)
+    {
+	platform_info->end_engine = true;
+    }
 }
 
 void engine_run(SyPlatformInfo *platform_info, SyAppInfo *app_info)

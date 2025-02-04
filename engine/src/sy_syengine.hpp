@@ -31,6 +31,8 @@ struct SyAppInfo
     double delta_time; // in seconds
     bool stop_game;
 
+    void *global_mem; // pointer to memory that the user can use
+    size_t global_mem_size;
 };
 
 void engine_init(SyPlatformInfo *platform_info, SyAppInfo *app_info);

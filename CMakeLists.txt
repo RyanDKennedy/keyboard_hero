@@ -2,6 +2,8 @@ cmake_minimum_required(VERSION 3.22.1)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS On)
 
+set(SY_VULKAN On)
+
 file(MAKE_DIRECTORY ${CMAKE_SOURCE_DIR}/bin)
 
 if(NOT CMAKE_BUILD_TYPE)
