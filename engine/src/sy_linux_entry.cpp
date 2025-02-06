@@ -70,6 +70,8 @@ int main(int argc, char *argv[])
 	platform_info.app_init = nullptr;
 	platform_info.app_run = nullptr;
 	platform_info.app_destroy = nullptr;
+	platform_info.app_dll_init = nullptr;
+	platform_info.app_dll_exit = nullptr;
 	load_app_functions(&platform_info, dll_file);
 	SY_OUTPUT_INFO("Loaded the dll app functions.");
 
@@ -121,6 +123,7 @@ int main(int argc, char *argv[])
 	if (platform_info.reload_dll)
 	{
 	    platform_info.reload_dll = false;
+	    platform_info.dll_first_run = true;
 	    load_app_functions(&platform_info, dll_file);
 	    SY_OUTPUT_INFO("Reloaded the dll app functions.");
 	    sleep(1);
@@ -163,7 +166,11 @@ void load_app_functions(SyPlatformInfo *platform_info, const char *dll_file)
     platform_info->app_destroy = (void (*)(SyAppInfo*))dlsym(platform_info->dll_handle, "app_destroy");
     SY_ERROR_COND((error = dlerror()) != NULL, "failed to load symbol %s", error);
 
+    platform_info->app_dll_init = (void (*)(SyAppInfo*))dlsym(platform_info->dll_handle, "app_dll_init");
+    SY_ERROR_COND((error = dlerror()) != NULL, "failed to load symbol %s", error);
 
+    platform_info->app_dll_exit = (void (*)(SyAppInfo*))dlsym(platform_info->dll_handle, "app_dll_exit");
+    SY_ERROR_COND((error = dlerror()) != NULL, "failed to load symbol %s", error);
 }
 
 size_t get_current_time_us()

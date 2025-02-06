@@ -158,7 +158,7 @@ struct SyEcs
 	    get_type_id_with_addr<T>(&addr);
 	    *addr = associated_type_id;
 	    --m_current_type_id; // you do this as instructed by the get_type_id_with_addr() function
-	    SY_OUTPUT_INFO("ECS: re-registered type %lu - %s", get_type_id<T>(), type_name);
+	    SY_OUTPUT_DEBUG("ECS: re-registered type %lu - %s", get_type_id<T>(), type_name);
 	    return;
 	}
 

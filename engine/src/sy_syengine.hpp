@@ -14,8 +14,12 @@ struct SyPlatformInfo
     void (*app_init)(SyAppInfo*);
     void (*app_run)(SyAppInfo*);
     void (*app_destroy)(SyAppInfo*);
+    void (*app_dll_init)(SyAppInfo*);
+    void (*app_dll_exit)(SyAppInfo*);
     bool end_engine; // mark this true to end engine
+
     bool reload_dll;
+    bool dll_first_run; // when the dll has just been loaded
 
     SyInputInfo input_info;
     size_t delta_time; // in microseconds

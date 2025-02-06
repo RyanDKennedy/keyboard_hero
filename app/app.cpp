@@ -2,11 +2,9 @@
 
 #include "sy_ecs.hpp"
 #include "sy_syengine.hpp"
+#include "render/sy_render.hpp"
 
-struct Global
-{
-
-};
+#include "global.hpp"
 
 extern "C"
 void app_init(SyAppInfo *app_info)
@@ -19,17 +17,16 @@ void app_init(SyAppInfo *app_info)
 	return;
     }
 
-    Global *global = (Global*)app_info->global_mem;
+    g_state = (Global*)app_info->global_mem;
 
-    // FIXME
-    SY_ECS_REGISTER_TYPE(app_info->ecs, int);
+    sy_render_init_ecs(&app_info->ecs);
 
 }
 
 extern "C"
 void app_run(SyAppInfo *app_info)
 {
-    Global *global = (Global*)app_info->global_mem;
+    g_state = (Global*)app_info->global_mem;
 
     if (app_info->input_info.q)
 	app_info->stop_game = true;
@@ -41,3 +38,20 @@ void app_destroy(SyAppInfo *app_info)
 {
 
 }
+
+
+// When I reload the dll this will run instead of app_init, this will not run on the initial start
+extern "C"
+void app_dll_init(SyAppInfo *app_info)
+{
+    SY_OUTPUT_DEBUG("new dll init")
+}
+
+// When I reload the dll this will run before the dll is reloaded
+extern "C"
+void app_dll_exit(SyAppInfo *app_info)
+{
+    SY_OUTPUT_DEBUG("old dll exit")
+    
+}
+

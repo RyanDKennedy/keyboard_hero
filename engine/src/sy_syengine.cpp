@@ -4,6 +4,7 @@
 
 #include "sy_ecs.hpp"
 #include "sy_macros.hpp"
+#include "render/sy_render.hpp"
 
 void engine_init(SyPlatformInfo *platform_info, SyAppInfo *app_info)
 {
@@ -23,8 +24,8 @@ void engine_init(SyPlatformInfo *platform_info, SyAppInfo *app_info)
     app_info->global_mem_size = 2048;
     app_info->global_mem = app_info->persistent_arena.alloc(app_info->global_mem_size);
 
-    // FIXME
-    SY_ECS_REGISTER_TYPE(app_info->ecs, int);
+    // init render types in ecs
+    sy_render_init_ecs(&app_info->ecs);
 
     platform_info->app_init(app_info);
 
@@ -44,7 +45,7 @@ void engine_run(SyPlatformInfo *platform_info, SyAppInfo *app_info)
     SyInputInfo &input = app_info->input_info;
 
     // close the engine
-    if (input.escape || input.window_should_close)
+    if (input.window_should_close)
     {
 	platform_info->end_engine = true;
     }
@@ -55,8 +56,21 @@ void engine_run(SyPlatformInfo *platform_info, SyAppInfo *app_info)
 	platform_info->reload_dll = true;
     }
 
+    // Run the app_dll_init function after dll has been reloaded 
+    if (platform_info->dll_first_run == true)
+    {
+	platform_info->app_dll_init(app_info);
+	platform_info->dll_first_run = false;
+    }
+
     // run the app
     platform_info->app_run(app_info);
+
+    // if the dll is about to be reloaded then run the app_dll_exit function
+    if (platform_info->reload_dll == true)
+    {
+	platform_info->app_dll_exit(app_info);
+    }
 
     // NOTE: The input below this is stuff responding to data received by running the app
 

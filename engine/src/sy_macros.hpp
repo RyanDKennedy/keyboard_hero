@@ -17,10 +17,21 @@
 	fprintf(stdout, "\n\033[32mINFORMATION\033[0m:\n" TEXT "\033[0m\n" __VA_OPT__(,) __VA_ARGS__); \
     }
 
+
 #define SY_ERROR_COND(condition, ...) if (condition) { SY_ERROR(__VA_ARGS__); }
 
-#ifndef NDEBUG
+#ifndef NDEBUG // Debug Mode
+
 #define SY_ASSERT(cond) if (!(cond)) { SY_ERROR("SY_ASSERT("#cond") failed.") }
-#else
+
+#define SY_OUTPUT_DEBUG(TEXT, ...)					\
+    {									\
+	fprintf(stdout, "\n\033[32mDEBUG\033[0m:\n" TEXT "\033[0m\n" __VA_OPT__(,) __VA_ARGS__); \
+    }
+
+#else // Release mode
+
 #define SY_ASSERT(cond)
+#define SY_OUTPUT_DEBUG(...)
+
 #endif
