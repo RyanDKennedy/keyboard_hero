@@ -4,6 +4,8 @@
 #include "sy_arena.hpp"
 #include "sy_ecs.hpp"
 
+#include "render/sy_render_info.hpp"
+
 struct SyPlatformInfo;
 struct SyAppInfo;
 
@@ -23,6 +25,8 @@ struct SyPlatformInfo
 
     SyInputInfo input_info;
     size_t delta_time; // in microseconds
+
+    SyRenderInfo render_info;
 };
 
 // used to communicate engine <--> app

@@ -1,3 +1,10 @@
+/*
+  the projectile shit
+  splash splash splash splash everywhere
+  big poop in my sock
+ */
+
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
@@ -13,6 +20,8 @@
 
 #include "sy_syengine.hpp"
 #include "sy_macros.hpp"
+
+#include "render/sy_linux_init.hpp"
 
 #define SY_MICROSECOND 1000000
 
@@ -61,6 +70,8 @@ int main(int argc, char *argv[])
     SyXCBInfo xcb_info;
     SyAppInfo app_info; // Stuff used to communicate engine <--> app
 
+    int status;
+
     // Linux Init
     init_window(&xcb_info, 600, 600, "Syengine");
 
@@ -82,6 +93,10 @@ int main(int argc, char *argv[])
 	// Input Init
 	memset(&platform_info.input_info, 0, sizeof(SyInputInfo));
 	poll_events(&xcb_info, &platform_info.input_info);
+
+	// Init render system
+	status = sy_render_init(&xcb_info, &platform_info.render_info);
+	// FIXME CHECK STATUS VAR
     }
 
     // Init Engine
