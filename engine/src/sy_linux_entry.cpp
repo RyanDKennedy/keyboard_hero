@@ -25,8 +25,11 @@
 
 #define SY_MICROSECOND 1000000
 
-size_t get_current_time_us();
+#ifndef NDEBUG
 void load_app_functions(SyPlatformInfo *platform_info, const char *dll_file);
+#endif
+
+size_t get_current_time_us();
 int go_to_root_path();
 
 int main(int argc, char *argv[])
@@ -77,18 +80,20 @@ int main(int argc, char *argv[])
 
     { // Platform Info Init
 	// App Dyanamic function load
+#ifndef NDEBUG
 	platform_info.dll_handle = nullptr;
 	platform_info.app_init = nullptr;
 	platform_info.app_run = nullptr;
 	platform_info.app_destroy = nullptr;
 	platform_info.app_dll_init = nullptr;
 	platform_info.app_dll_exit = nullptr;
+	platform_info.reload_dll = false;
 	load_app_functions(&platform_info, dll_file);
 	SY_OUTPUT_INFO("Loaded the dll app functions.");
+#endif
 
 	// Flags Init
 	platform_info.end_engine = false;
-	platform_info.reload_dll = false;
 
 	// Input Init
 	memset(&platform_info.input_info, 0, sizeof(SyInputInfo));
@@ -97,6 +102,7 @@ int main(int argc, char *argv[])
 	// Init render system
 	status = sy_render_init(&xcb_info, &platform_info.render_info);
 	// FIXME CHECK STATUS VAR
+
     }
 
     // Init Engine
@@ -135,6 +141,7 @@ int main(int argc, char *argv[])
 	// Calls engine
 	engine_run(&platform_info, &app_info);
 
+#ifndef NDEBUG
 	if (platform_info.reload_dll)
 	{
 	    platform_info.reload_dll = false;
@@ -143,6 +150,7 @@ int main(int argc, char *argv[])
 	    SY_OUTPUT_INFO("Reloaded the dll app functions.");
 	    sleep(1);
 	}
+#endif
 
 
     }
@@ -151,7 +159,10 @@ int main(int argc, char *argv[])
     engine_destroy(&platform_info, &app_info);
 
     { // Cleanup Platform Info
+#ifndef NDEBUG
 	dlclose(platform_info.dll_handle);
+#endif
+
 	sy_render_deinit(&platform_info.render_info);
     }
 
@@ -161,6 +172,7 @@ int main(int argc, char *argv[])
     return 0;
 }
 
+#ifndef NDEBUG
 void load_app_functions(SyPlatformInfo *platform_info, const char *dll_file)
 {
     if (platform_info->dll_handle != nullptr)
@@ -187,7 +199,9 @@ void load_app_functions(SyPlatformInfo *platform_info, const char *dll_file)
 
     platform_info->app_dll_exit = (void (*)(SyAppInfo*))dlsym(platform_info->dll_handle, "app_dll_exit");
     SY_ERROR_COND((error = dlerror()) != NULL, "failed to load symbol %s", error);
+
 }
+#endif
 
 size_t get_current_time_us()
 {

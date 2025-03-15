@@ -2,6 +2,8 @@
 
 struct SyInputInfo
 {
+    int window_width;
+    int window_height;
     bool window_should_close;
     bool window_resized;
     bool a;

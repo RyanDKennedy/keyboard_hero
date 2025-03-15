@@ -62,6 +62,8 @@ void handle_event_expose(SyXCBInfo *xcb_info, SyInputInfo *input_info, xcb_gener
 	input_info->window_resized = true;
 	xcb_info->win_width = reply->width;
 	xcb_info->win_height = reply->height;
+	input_info->window_width = reply->width;
+	input_info->window_height = reply->height;
     }
 
     free(reply);

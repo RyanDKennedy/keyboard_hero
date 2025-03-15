@@ -1,16 +1,26 @@
+cmake_minimum_required(VERSION 3.22.1)
+
 project(syengine)
+
+find_package(Vulkan REQUIRED)
 
 # PLATFORM UNSPECIFIC FILES
 set(SY_SOURCE_FILES
     ${CMAKE_CURRENT_SOURCE_DIR}/src/sy_syengine.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/sy_arena.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/render/sy_render.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/render/sy_resources.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/render/sy_physical_device.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/render/sy_logical_device.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/render/sy_swapchain.cpp
 )
 
 # PLATFORM UNSPECIFIC FILES
-set(SY_LINK_LIBRARIES)
+set(SY_LINK_LIBRARIES
+  Vulkan::Vulkan
+)
 
-if (UNIX)
+if(UNIX)
   list(APPEND SY_SOURCE_FILES 
     ${CMAKE_CURRENT_SOURCE_DIR}/src/sy_linux_entry.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/sy_linux_window.cpp
@@ -25,19 +35,11 @@ if (UNIX)
     xkbcommon
     xkbcommon-x11
   )
-endif (UNIX)
+endif(UNIX)
 
-if (SY_VULKAN)
-
-  find_package(Vulkan REQUIRED)
-  
-  list(APPEND SY_LINK_LIBRARIES
-    Vulkan::Vulkan
-  )
-
-endif (SY_VULKAN)
-
-
+if(CMAKE_BUILD_TYPE STREQUAL "Release")
+  list(APPEND SY_LINK_LIBRARIES app)
+endif()
 
 add_executable(${PROJECT_NAME} ${SY_SOURCE_FILES})
 
@@ -46,5 +48,8 @@ target_include_directories(${PROJECT_NAME}
   ${CMAKE_CURRENT_SOURCE_DIR}/src/
 )
 
-target_link_libraries(${PROJECT_NAME} ${SY_LINK_LIBRARIES})
+target_link_libraries(${PROJECT_NAME}
+  PRIVATE
+  ${SY_LINK_LIBRARIES}
+)
 

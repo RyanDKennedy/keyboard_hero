@@ -2,6 +2,8 @@
 
 #pragma once
 
+#include <stdio.h>
+
 #define SY_ERROR_OUTPUT(TEXT, ...) fprintf(stderr, "\n\033[31mERROR\033[0m - %s [%d]:\n\033[31m" TEXT "\033[0m\n", __FILE__ , __LINE__  __VA_OPT__(,) __VA_ARGS__);
 
 // requires importing stdio.h

@@ -31,15 +31,18 @@ void app_run(SyAppInfo *app_info)
     if (app_info->input_info.q)
 	app_info->stop_game = true;
 
+
+
 }
 
 extern "C"
 void app_destroy(SyAppInfo *app_info)
 {
-
+    SY_OUTPUT_INFO("destroying app");
 }
 
 
+#ifndef NDEBUG
 // When I reload the dll this will run instead of app_init, this will not run on the initial start
 extern "C"
 void app_dll_init(SyAppInfo *app_info)
@@ -54,4 +57,4 @@ void app_dll_exit(SyAppInfo *app_info)
     SY_OUTPUT_DEBUG("old dll exit")
     
 }
-
+#endif
