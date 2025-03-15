@@ -8,4 +8,4 @@
 
 int sy_render_init(SyXCBInfo *xcb_info, SyRenderInfo *render_info);
 
-
+int sy_render_deinit(SyRenderInfo *render_info);

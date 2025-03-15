@@ -7,6 +7,7 @@
 struct SyRenderInfo
 {
     VkInstance instance;
-
+    VkDebugUtilsMessengerEXT debug_messenger;
+    VkSurfaceKHR surface;
 
 };

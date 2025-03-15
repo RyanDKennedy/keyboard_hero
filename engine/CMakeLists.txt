@@ -15,6 +15,7 @@ if (UNIX)
     ${CMAKE_CURRENT_SOURCE_DIR}/src/sy_linux_entry.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/sy_linux_window.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/sy_linux_input.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/render/sy_linux_init.cpp
   )
 
   list(APPEND SY_LINK_LIBRARIES

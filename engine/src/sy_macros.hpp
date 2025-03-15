@@ -35,3 +35,5 @@
 #define SY_OUTPUT_DEBUG(...)
 
 #endif
+
+#define SY_ARRLEN(arr) (sizeof(arr) / sizeof(arr[0]))

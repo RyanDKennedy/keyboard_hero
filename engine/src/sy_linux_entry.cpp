@@ -152,6 +152,7 @@ int main(int argc, char *argv[])
 
     { // Cleanup Platform Info
 	dlclose(platform_info.dll_handle);
+	sy_render_deinit(&platform_info.render_info);
     }
 
     // Cleanup Linux
