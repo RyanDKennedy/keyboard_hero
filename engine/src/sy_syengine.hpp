@@ -1,10 +1,16 @@
 #pragma once
 
+/* TODO:
+   - move SyAppInfo out of this file so that the app doesn't have to get information about the platform info
+   - find a better place for pipeline info besides platform info since the platform doesn't need it
+ */
+
 #include "sy_input_info.hpp"
 #include "sy_arena.hpp"
 #include "sy_ecs.hpp"
 
 #include "render/sy_render_info.hpp"
+#include "render/sy_pipeline.hpp"
 
 struct SyPlatformInfo;
 struct SyAppInfo;
@@ -29,6 +35,7 @@ struct SyPlatformInfo
     size_t delta_time; // in microseconds
 
     SyRenderInfo render_info;
+    SyRenderPipelineInfo pipeline_info;
 };
 
 // used to communicate engine <--> app

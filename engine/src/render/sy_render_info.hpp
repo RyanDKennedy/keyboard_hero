@@ -26,4 +26,9 @@ struct SyRenderInfo
     VkImageView *swapchain_image_views;
     uint32_t swapchain_image_views_amt;
 
+    VkFramebuffer *swapchain_framebuffers;
+    uint32_t swapchain_framebuffers_amt;
+
+    VkDescriptorPool descriptor_pool;
+
 };

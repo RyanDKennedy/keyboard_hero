@@ -39,6 +39,7 @@ void engine_init(SyPlatformInfo *platform_info, SyAppInfo *app_info)
 
     // create render resources
     sy_render_create_resources(&platform_info->render_info, platform_info->input_info.window_width, platform_info->input_info.window_height);
+    sy_render_create_pipeline_resources(&platform_info->render_info, &platform_info->pipeline_info);
 
     // init render types in ecs
     sy_render_init_ecs(&app_info->ecs);
@@ -122,6 +123,7 @@ void engine_destroy(SyPlatformInfo *platform_info, SyAppInfo *app_info)
     app_destroy(app_info);
 #endif
 
+    sy_render_destroy_pipeline_resources(&platform_info->render_info, &platform_info->pipeline_info);
     sy_render_destroy_resources(&platform_info->render_info);
 
     { // Cleanup App Info

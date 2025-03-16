@@ -31,6 +31,8 @@ void app_run(SyAppInfo *app_info)
     if (app_info->input_info.q)
 	app_info->stop_game = true;
 
+    if (app_info->input_info.p)
+	printf("hi\n");
 
 
 }
