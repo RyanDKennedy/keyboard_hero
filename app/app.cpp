@@ -1,7 +1,7 @@
 #include <stdio.h>
 
 #include "sy_ecs.hpp"
-#include "sy_syengine.hpp"
+#include "sy_app_info.hpp"
 #include "render/sy_render.hpp"
 
 #include "global.hpp"

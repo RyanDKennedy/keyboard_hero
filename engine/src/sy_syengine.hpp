@@ -8,6 +8,7 @@
 #include "sy_input_info.hpp"
 #include "sy_arena.hpp"
 #include "sy_ecs.hpp"
+#include "sy_app_info.hpp"
 
 #include "render/sy_render_info.hpp"
 #include "render/sy_pipeline.hpp"
@@ -16,6 +17,7 @@ struct SyPlatformInfo;
 struct SyAppInfo;
 
 // used to communicate platform <--> engine
+// and engine state
 struct SyPlatformInfo
 {
 #ifndef NDEBUG
@@ -36,20 +38,6 @@ struct SyPlatformInfo
 
     SyRenderInfo render_info;
     SyPipeline single_color_pipeline;
-};
-
-// used to communicate engine <--> app
-struct SyAppInfo
-{
-    SyArena persistent_arena;
-    SyArena frame_arena;
-    SyEcs ecs;
-    SyInputInfo input_info;
-    double delta_time; // in seconds
-    bool stop_game;
-
-    void *global_mem; // pointer to memory that the user can use
-    size_t global_mem_size;
 };
 
 void engine_init(SyPlatformInfo *platform_info, SyAppInfo *app_info);
