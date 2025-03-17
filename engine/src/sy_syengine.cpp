@@ -19,32 +19,16 @@ extern "C"
 void app_destroy(SyAppInfo *app_info);
 #endif
 
-
-void engine_init(SyPlatformInfo *platform_info, SyAppInfo *app_info)
+void renderer_init(SyPlatformInfo *platform_info, SyAppInfo *app_info)
 {
-    SY_OUTPUT_INFO("Starting Engine");
-    
-    app_info->stop_game = false;
-
-    // ECS Init
-    app_info->ecs.initialize();
-
-    // Arena/Allocation Init
-    SY_ERROR_COND(app_info->persistent_arena.initialize(4096) != 0, "Failed to allocate data for persistent arena.");
-    SY_ERROR_COND(app_info->frame_arena.initialize(4096) != 0, "Failed to allocate data for frame arena.");
-
-    app_info->delta_time = 0.0;
-
-    app_info->global_mem_size = 2048;
-    app_info->global_mem = app_info->persistent_arena.alloc(app_info->global_mem_size);
-
     /* ORDER FOR RENDER SYSTEM INIT
        1. create descriptor set layouts
        1. create render pass
        2. create framebuffers
        2. create pipelines
-          1. create descriptor sets
 	  1. create uniform buffers
+          2. create descriptor sets
+
      */
     
     // render system init
@@ -76,12 +60,52 @@ void engine_init(SyPlatformInfo *platform_info, SyAppInfo *app_info)
 	create_info.descriptor_set_layouts = &platform_info->render_info.single_ubo_descriptor_set_layout;
 	create_info.descriptor_set_layouts_amt = 1;
 	create_info.subpass_number = 0;
+	create_info.ubo_size = sizeof(float) * 1;
 
 	platform_info->single_color_pipeline = sy_render_create_pipeline(&platform_info->render_info, &create_info);
     }
 
+
     // init render types in ecs
     sy_render_init_ecs(&app_info->ecs);
+}
+
+void renderer_cleanup(SyPlatformInfo *platform_info, SyAppInfo *app_info)
+{
+
+    sy_render_destroy_pipeline(&platform_info->render_info, &platform_info->single_color_pipeline);
+    
+    for (int i = 0; i < platform_info->render_info.swapchain_framebuffers_amt; ++i)
+    {
+	vkDestroyFramebuffer(platform_info->render_info.logical_device, platform_info->render_info.swapchain_framebuffers[i], NULL);
+    }
+    free(platform_info->render_info.swapchain_framebuffers);
+
+
+    vkDestroyRenderPass(platform_info->render_info.logical_device, platform_info->render_info.render_pass, NULL);
+    vkDestroyDescriptorSetLayout(platform_info->render_info.logical_device, platform_info->render_info.single_ubo_descriptor_set_layout, NULL);
+    sy_render_destroy_resources(&platform_info->render_info);
+}
+
+
+void engine_init(SyPlatformInfo *platform_info, SyAppInfo *app_info)
+{
+    SY_OUTPUT_INFO("Starting Engine");
+    
+    app_info->stop_game = false;
+
+    // ECS Init
+    app_info->ecs.initialize();
+
+    // Arena/Allocation Init
+    SY_ERROR_COND(app_info->persistent_arena.initialize(4096) != 0, "Failed to allocate data for persistent arena.");
+    SY_ERROR_COND(app_info->frame_arena.initialize(4096) != 0, "Failed to allocate data for frame arena.");
+    app_info->global_mem_size = 2048;
+    app_info->global_mem = app_info->persistent_arena.alloc(app_info->global_mem_size);
+
+    app_info->delta_time = 0.0;
+
+    renderer_init(platform_info, app_info);
 
 #ifndef NDEBUG
     platform_info->app_init(app_info);
@@ -162,8 +186,8 @@ void engine_destroy(SyPlatformInfo *platform_info, SyAppInfo *app_info)
     app_destroy(app_info);
 #endif
 
-//    sy_render_destroy_pipeline_resources(&platform_info->render_info, &platform_info->pipeline_info);
-    sy_render_destroy_resources(&platform_info->render_info);
+    renderer_cleanup(platform_info, app_info);
+
 
     { // Cleanup App Info
 	// Arena/Allocation Cleanup

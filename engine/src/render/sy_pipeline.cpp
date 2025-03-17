@@ -5,27 +5,80 @@
 #include "render/sy_render_info.hpp"
 #include "sy_macros.hpp"
 #include "sy_utils.hpp"
+#include "sy_buffer.hpp"
 
-VkShaderModule create_shader_module(SyRenderInfo *render_info, char *code, ssize_t code_size)
-{
-    VkShaderModuleCreateInfo create_info;
-    create_info.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
-    create_info.pNext = NULL;
-    create_info.flags = 0;
-    create_info.codeSize = code_size;
-    create_info.pCode = (uint32_t*)code;
-    
-    VkShaderModule shader_module;
-    SY_ERROR_COND(vkCreateShaderModule(render_info->logical_device, &create_info, NULL, &shader_module) != VK_SUCCESS,
-		  "PIPELINE: Couldn't make shader module.");
-
-    return shader_module;
-}
+SyPipeline create_pipeline_object(SyRenderInfo *render_info, SyPipelineCreateInfo *pipeline_create_info);
+VkShaderModule create_shader_module(SyRenderInfo *render_info, char *code, ssize_t code_size);
+void create_descriptor_pool(SyRenderInfo *render_info, SyPipeline *pipeline);
+void create_uniforms(SyRenderInfo *render_info, SyPipeline *pipeline, size_t ubo_size);
 
 SyPipeline sy_render_create_pipeline(SyRenderInfo *render_info, SyPipelineCreateInfo *pipeline_create_info)
 {
-    // TODO create uniform buffers, descriptor pool, descriptor sets
+    // TODO create descriptor sets
 
+    SyPipeline result = create_pipeline_object(render_info, pipeline_create_info);
+    create_uniforms(render_info, &result, pipeline_create_info->ubo_size);
+    create_descriptor_pool(render_info, &result);
+
+
+
+    return result;
+}
+
+void sy_render_destroy_pipeline(SyRenderInfo *render_info, SyPipeline *pipeline)
+{
+    vkDestroyDescriptorPool(render_info->logical_device, pipeline->descriptor_pool, NULL);
+
+    for (size_t i = 0; i < render_info->max_frames_in_flight; ++i)
+    {
+	vkDestroyBuffer(render_info->logical_device, pipeline->uniform_buffers[i], NULL);
+	vkFreeMemory(render_info->logical_device, pipeline->uniform_buffers_memory[i], NULL);
+    }
+    free(pipeline->uniform_buffers);
+    free(pipeline->uniform_buffers_memory);
+    free(pipeline->uniform_buffers_mapped);
+
+    vkDestroyPipelineLayout(render_info->logical_device, pipeline->pipeline_layout, NULL);
+    
+    vkDestroyPipeline(render_info->logical_device, pipeline->pipeline, NULL);
+
+}
+
+void create_descriptor_pool(SyRenderInfo *render_info, SyPipeline *pipeline)
+{
+    VkDescriptorPoolSize pool_size;
+    pool_size.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+    pool_size.descriptorCount = render_info->max_frames_in_flight;
+
+    VkDescriptorPoolCreateInfo pool_create_info;
+    pool_create_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+    pool_create_info.pNext = NULL;
+    pool_create_info.flags = 0;
+    pool_create_info.poolSizeCount = 1;
+    pool_create_info.pPoolSizes = &pool_size;
+    pool_create_info.maxSets = render_info->max_frames_in_flight;
+
+    SY_ERROR_COND(vkCreateDescriptorPool(render_info->logical_device, &pool_create_info, NULL, &pipeline->descriptor_pool) != VK_SUCCESS, "PIPELINE: Failed to create descriptor pool.");
+}
+
+void create_uniforms(SyRenderInfo *render_info, SyPipeline *pipeline, size_t ubo_size)
+{
+    pipeline->uniform_buffers_amt = render_info->max_frames_in_flight;
+    pipeline->uniform_buffers = (VkBuffer*)calloc(pipeline->uniform_buffers_amt, sizeof(VkBuffer));
+    pipeline->uniform_buffers_memory = (VkDeviceMemory*)calloc(pipeline->uniform_buffers_amt, sizeof(VkDeviceMemory));
+    pipeline->uniform_buffers_mapped = (void**)calloc(pipeline->uniform_buffers_amt, sizeof(void*));
+
+    for (size_t i = 0; i < render_info->max_frames_in_flight; ++i)
+    {
+	sy_create_buffer(render_info, ubo_size, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, &pipeline->uniform_buffers[i], &pipeline->uniform_buffers_memory[i]);
+
+	SY_ERROR_COND(vkMapMemory(render_info->logical_device, pipeline->uniform_buffers_memory[i], 0, ubo_size, 0, &pipeline->uniform_buffers_mapped[i]) != VK_SUCCESS, "PIPELINE: Failed to map uniform buffer %lu", i);
+    }
+
+}
+
+SyPipeline create_pipeline_object(SyRenderInfo *render_info, SyPipelineCreateInfo *pipeline_create_info)
+{
 
     SyPipeline result;
 
@@ -233,8 +286,22 @@ SyPipeline sy_render_create_pipeline(SyRenderInfo *render_info, SyPipelineCreate
     // Cleanup
     vkDestroyShaderModule(render_info->logical_device, vertex_shader_module, NULL);
     vkDestroyShaderModule(render_info->logical_device, fragment_shader_module, NULL);
-
-
-
+    
     return result;
+}
+
+VkShaderModule create_shader_module(SyRenderInfo *render_info, char *code, ssize_t code_size)
+{
+    VkShaderModuleCreateInfo create_info;
+    create_info.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
+    create_info.pNext = NULL;
+    create_info.flags = 0;
+    create_info.codeSize = code_size;
+    create_info.pCode = (uint32_t*)code;
+    
+    VkShaderModule shader_module;
+    SY_ERROR_COND(vkCreateShaderModule(render_info->logical_device, &create_info, NULL, &shader_module) != VK_SUCCESS,
+		  "PIPELINE: Couldn't make shader module.");
+
+    return shader_module;
 }

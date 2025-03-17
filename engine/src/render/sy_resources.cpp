@@ -37,6 +37,8 @@ index buffer     by user / render system
 
  */
 
+void create_command_pool(SyRenderInfo *render_info);
+
 void sy_render_create_resources(SyRenderInfo *render_info, int win_width, int win_height)
 {
     sy_render_create_physical_device(render_info);
@@ -50,18 +52,36 @@ void sy_render_create_resources(SyRenderInfo *render_info, int win_width, int wi
 
     sy_render_create_swapchain(render_info, win_width, win_height);
 
+    create_command_pool(render_info);
+
+
+
     SY_OUTPUT_INFO("Created render resources.");
 }
 
 void sy_render_destroy_resources(SyRenderInfo *render_info)
 {
+    vkDestroyCommandPool(render_info->logical_device, render_info->command_pool, NULL); // command buffers are freed when command pool is freed
+
     sy_render_destroy_swapchain(render_info);
-    vkDestroyDevice(render_info->logical_device, NULL);    
+    vkDestroyDevice(render_info->logical_device, NULL);
 
     SY_OUTPUT_INFO("Destroyed render resources.");
 }
 
 // TODO DESTROY DESCRIPTOR SET LAYOUTS AND RENDER PASS
+
+
+void create_command_pool(SyRenderInfo *render_info)
+{
+    VkCommandPoolCreateInfo command_pool_create_info;
+    command_pool_create_info.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+    command_pool_create_info.pNext = NULL;
+    command_pool_create_info.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
+    command_pool_create_info.queueFamilyIndex = render_info->graphics_queue_family_index;
+    
+    SY_ERROR_COND(vkCreateCommandPool(render_info->logical_device, &command_pool_create_info, NULL, &render_info->command_pool) != VK_SUCCESS, "RENDER: Failed to create command pool.");
+}
 
 
 void sy_render_create_descriptor_set_layouts(SyRenderInfo *render_info)

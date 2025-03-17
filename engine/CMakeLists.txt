@@ -15,6 +15,7 @@ set(SY_SOURCE_FILES
     ${CMAKE_CURRENT_SOURCE_DIR}/src/render/sy_logical_device.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/render/sy_swapchain.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/render/sy_pipeline.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/render/sy_buffer.cpp
 )
 
 # PLATFORM UNSPECIFIC FILES

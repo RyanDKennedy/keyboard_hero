@@ -29,6 +29,8 @@ struct SyRenderInfo
     VkFramebuffer *swapchain_framebuffers;
     uint32_t swapchain_framebuffers_amt;
 
+    VkCommandPool command_pool;
+
     // descriptors
     VkDescriptorSetLayout single_ubo_descriptor_set_layout;
 

@@ -10,7 +10,7 @@ struct SyPipelineCreateInfo
 {
     const char *vertex_shader_path;
     const char *fragment_shader_path;
-// TODO    const char *geometry_shader_path;
+// TODO   const char *geometry_shader_path;
 // TODO   bool has_geometry_shader;
     
     VkVertexInputBindingDescription vertex_input_binding_description;
@@ -23,7 +23,8 @@ struct SyPipelineCreateInfo
     uint32_t descriptor_set_layouts_amt;
     
     uint32_t subpass_number;
-    
+
+    size_t ubo_size;
 };
 
 
@@ -38,8 +39,10 @@ struct SyPipeline
     void **uniform_buffers_mapped;
 
     VkDescriptorPool descriptor_pool;
-    VkDescriptorSet *camera_descriptor_sets;
+    VkDescriptorSet *descriptor_sets;
+    uint32_t descriptor_sets_amt;
 };
 
 
 SyPipeline sy_render_create_pipeline(SyRenderInfo *render_info, SyPipelineCreateInfo *pipeline_create_info);
+void sy_render_destroy_pipeline(SyRenderInfo *render_info, SyPipeline *pipeline);
