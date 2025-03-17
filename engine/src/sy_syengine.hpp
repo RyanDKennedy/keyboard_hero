@@ -35,7 +35,7 @@ struct SyPlatformInfo
     size_t delta_time; // in microseconds
 
     SyRenderInfo render_info;
-    SyRenderPipelineInfo pipeline_info;
+    SyPipeline single_color_pipeline;
 };
 
 // used to communicate engine <--> app

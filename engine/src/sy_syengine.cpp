@@ -1,6 +1,7 @@
 #include "sy_syengine.hpp"
 
 #include <stdio.h>
+#include <vulkan/vulkan_core.h>
 
 #include "sy_ecs.hpp"
 #include "sy_macros.hpp"
@@ -37,9 +38,47 @@ void engine_init(SyPlatformInfo *platform_info, SyAppInfo *app_info)
     app_info->global_mem_size = 2048;
     app_info->global_mem = app_info->persistent_arena.alloc(app_info->global_mem_size);
 
-    // create render resources
+    /* ORDER FOR RENDER SYSTEM INIT
+       1. create descriptor set layouts
+       1. create render pass
+       2. create framebuffers
+       2. create pipelines
+          1. create descriptor sets
+	  1. create uniform buffers
+     */
+    
+    // render system init
     sy_render_create_resources(&platform_info->render_info, platform_info->input_info.window_width, platform_info->input_info.window_height);
-    sy_render_create_pipeline_resources(&platform_info->render_info, &platform_info->pipeline_info);
+    sy_render_create_descriptor_set_layouts(&platform_info->render_info);
+    platform_info->render_info.render_pass = sy_render_create_simple_render_pass(&platform_info->render_info);
+    sy_render_create_swapchain_framebuffers(&platform_info->render_info);
+    platform_info->render_info.max_frames_in_flight = 2;
+
+    { // Create single color pipeline
+	VkVertexInputBindingDescription binding_description;
+	binding_description.binding = 0;
+	binding_description.stride = sizeof(float) * 2;
+	binding_description.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;    
+
+	VkVertexInputAttributeDescription attr[1];
+	attr[0].binding = 0;
+	attr[0].location = 0;
+	attr[0].format = VK_FORMAT_R32G32_SFLOAT;
+	attr[0].offset = 0;
+
+	SyPipelineCreateInfo create_info;
+	create_info.vertex_shader_path = "single_color/vertex.spv";
+	create_info.fragment_shader_path = "single_color/fragment.spv";
+	create_info.vertex_input_binding_description = binding_description;
+	create_info.vertex_input_attribute_descriptions = attr;
+	create_info.vertex_input_attribute_descriptions_amt = 1;
+	create_info.render_type = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+	create_info.descriptor_set_layouts = &platform_info->render_info.single_ubo_descriptor_set_layout;
+	create_info.descriptor_set_layouts_amt = 1;
+	create_info.subpass_number = 0;
+
+	platform_info->single_color_pipeline = sy_render_create_pipeline(&platform_info->render_info, &create_info);
+    }
 
     // init render types in ecs
     sy_render_init_ecs(&app_info->ecs);
@@ -123,7 +162,7 @@ void engine_destroy(SyPlatformInfo *platform_info, SyAppInfo *app_info)
     app_destroy(app_info);
 #endif
 
-    sy_render_destroy_pipeline_resources(&platform_info->render_info, &platform_info->pipeline_info);
+//    sy_render_destroy_pipeline_resources(&platform_info->render_info, &platform_info->pipeline_info);
     sy_render_destroy_resources(&platform_info->render_info);
 
     { // Cleanup App Info

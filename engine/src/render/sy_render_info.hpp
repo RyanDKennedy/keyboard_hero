@@ -29,6 +29,12 @@ struct SyRenderInfo
     VkFramebuffer *swapchain_framebuffers;
     uint32_t swapchain_framebuffers_amt;
 
-    VkDescriptorPool descriptor_pool;
+    // descriptors
+    VkDescriptorSetLayout single_ubo_descriptor_set_layout;
 
+    // The render pass
+    VkRenderPass render_pass;
+
+    int max_frames_in_flight;
+    
 };

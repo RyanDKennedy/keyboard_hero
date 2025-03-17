@@ -35,7 +35,7 @@ int go_to_root_path();
 int main(int argc, char *argv[])
 {
     // parse command arguments
-    const char *dll_file = "./libapp.so";
+    const char *dll_file = "./bin/debug/libapp.so";
 
     {
 	opterr = 0;
@@ -224,9 +224,13 @@ int go_to_root_path()
 	path[root_path_len] = '\0';
     }
     
-    char *last_slash = strrchr(path, '/');
+    for (int i = 0; i < 3; ++i)
+    {
+	char *last_slash = strrchr(path, '/');
+	*last_slash = '\0';
+    }
 
-    *last_slash = '\0';
+    SY_OUTPUT_INFO("Root Directory = %s", path);
 
     return chdir(path);
 }

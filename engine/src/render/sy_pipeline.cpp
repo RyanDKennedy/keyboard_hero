@@ -1,47 +1,41 @@
 #include "sy_pipeline.hpp"
 
-#include "render/sy_render_info.hpp"
-#include "sy_macros.hpp"
-
 #include <stdlib.h>
 
-void create_render_pass(SyRenderInfo *render_info, SyRenderPipelineInfo *pipeline_info);
-void create_descriptor_set_layout(SyRenderInfo *render_info, SyRenderPipelineInfo *pipeline_info);
-void create_pipeline(SyRenderInfo *render_info, SyRenderPipelineInfo *pipeline_info);
+#include "render/sy_render_info.hpp"
+#include "sy_macros.hpp"
+#include "sy_utils.hpp"
 
-void sy_render_create_pipeline_resources(SyRenderInfo *render_info, SyRenderPipelineInfo *pipeline_info)
+VkShaderModule create_shader_module(SyRenderInfo *render_info, char *code, ssize_t code_size)
 {
-    create_render_pass(render_info, pipeline_info);
-    create_descriptor_set_layout(render_info, pipeline_info);
+    VkShaderModuleCreateInfo create_info;
+    create_info.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
+    create_info.pNext = NULL;
+    create_info.flags = 0;
+    create_info.codeSize = code_size;
+    create_info.pCode = (uint32_t*)code;
+    
+    VkShaderModule shader_module;
+    SY_ERROR_COND(vkCreateShaderModule(render_info->logical_device, &create_info, NULL, &shader_module) != VK_SUCCESS,
+		  "PIPELINE: Couldn't make shader module.");
 
-
-    SY_OUTPUT_INFO("Created render pipeline resources.")
+    return shader_module;
 }
 
-void sy_render_destroy_pipeline_resources(SyRenderInfo *render_info, SyRenderPipelineInfo *pipeline_info)
+SyPipeline sy_render_create_pipeline(SyRenderInfo *render_info, SyPipelineCreateInfo *pipeline_create_info)
 {
+    // TODO create uniform buffers, descriptor pool, descriptor sets
 
 
+    SyPipeline result;
 
-    vkDestroyDescriptorSetLayout(render_info->logical_device, pipeline_info->descriptor_set_layout, NULL);
-    vkDestroyRenderPass(render_info->logical_device, pipeline_info->render_pass, NULL);
-
-    SY_OUTPUT_INFO("Destroyed render pipeline resources.")
-}
-
-void create_pipeline(SyRenderInfo *render_info, SyRenderPipelineInfo *pipeline_info)
-{
     // Creating Shaders
 
     // vertex shader
-    const char *vertex_shader_path = "shaders/vertex.spv";
-    const char *fragment_shader_path = "shaders/fragment.spv";
-
-    char *vertex_shader_code = NULL;
-    ssize_t vertex_shader_code_size = get_file_contents(vertex_shader_path, &vertex_shader_code);
-    SY_ERROR_COND(vertex_shader_code_size == -1, "PIPELINE: Failed to read file \"%s\".\n", vertex_shader_path);
+    size_t vertex_shader_code_size;
+    char *vertex_shader_code = sy_read_resource_file(pipeline_create_info->vertex_shader_path, &vertex_shader_code_size);
     // This is freed at the end of this function
-    VkShaderModule vertex_shader_module = create_shader_module(vk_info, vertex_shader_code, vertex_shader_code_size - 1);
+    VkShaderModule vertex_shader_module = create_shader_module(render_info, vertex_shader_code, vertex_shader_code_size);
     free(vertex_shader_code);
 
     VkPipelineShaderStageCreateInfo vertex_shader_stage_create_info;
@@ -54,11 +48,10 @@ void create_pipeline(SyRenderInfo *render_info, SyRenderPipelineInfo *pipeline_i
     vertex_shader_stage_create_info.pSpecializationInfo = NULL; // specialization constants (uniforms???)
     
     // fragment shader
-    char *fragment_shader_code = NULL;
-    ssize_t fragment_shader_code_size = get_file_contents(fragment_shader_path, &fragment_shader_code);
-    SY_ERROR_COND(fragment_shader_code_size == -1, "PIPELINE: Failed to read file \"%s\".\n", fragment_shader_path);
+    size_t fragment_shader_code_size;
+    char *fragment_shader_code = sy_read_resource_file(pipeline_create_info->fragment_shader_path, &fragment_shader_code_size);
     // This is freed at the end of this function
-    VkShaderModule fragment_shader_module = create_shader_module(vk_info, fragment_shader_code, fragment_shader_code_size - 1);
+    VkShaderModule fragment_shader_module = create_shader_module(render_info, fragment_shader_code, fragment_shader_code_size);
     free(fragment_shader_code);
 
     VkPipelineShaderStageCreateInfo fragment_shader_stage_create_info;
@@ -72,6 +65,7 @@ void create_pipeline(SyRenderInfo *render_info, SyRenderPipelineInfo *pipeline_i
 
     VkPipelineShaderStageCreateInfo shader_stages[] = {vertex_shader_stage_create_info, fragment_shader_stage_create_info};
 
+
     // Fixed Functions
 
     // dynamic state
@@ -84,11 +78,9 @@ void create_pipeline(SyRenderInfo *render_info, SyRenderPipelineInfo *pipeline_i
     dynamic_state_create_info.pDynamicStates = dynamic_states;
 
     // vertex input bindings
-    VkVertexInputBindingDescription binding_descriptions[] =  {vertex_get_binding_description()};
-    uint32_t attr_descriptions_amt;
-    vertex_get_attribute_descriptions(NULL, &attr_descriptions_amt);
-    VkVertexInputAttributeDescription *attr_descriptions = calloc(attr_descriptions_amt, sizeof(VkVertexInputAttributeDescription));
-    vertex_get_attribute_descriptions(attr_descriptions, &attr_descriptions_amt);
+    VkVertexInputBindingDescription binding_descriptions[] =  {pipeline_create_info->vertex_input_binding_description};
+    uint32_t attr_descriptions_amt = pipeline_create_info->vertex_input_attribute_descriptions_amt;
+    VkVertexInputAttributeDescription *attr_descriptions = pipeline_create_info->vertex_input_attribute_descriptions;
 
     VkPipelineVertexInputStateCreateInfo vertex_input_create_info;
     vertex_input_create_info.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
@@ -99,12 +91,15 @@ void create_pipeline(SyRenderInfo *render_info, SyRenderPipelineInfo *pipeline_i
     vertex_input_create_info.vertexAttributeDescriptionCount = attr_descriptions_amt;
     vertex_input_create_info.pVertexAttributeDescriptions = attr_descriptions;
 
+
+
     // input assembly
+
     VkPipelineInputAssemblyStateCreateInfo input_assembly_create_info;
     input_assembly_create_info.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
     input_assembly_create_info.pNext = NULL;
     input_assembly_create_info.flags = 0;
-    input_assembly_create_info.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST; // render a list of triangles
+    input_assembly_create_info.topology = pipeline_create_info->render_type;
     input_assembly_create_info.primitiveRestartEnable = VK_FALSE; // some random EBO shit
 
     // viewport
@@ -164,17 +159,17 @@ void create_pipeline(SyRenderInfo *render_info, SyRenderPipelineInfo *pipeline_i
     multisample_create_info.alphaToCoverageEnable = VK_FALSE;
     multisample_create_info.alphaToOneEnable = VK_FALSE;
 
-    /* The tutorial doesn't use a depth and stencil buffer so we will pass NULL later on
+    // The tutorial doesn't use a depth and stencil buffer so we will pass NULL later on
     // depth and stencil testing
-    VkPipelineDepthStencilStateCreateInfo depth_stencil_create_info;
-    depth_stencil_create_info.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
-    depth_stencil_create_info.pNext = NULL;
-    depth_stencil_create_info.flags = 0; */
+    // VkPipelineDepthStencilStateCreateInfo depth_stencil_create_info;
+    // depth_stencil_create_info.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
+    // depth_stencil_create_info.pNext = NULL;
+    // depth_stencil_create_info.flags = 0;
 
     // color blending
-    /* NOTE:
-     * VkPipelineColorBlendAttachmentState contains the configuration per attached frambuffer
-     * VkPipelineColorBlendStateCreateInfo contains the global color blending settings */
+    // NOTE:
+    // VkPipelineColorBlendAttachmentState contains the configuration per attached frambuffer
+    // VkPipelineColorBlendStateCreateInfo contains the global color blending settings
     const int attachments_amt = 1;
     VkPipelineColorBlendAttachmentState color_blend_attachments[attachments_amt];
     color_blend_attachments[0].colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT |
@@ -205,119 +200,41 @@ void create_pipeline(SyRenderInfo *render_info, SyRenderPipelineInfo *pipeline_i
     layout_create_info.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
     layout_create_info.pNext = NULL;
     layout_create_info.flags = 0;
-    layout_create_info.setLayoutCount = 1;
-    layout_create_info.pSetLayouts = &pipeline_info->descriptor_set_layout;
+    layout_create_info.setLayoutCount = pipeline_create_info->descriptor_set_layouts_amt;
+    layout_create_info.pSetLayouts = pipeline_create_info->descriptor_set_layouts;
     layout_create_info.pushConstantRangeCount = 0;
     layout_create_info.pPushConstantRanges = NULL;
 
-    SY_ERROR_COND(vkCreatePipelineLayout(render_info->logical_device, &layout_create_info, NULL, &pipeline_info->pipeline_layout) != VK_SUCCESS,
+    SY_ERROR_COND(vkCreatePipelineLayout(render_info->logical_device, &layout_create_info, NULL, &result.pipeline_layout) != VK_SUCCESS,
 		  "PIPELINE: Failed to create a pipeline layout.");
 
-    VkGraphicsPipelineCreateInfo pipeline_create_info;
-    pipeline_create_info.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
-    pipeline_create_info.pNext = NULL;
-    pipeline_create_info.flags = 0;
-    pipeline_create_info.stageCount = 2;
-    pipeline_create_info.pStages = shader_stages;
-    pipeline_create_info.pVertexInputState = &vertex_input_create_info;
-    pipeline_create_info.pInputAssemblyState = &input_assembly_create_info;
-    pipeline_create_info.pViewportState = &viewport_state_create_info;
-    pipeline_create_info.pRasterizationState = &rasterizer_create_info;
-    pipeline_create_info.pMultisampleState = &multisample_create_info;
-    pipeline_create_info.pDepthStencilState = NULL;
-    pipeline_create_info.pColorBlendState = &color_blend_create_info;
-    pipeline_create_info.pDynamicState = &dynamic_state_create_info;
-    pipeline_create_info.layout = pipeline_info->pipeline_layout;
-    pipeline_create_info.renderPass = pipeline_info->render_pass;
-    pipeline_create_info.subpass = 0; // index of subpass where this pipeline will be used
-    pipeline_create_info.basePipelineHandle = VK_NULL_HANDLE;
-    pipeline_create_info.basePipelineIndex = -1;
+    VkGraphicsPipelineCreateInfo vulkan_pipeline_create_info;
+    vulkan_pipeline_create_info.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
+    vulkan_pipeline_create_info.pNext = NULL;
+    vulkan_pipeline_create_info.flags = 0;
+    vulkan_pipeline_create_info.stageCount = SY_ARRLEN(shader_stages);
+    vulkan_pipeline_create_info.pStages = shader_stages;
+    vulkan_pipeline_create_info.pVertexInputState = &vertex_input_create_info;
+    vulkan_pipeline_create_info.pInputAssemblyState = &input_assembly_create_info;
+    vulkan_pipeline_create_info.pViewportState = &viewport_state_create_info;
+    vulkan_pipeline_create_info.pRasterizationState = &rasterizer_create_info;
+    vulkan_pipeline_create_info.pMultisampleState = &multisample_create_info;
+    vulkan_pipeline_create_info.pDepthStencilState = NULL;
+    vulkan_pipeline_create_info.pColorBlendState = &color_blend_create_info;
+    vulkan_pipeline_create_info.pDynamicState = &dynamic_state_create_info;
+    vulkan_pipeline_create_info.layout = result.pipeline_layout;
+    vulkan_pipeline_create_info.renderPass = render_info->render_pass;
+    vulkan_pipeline_create_info.subpass = pipeline_create_info->subpass_number; // index of subpass where this pipeline will be used
+    vulkan_pipeline_create_info.basePipelineHandle = VK_NULL_HANDLE;
+    vulkan_pipeline_create_info.basePipelineIndex = -1;
 
-    SY_ERROR_COND(vkCreateGraphicsPipelines(render_info->logical_device, VK_NULL_HANDLE, 1, &pipeline_create_info, NULL, &pipeline_info->pipeline) != VK_SUCCESS, "PIPELINE: Failed to create graphics pipeline.");
+    SY_ERROR_COND(vkCreateGraphicsPipelines(render_info->logical_device, VK_NULL_HANDLE, 1, &vulkan_pipeline_create_info, NULL, &result.pipeline) != VK_SUCCESS, "PIPELINE: Failed to create graphics pipeline.");
 
     // Cleanup
-    free(attr_descriptions);
     vkDestroyShaderModule(render_info->logical_device, vertex_shader_module, NULL);
     vkDestroyShaderModule(render_info->logical_device, fragment_shader_module, NULL);
 
-}
 
-void create_descriptor_set_layout(SyRenderInfo *render_info, SyRenderPipelineInfo *pipeline_info)
-{
-    VkDescriptorSetLayoutBinding ubo_layout_binding;
-    ubo_layout_binding.binding = 0; // the binding of the uniform inside of the shader
-    ubo_layout_binding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-    ubo_layout_binding.descriptorCount = 1;
-    ubo_layout_binding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
-    ubo_layout_binding.pImmutableSamplers = NULL; // for image sampling
-    
-    VkDescriptorSetLayoutCreateInfo layout_create_info;
-    layout_create_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-    layout_create_info.pNext = NULL;
-    layout_create_info.flags = 0;
-    layout_create_info.bindingCount = 1;
-    layout_create_info.pBindings = &ubo_layout_binding;
 
-    SY_ERROR_COND(vkCreateDescriptorSetLayout(render_info->logical_device, &layout_create_info, NULL, &pipeline_info->descriptor_set_layout) != VK_SUCCESS, "PIPELINE: Failed to create descriptor set layout.");
-
-}
-
-void create_render_pass(SyRenderInfo *render_info, SyRenderPipelineInfo *pipeline_info)
-{
-    VkAttachmentDescription color_attachment;
-    color_attachment.format = render_info->swapchain_image_format;
-    color_attachment.samples = VK_SAMPLE_COUNT_1_BIT;
-    color_attachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR; // what to do when the image first gets loaded and ready to draw
-    color_attachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE; // what to do when finished writing to image 
-    color_attachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE; // same as loadOp but we don't care about stencil
-    color_attachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE; // same as storeOp but we don't care about stencil
-    color_attachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED; // what layout is image before render pass
-    color_attachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR; // what layout to output image as after render pass
-    color_attachment.flags = 0;
-    
-    VkAttachmentReference color_attachment_reference;
-    color_attachment_reference.attachment = 0; // what index our referenced color attachment is stored at
-    color_attachment_reference.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL; // what layout we want it stored at during the subpass
-
-    VkSubpassDescription subpass;
-    subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS; // specify it is graphics subpass because future may support compute subpass
-    subpass.colorAttachmentCount = 1;
-    subpass.pColorAttachments = &color_attachment_reference; // layout(location = 0) out ... in frag shader refers to index 0 of this array to write to
-    subpass.inputAttachmentCount = 0;
-    subpass.pInputAttachments = NULL;
-    subpass.preserveAttachmentCount = 0;
-    subpass.pPreserveAttachments = NULL;
-    subpass.pResolveAttachments = NULL;
-    subpass.pDepthStencilAttachment = NULL;
-    subpass.flags = 0;
-
-    // Create subpass dependency so that the implicit subpass where the image format gets converted waits until we have an image
-    VkSubpassDependency subpass_dependency;
-
-    // subpass 0 relies on VK_SUBPASS_EXTERNAL AKA image conversion
-    subpass_dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
-    subpass_dependency.dstSubpass = 0;
-
-    // finish executing color attachment on image conversion before going through with color attachment on subpass 0
-    subpass_dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-    subpass_dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-
-    subpass_dependency.srcAccessMask = 0;
-    subpass_dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-
-    subpass_dependency.dependencyFlags = 0;
-
-    VkRenderPassCreateInfo render_pass_create_info;
-    render_pass_create_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
-    render_pass_create_info.pNext = NULL;
-    render_pass_create_info.flags = 0;
-    render_pass_create_info.subpassCount = 1;
-    render_pass_create_info.pSubpasses = &subpass;
-    render_pass_create_info.attachmentCount = 1;
-    render_pass_create_info.pAttachments = &color_attachment; // NOTE: subpass contains references to attachments, this contains actual attachments
-    render_pass_create_info.dependencyCount = 1;
-    render_pass_create_info.pDependencies = &subpass_dependency;
-
-    SY_ERROR_COND(vkCreateRenderPass(render_info->logical_device, &render_pass_create_info, NULL, &pipeline_info->render_pass) != VK_SUCCESS, "PIPELINE: Failed to create render pass.");
-
+    return result;
 }
