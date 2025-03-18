@@ -5,8 +5,13 @@
 
 #include "sy_ecs.hpp"
 #include "sy_macros.hpp"
+
 #include "render/sy_render.hpp"
 #include "render/sy_resources.hpp"
+#include "render/sy_physical_device.hpp"
+#include "render/sy_logical_device.hpp"
+#include "render/sy_swapchain.hpp"
+#include "sy_utils.hpp"
 
 #ifdef NDEBUG
 extern "C"
@@ -31,8 +36,15 @@ void renderer_init(SyPlatformInfo *platform_info, SyAppInfo *app_info)
 
      */
     
-    // render system init
-    sy_render_create_resources(&platform_info->render_info, platform_info->input_info.window_width, platform_info->input_info.window_height);
+    sy_render_create_physical_device(&platform_info->render_info);
+    {
+	VkPhysicalDeviceProperties props;
+	vkGetPhysicalDeviceProperties(platform_info->render_info.physical_device, &props);
+	SY_OUTPUT_INFO("using device %s", props.deviceName);
+    }
+    sy_render_create_logical_device(&platform_info->render_info);
+    sy_render_create_swapchain(&platform_info->render_info, platform_info->input_info.window_width, platform_info->input_info.window_height);
+    sy_create_command_pool(&platform_info->render_info);
     sy_render_create_descriptor_set_layouts(&platform_info->render_info);
     platform_info->render_info.render_pass = sy_render_create_simple_render_pass(&platform_info->render_info);
     sy_render_create_swapchain_framebuffers(&platform_info->render_info);
@@ -65,9 +77,9 @@ void renderer_init(SyPlatformInfo *platform_info, SyAppInfo *app_info)
 	platform_info->single_color_pipeline = sy_render_create_pipeline(&platform_info->render_info, &create_info);
     }
 
-
     // init render types in ecs
     sy_render_init_ecs(&app_info->ecs);
+
 }
 
 void renderer_cleanup(SyPlatformInfo *platform_info, SyAppInfo *app_info)
@@ -84,14 +96,18 @@ void renderer_cleanup(SyPlatformInfo *platform_info, SyAppInfo *app_info)
 
     vkDestroyRenderPass(platform_info->render_info.logical_device, platform_info->render_info.render_pass, NULL);
     vkDestroyDescriptorSetLayout(platform_info->render_info.logical_device, platform_info->render_info.single_ubo_descriptor_set_layout, NULL);
-    sy_render_destroy_resources(&platform_info->render_info);
+
+    vkDestroyCommandPool(platform_info->render_info.logical_device, platform_info->render_info.command_pool, NULL); // command buffers are freed when command pool is freed
+
+    sy_render_destroy_swapchain(&platform_info->render_info);
+    vkDestroyDevice(platform_info->render_info.logical_device, NULL);
 }
 
 
 void engine_init(SyPlatformInfo *platform_info, SyAppInfo *app_info)
 {
     SY_OUTPUT_INFO("Starting Engine");
-    
+
     app_info->stop_game = false;
 
     // ECS Init

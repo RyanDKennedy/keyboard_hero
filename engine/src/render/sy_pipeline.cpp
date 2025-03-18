@@ -87,6 +87,8 @@ SyPipeline create_pipeline_object(SyRenderInfo *render_info, SyPipelineCreateInf
     // vertex shader
     size_t vertex_shader_code_size;
     char *vertex_shader_code = sy_read_resource_file(pipeline_create_info->vertex_shader_path, &vertex_shader_code_size);
+    SY_ERROR_COND(vertex_shader_code == NULL, "PIPELINE: couldn't read resources file %s", pipeline_create_info->vertex_shader_path);
+
     // This is freed at the end of this function
     VkShaderModule vertex_shader_module = create_shader_module(render_info, vertex_shader_code, vertex_shader_code_size);
     free(vertex_shader_code);
@@ -103,6 +105,8 @@ SyPipeline create_pipeline_object(SyRenderInfo *render_info, SyPipelineCreateInf
     // fragment shader
     size_t fragment_shader_code_size;
     char *fragment_shader_code = sy_read_resource_file(pipeline_create_info->fragment_shader_path, &fragment_shader_code_size);
+    SY_ERROR_COND(fragment_shader_code == NULL, "PIPELINE: couldn't read resources file %s", pipeline_create_info->fragment_shader_path);
+
     // This is freed at the end of this function
     VkShaderModule fragment_shader_module = create_shader_module(render_info, fragment_shader_code, fragment_shader_code_size);
     free(fragment_shader_code);

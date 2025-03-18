@@ -3,23 +3,41 @@
 
 #include <stdio.h>
 
-char* sy_read_resource_file(const char *filepath, size_t *size)
+char* sy_read_resource_file(const char *filepath, size_t *out_size)
 {
-    // Open file
+    // get filepath with directory path prepended
     char new_filepath[256];
     snprintf(new_filepath, 256, "%s%s", "./resources/", filepath);
 
     FILE *fd = fopen(new_filepath, "r");
+    if (fd == NULL)
+    {
+	return NULL;
+    }
 
-    SY_ERROR_COND(fd == NULL, "Failed to read file %s", new_filepath);
-
+    // get size of file
     fseek(fd, 0, SEEK_END);
-    *size = ftell(fd);
+    size_t size = ftell(fd);
     rewind(fd);
+
+    *out_size = size;
     
-    char *result = (char*) malloc(sizeof(char) * *size);
-    fread(result, sizeof(char), *size, fd);
-    
+    // allocate and read into buffer
+    char *result = (char*) malloc(sizeof(char) * size);
+    size_t data_read = 0;
+    while (data_read < size)
+    {
+	data_read += fread(result, sizeof(char), size, fd);
+
+	// check for errors
+	if (ferror(fd) != 0)
+	{
+	    free(result);
+	    fclose(fd);
+	    return NULL;
+	}
+    }
+
     fclose(fd);
 
     return result;

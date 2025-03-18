@@ -1,7 +1,6 @@
 #pragma once
 
 /* TODO:
-   - move SyAppInfo out of this file so that the app doesn't have to get information about the platform info
    - find a better place for pipeline info besides platform info since the platform doesn't need it
  */
 
