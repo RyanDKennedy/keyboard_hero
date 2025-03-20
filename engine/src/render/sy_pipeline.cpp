@@ -11,16 +11,14 @@ SyPipeline create_pipeline_object(SyRenderInfo *render_info, SyPipelineCreateInf
 VkShaderModule create_shader_module(SyRenderInfo *render_info, char *code, ssize_t code_size);
 void create_descriptor_pool(SyRenderInfo *render_info, SyPipeline *pipeline);
 void create_uniforms(SyRenderInfo *render_info, SyPipeline *pipeline, size_t ubo_size);
+void create_descriptor_sets(SyRenderInfo *render_info, SyPipeline *pipeline, VkDeviceSize uniform_size);
 
 SyPipeline sy_render_create_pipeline(SyRenderInfo *render_info, SyPipelineCreateInfo *pipeline_create_info)
 {
-    // TODO create descriptor sets
-
     SyPipeline result = create_pipeline_object(render_info, pipeline_create_info);
     create_uniforms(render_info, &result, pipeline_create_info->ubo_size);
     create_descriptor_pool(render_info, &result);
-
-
+    create_descriptor_sets(render_info, &result, sizeof(float)); // FIXME: change from sizeof(int)
 
     return result;
 }
@@ -42,6 +40,57 @@ void sy_render_destroy_pipeline(SyRenderInfo *render_info, SyPipeline *pipeline)
     
     vkDestroyPipeline(render_info->logical_device, pipeline->pipeline, NULL);
 
+}
+
+void create_descriptor_sets(SyRenderInfo *render_info, SyPipeline *pipeline, VkDeviceSize uniform_size)
+{
+    // Allocate descriptor sets
+
+    // Initialize layouts array with every member set to vk_info->descriptor_set_layout
+    uint32_t layout_amt = render_info->max_frames_in_flight;
+    VkDescriptorSetLayout *layouts = (VkDescriptorSetLayout*)calloc(layout_amt, sizeof(VkDescriptorSetLayout));
+    for (int i = 0; i < layout_amt; ++i)
+    {
+	layouts[i] = render_info->single_ubo_descriptor_set_layout;
+    }
+
+    VkDescriptorSetAllocateInfo allocate_info;
+    allocate_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+    allocate_info.pNext = NULL;
+    allocate_info.pSetLayouts = layouts;
+    allocate_info.descriptorSetCount = layout_amt;
+    allocate_info.descriptorPool = pipeline->descriptor_pool;
+
+    pipeline->descriptor_sets_amt = render_info->max_frames_in_flight;
+    pipeline->descriptor_sets = (VkDescriptorSet*)calloc(pipeline->descriptor_sets_amt, sizeof(VkDescriptorSet));
+    
+    SY_ERROR_COND(vkAllocateDescriptorSets(render_info->logical_device, &allocate_info, pipeline->descriptor_sets) != VK_SUCCESS, "PIPELINE: Failed to allocate descriptor sets.");
+
+    // Populate every descriptor set
+    for (size_t i = 0; i < pipeline->descriptor_sets_amt; ++i)
+    {
+	VkDescriptorBufferInfo buffer_info;
+	buffer_info.buffer = pipeline->uniform_buffers[i];
+	buffer_info.offset = 0;
+	buffer_info.range = uniform_size;
+
+	VkWriteDescriptorSet descriptor_write;
+	descriptor_write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+	descriptor_write.pNext = NULL;
+	descriptor_write.dstSet = pipeline->descriptor_sets[i];
+	descriptor_write.dstBinding = 0;
+	descriptor_write.dstArrayElement = 0;
+	descriptor_write.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+	descriptor_write.descriptorCount = 1;
+	descriptor_write.pBufferInfo = &buffer_info;
+	descriptor_write.pImageInfo = NULL;
+	descriptor_write.pTexelBufferView = NULL;
+
+	vkUpdateDescriptorSets(render_info->logical_device, 1, &descriptor_write, 0, NULL);
+    }
+
+    // Cleanup
+    free(layouts);
 }
 
 void create_descriptor_pool(SyRenderInfo *render_info, SyPipeline *pipeline)
