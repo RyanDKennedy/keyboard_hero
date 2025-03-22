@@ -3,6 +3,7 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include <vulkan/vulkan_core.h>
 
 uint32_t find_memory_type(VkPhysicalDevice physical_device, uint32_t type_filter, VkMemoryPropertyFlags properties);
 
@@ -21,7 +22,7 @@ void sy_render_create_vertex_buffer(SyRenderInfo *render_info, size_t vertex_amt
 	buffer_info.size = buffer_size;
 	buffer_info.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
 	
-	VmaAllocationCreateInfo alloc_info = {};
+	VmaAllocationCreateInfo alloc_info = {0};
 	alloc_info.usage = VMA_MEMORY_USAGE_AUTO;
 	alloc_info.flags = VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT;
 	
@@ -29,7 +30,7 @@ void sy_render_create_vertex_buffer(SyRenderInfo *render_info, size_t vertex_amt
     }
 
     // Copy the vertices into the staging buffer
-    vmaCopyMemoryToAllocation(render_info->vma_allocator, &vertices, staging_buffer_alloc, 0, buffer_size);
+    vmaCopyMemoryToAllocation(render_info->vma_allocator, vertices, staging_buffer_alloc, 0, buffer_size);
 
     // Create Vertex Buffer
     {
@@ -37,12 +38,11 @@ void sy_render_create_vertex_buffer(SyRenderInfo *render_info, size_t vertex_amt
 	buffer_info.size = buffer_size;
 	buffer_info.usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
 	
-	VmaAllocationCreateInfo alloc_info = {};
+	VmaAllocationCreateInfo alloc_info = {0};
 	alloc_info.usage = VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE;
 	
 	vmaCreateBuffer(render_info->vma_allocator, &buffer_info, &alloc_info, &result, &result_alloc, nullptr);
     }
-
 
     // Copy Staging Buffer to Vertex Buffer
     sy_render_copy_buffer(render_info, staging_buffer, result, buffer_size);
@@ -66,7 +66,7 @@ void sy_render_create_index_buffer(SyRenderInfo *render_info, size_t index_amt, 
 	buffer_info.size = buffer_size;
 	buffer_info.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
 	
-	VmaAllocationCreateInfo alloc_info = {};
+	VmaAllocationCreateInfo alloc_info = {0};
 	alloc_info.usage = VMA_MEMORY_USAGE_AUTO;
 	alloc_info.flags = VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT;
 	
@@ -74,7 +74,7 @@ void sy_render_create_index_buffer(SyRenderInfo *render_info, size_t index_amt, 
     }
 
     // Copy data into Staging Buffer
-    vmaCopyMemoryToAllocation(render_info->vma_allocator, &indices, staging_buffer_alloc, 0, buffer_size);
+    vmaCopyMemoryToAllocation(render_info->vma_allocator, indices, staging_buffer_alloc, 0, buffer_size);
 
     VkBuffer result;
     VmaAllocation result_alloc;
@@ -84,8 +84,8 @@ void sy_render_create_index_buffer(SyRenderInfo *render_info, size_t index_amt, 
 	VkBufferCreateInfo buffer_info = { VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO };
 	buffer_info.size = buffer_size;
 	buffer_info.usage = VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
-	
-	VmaAllocationCreateInfo alloc_info = {};
+
+	VmaAllocationCreateInfo alloc_info = {0};
 	alloc_info.usage = VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE;
 	
 	vmaCreateBuffer(render_info->vma_allocator, &buffer_info, &alloc_info, &result, &result_alloc, nullptr);

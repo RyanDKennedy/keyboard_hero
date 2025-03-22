@@ -103,7 +103,7 @@ void renderer_init(SyPlatformInfo *platform_info, SyAppInfo *app_info)
 	    {
 		0, 3, 2, 2, 1, 0
 	    };
-	
+
 	SyEntityHandle square = app_info->ecs.new_entity();
 	app_info->ecs.entity_add_component<SyMesh>(square);
 	SyMesh *mesh = app_info->ecs.component<SyMesh>(square);
