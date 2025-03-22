@@ -1,7 +1,9 @@
 #include "sy_drawing.hpp"
 #include "render/sy_resources.hpp"
+#include "sy_ecs.hpp"
 #include "sy_macros.hpp"
 #include "sy_swapchain.hpp"
+#include "sy_opaque_types.hpp"
 #include <stdlib.h>
 
 void recreate_swapchain(SyRenderInfo *render_info, SyInputInfo *input_info)
@@ -19,7 +21,7 @@ void recreate_swapchain(SyRenderInfo *render_info, SyInputInfo *input_info)
     sy_render_create_swapchain_framebuffers(render_info);
 }
 
-void record_command_buffer(SyRenderInfo *render_info, VkCommandBuffer command_buffer, uint32_t image_index, SyPipeline *pipeline)
+void record_command_buffer(SyRenderInfo *render_info, VkCommandBuffer command_buffer, uint32_t image_index, SyPipeline *pipeline, SyEcs *ecs)
 {
     VkCommandBufferBeginInfo command_buffer_begin_info;
     command_buffer_begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
@@ -63,22 +65,37 @@ void record_command_buffer(SyRenderInfo *render_info, VkCommandBuffer command_bu
     scissor.offset.y = 0;
     vkCmdSetScissor(command_buffer, 0, 1, &scissor);
 
-    // Buffers
-    VkDeviceSize vertex_buffer_offset = 0;
-    vkCmdBindVertexBuffers(command_buffer, 0, 1, &render_info->vertex_buffer, &vertex_buffer_offset);
-    vkCmdBindIndexBuffer(command_buffer, render_info->index_buffer, 0, VK_INDEX_TYPE_UINT32);
+    size_t mesh_type_id = ecs->get_type_id<SyMesh>();
+    for (size_t i = 0; i < ecs->m_entity_used.m_filled_length; ++i)
+    {
+	if (ecs->m_entity_used.get<bool>(i) == true)
+	{
+	    if (ecs->m_entity_data.get<SyEntityData>(i).mask[mesh_type_id] == true)
+	    {
+		SyMesh *mesh = ecs->component<SyMesh>(i);
 
-    // Uniforms
-//    vkCmdBindDescriptorSets(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, render_info->pipeline_layout, 0, 1, &render_info->descriptor_sets[render_info->current_frame], 0, NULL);
+		// Buffers
+		VkDeviceSize vertex_buffer_offset = 0;
+		vkCmdBindVertexBuffers(command_buffer, 0, 1, &mesh->vertex_buffer, &vertex_buffer_offset);
+		vkCmdBindIndexBuffer(command_buffer, mesh->index_buffer, 0, VK_INDEX_TYPE_UINT32);
+		
+		// Uniforms
+		// vkCmdBindDescriptorSets(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, mesh->pipeline_layout, 0, 1, &mesh->descriptor_sets[mesh->current_frame], 0, NULL);
+		
+		// Draw
+		vkCmdDrawIndexed(command_buffer, mesh->index_amt, 1, 0, 0, 0);
+		
+	    }
+	}
+    }
 
-    // Draw
-    vkCmdDrawIndexed(command_buffer, render_info->index_amt, 1, 0, 0, 0);
+
 
     vkCmdEndRenderPass(command_buffer);
     SY_ERROR_COND(vkEndCommandBuffer(command_buffer) != VK_SUCCESS, "RENDER: Failed to end command buffer.");
 }
 
-void sy_render_draw(SyRenderInfo *render_info, SyPipeline *pipeline, SyInputInfo *input_info)
+void sy_render_draw(SyRenderInfo *render_info, SyPipeline *pipeline, SyInputInfo *input_info, SyEcs *ecs)
 {
     VkResult result;
 
@@ -106,7 +123,7 @@ void sy_render_draw(SyRenderInfo *render_info, SyPipeline *pipeline, SyInputInfo
     
     // Record command buffer
     vkResetCommandBuffer(render_info->command_buffers[render_info->current_frame], 0);
-    record_command_buffer(render_info, render_info->command_buffers[render_info->current_frame], image_index, pipeline);
+    record_command_buffer(render_info, render_info->command_buffers[render_info->current_frame], image_index, pipeline, ecs);
 
     // update_uniform_buffer(render_info, render_info->current_frame);
 

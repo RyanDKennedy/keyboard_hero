@@ -28,16 +28,6 @@ void app_destroy(SyAppInfo *app_info);
 
 void renderer_init(SyPlatformInfo *platform_info, SyAppInfo *app_info)
 {
-    /* ORDER FOR RENDER SYSTEM INIT
-       1. create descriptor set layouts
-       1. create render pass
-       2. create framebuffers
-       2. create pipelines
-	  1. create uniform buffers
-          2. create descriptor sets
-
-     */
-    
     platform_info->render_info.max_frames_in_flight = 2;
     sy_render_create_physical_device(&platform_info->render_info);
     {
@@ -87,27 +77,53 @@ void renderer_init(SyPlatformInfo *platform_info, SyAppInfo *app_info)
     // init render types in ecs
     sy_render_init_ecs(&app_info->ecs);
 
-    // FIXME:
-    float vertex_data[] =
-	{
-	    -0.5f, -0.5f,
-	    0.5f, -0.5f,
-	    0.5f, 0.5f,
-	    -0.5f, 0.5f
-	};
-    sy_render_create_vertex_buffer(&platform_info->render_info, SY_ARRLEN(vertex_data), sizeof(float) * 2, vertex_data, &platform_info->render_info.vertex_buffer, &platform_info->render_info.vertex_buffer_memory);
 
-    uint32_t index_data[] =
-	{
-	    0, 3, 2, 2, 1, 0
-	};
-    platform_info->render_info.index_amt = SY_ARRLEN(index_data);
-    sy_render_create_index_buffer(&platform_info->render_info, SY_ARRLEN(index_data), index_data, &platform_info->render_info.index_buffer, &platform_info->render_info.index_buffer_memory);
+    // FIXME:
+    {
+	float vertex_data[] =
+	    {
+		-0.5f, -0.5f,
+		0.5f, -0.5f,
+		0.5f, 0.5f,
+		-0.5f, 0.5f
+	    };
+	
+	uint32_t index_data[] =
+	    {
+		0, 3, 2, 2, 1, 0
+	    };
+	
+	SyEntityHandle square = app_info->ecs.new_entity();
+	app_info->ecs.entity_add_component<SyMesh>(square);
+	SyMesh *mesh = app_info->ecs.component<SyMesh>(square);
+	
+	sy_render_create_vertex_buffer(&platform_info->render_info, SY_ARRLEN(vertex_data), sizeof(float) * 2, vertex_data, &mesh->vertex_buffer, &mesh->vertex_buffer_memory);    
+	
+	mesh->index_amt = SY_ARRLEN(index_data);
+	sy_render_create_index_buffer(&platform_info->render_info, SY_ARRLEN(index_data), index_data, &mesh->index_buffer, &mesh->index_buffer_memory);
+    }
 
 }
 
 void renderer_cleanup(SyPlatformInfo *platform_info, SyAppInfo *app_info)
 {
+    // Cleanup meshes
+    size_t mesh_type_id = app_info->ecs.get_type_id<SyMesh>();
+    for (size_t i = 0; i < app_info->ecs.m_entity_used.m_filled_length; ++i)
+    {
+	if (app_info->ecs.m_entity_used.get<bool>(i) == true)
+	{
+	    if (app_info->ecs.m_entity_data.get<SyEntityData>(i).mask[mesh_type_id] == true)
+	    {
+		SyMesh *mesh = app_info->ecs.component<SyMesh>(i);
+
+		vkDestroyBuffer(platform_info->render_info.logical_device, mesh->vertex_buffer, NULL);
+		vkFreeMemory(platform_info->render_info.logical_device, mesh->vertex_buffer_memory, NULL);
+		vkDestroyBuffer(platform_info->render_info.logical_device, mesh->index_buffer, NULL);
+		vkFreeMemory(platform_info->render_info.logical_device, mesh->index_buffer_memory, NULL);
+	    }
+	}
+    }
 
     sy_render_destroy_pipeline(&platform_info->render_info, &platform_info->pipeline);
 
@@ -136,8 +152,6 @@ void renderer_cleanup(SyPlatformInfo *platform_info, SyAppInfo *app_info)
 
     sy_render_destroy_swapchain(&platform_info->render_info);
     vkDestroyDevice(platform_info->render_info.logical_device, NULL);
-
-    
 }
 
 
@@ -227,7 +241,7 @@ void engine_run(SyPlatformInfo *platform_info, SyAppInfo *app_info)
 	platform_info->end_engine = true;
     }
 
-    sy_render_draw(&platform_info->render_info, &platform_info->pipeline, &platform_info->input_info);
+    sy_render_draw(&platform_info->render_info, &platform_info->pipeline, &platform_info->input_info, &app_info->ecs);
 
 }
 

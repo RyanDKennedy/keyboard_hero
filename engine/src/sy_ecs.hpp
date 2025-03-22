@@ -24,7 +24,7 @@
 /**
  * @brief The maximum amount of different types of components. Feel free to edit this.
  */
-inline const size_t g_sy_ecs_max_component_types = 64;
+inline const size_t sy_g_ecs_max_component_types = 64;
 
 typedef size_t SyEntityHandle;
 
@@ -33,8 +33,8 @@ typedef size_t SyEntityHandle;
  */
 struct SyEntityData
 {
-    bool mask[g_sy_ecs_max_component_types]; /**< A bitmask that shows which components are in use. */
-    size_t indices[g_sy_ecs_max_component_types]; /**< An array of indices into the different component arrays. */
+    bool mask[sy_g_ecs_max_component_types]; /**< A bitmask that shows which components are in use. */
+    size_t indices[sy_g_ecs_max_component_types]; /**< An array of indices into the different component arrays. */
 };
 
 #define SY_ECS_REGISTER_TYPE(ecs, type_name)\
@@ -52,8 +52,8 @@ struct SyEcs
      */
 
     // Component fields
-    SyAmbiguousVector m_component_used_arr[g_sy_ecs_max_component_types];
-    SyAmbiguousVector m_component_data_arr[g_sy_ecs_max_component_types];
+    SyAmbiguousVector m_component_used_arr[sy_g_ecs_max_component_types];
+    SyAmbiguousVector m_component_data_arr[sy_g_ecs_max_component_types];
 
     // SyEntity fields
     SyAmbiguousVector m_entity_used;
@@ -62,8 +62,8 @@ struct SyEcs
     // Types
     size_t m_current_type_id = 0;
     // type id is an index into these fields
-    const char *m_registered_type_names[g_sy_ecs_max_component_types];
-    size_t m_registered_type_ids[g_sy_ecs_max_component_types];
+    const char *m_registered_type_names[sy_g_ecs_max_component_types];
+    size_t m_registered_type_ids[sy_g_ecs_max_component_types];
 
     
 
@@ -75,10 +75,10 @@ struct SyEcs
 	m_entity_used.initialize<bool>();
 	m_entity_data.initialize<SyEntityData>();
 	
-	for (size_t i = 0; i < g_sy_ecs_max_component_types; ++i)
+	for (size_t i = 0; i < sy_g_ecs_max_component_types; ++i)
 	{
 	    m_registered_type_names[i] = "0";
-	    m_registered_type_ids[i] = g_sy_ecs_max_component_types;
+	    m_registered_type_ids[i] = sy_g_ecs_max_component_types;
 	}
     }
     
@@ -166,7 +166,7 @@ struct SyEcs
 	// NOTE: i use get_type_id_with_addr instead of get_type_id because get_type_id has checking if it hasn't registered that type yet.
 	size_t *addr;
 	associated_type_id = get_type_id_with_addr<T>(&addr);
-	SY_ERROR_COND(associated_type_id >= g_sy_ecs_max_component_types, "ECS: just registered type %s - %lu, this is beyond limit. To fix this increase g_sy_ecs_max_component_types.", type_name, associated_type_id);
+	SY_ERROR_COND(associated_type_id >= sy_g_ecs_max_component_types, "ECS: just registered type %s - %lu, this is beyond limit. To fix this increase sy_g_ecs_max_component_types.", type_name, associated_type_id);
 
 	m_registered_type_names[associated_type_id] = type_name;
 	m_registered_type_ids[associated_type_id] = associated_type_id;
@@ -224,12 +224,12 @@ struct SyEcs
      * @return A reference to the specified component.
      */
     template<typename T>
-    T& component(SyEntityHandle entity)
+    T* component(SyEntityHandle entity)
     {
 	SyEntityData &entity_data = m_entity_data.get<SyEntityData>(entity);
 	const size_t type_id = get_type_id<T>();
 	SY_ASSERT(entity_data.mask[type_id] == true && "ECS: You forgot to add the component to your entity.");
-	return m_component_data_arr[type_id].get<T>(entity_data.indices[type_id]);
+	return &m_component_data_arr[type_id].get<T>(entity_data.indices[type_id]);
     }
 
     // SyEntity methods
@@ -263,7 +263,7 @@ struct SyEcs
     {
 	SyEntityData &entity_data = m_entity_data.get<SyEntityData>(entity);
 	
-	for (size_t i = 0; i < g_sy_ecs_max_component_types; ++i)
+	for (size_t i = 0; i < sy_g_ecs_max_component_types; ++i)
 	{
 	    if (entity_data.mask[i] == true)
 	    {

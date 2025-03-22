@@ -11,6 +11,7 @@
 
 #include "render/sy_render_info.hpp"
 #include "render/sy_pipeline.hpp"
+#include "render/sy_opaque_types.hpp"
 
 struct SyPlatformInfo;
 struct SyAppInfo;

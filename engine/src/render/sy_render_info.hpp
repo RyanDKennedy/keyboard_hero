@@ -47,15 +47,4 @@ struct SyRenderInfo
     int max_frames_in_flight;
     uint32_t current_frame;
 
-
-    // FIXME:
-    VkBuffer vertex_buffer;
-    VkDeviceMemory vertex_buffer_memory;
-
-    VkBuffer index_buffer;
-    VkDeviceMemory index_buffer_memory;
-    uint32_t index_amt;
-
-
-    
 };
