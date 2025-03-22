@@ -35,7 +35,7 @@ struct SyRenderInfo
     VkCommandBuffer *command_buffers;
 
     // descriptors
-    // VkDescriptorSetLayout single_ubo_descriptor_set_layout;
+    VkDescriptorSetLayout frame_data_descriptor_set_layout;
 
     // The render pass
     VkRenderPass render_pass;

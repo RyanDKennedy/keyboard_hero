@@ -38,12 +38,11 @@ void renderer_init(SyPlatformInfo *platform_info, SyAppInfo *app_info)
     sy_render_create_logical_device(&platform_info->render_info);
     sy_render_create_swapchain(&platform_info->render_info, platform_info->input_info.window_width, platform_info->input_info.window_height);
     sy_render_create_command_pool(&platform_info->render_info);
-    // sy_render_create_descriptor_set_layouts(&platform_info->render_info);
     platform_info->render_info.render_pass = sy_render_create_simple_render_pass(&platform_info->render_info);
     sy_render_create_swapchain_framebuffers(&platform_info->render_info);
     sy_render_create_command_buffers(&platform_info->render_info);
     sy_render_create_sync_objects(&platform_info->render_info);
-    
+    // sy_render_create_descriptor_set_layouts(&platform_info->render_info);    
 
     { // Create single color pipeline
 	VkVertexInputBindingDescription binding_description;

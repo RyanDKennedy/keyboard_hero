@@ -17,6 +17,7 @@ set(SY_SOURCE_FILES
     ${CMAKE_CURRENT_SOURCE_DIR}/src/render/sy_pipeline.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/render/sy_buffer.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/render/sy_drawing.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/external/vma.cpp
 )
 
 # PLATFORM UNSPECIFIC FILES
@@ -50,6 +51,7 @@ add_executable(${PROJECT_NAME} ${SY_SOURCE_FILES})
 target_include_directories(${PROJECT_NAME}
   PUBLIC
   ${CMAKE_CURRENT_SOURCE_DIR}/src/
+  ${CMAKE_CURRENT_SOURCE_DIR}/external/
 )
 
 target_link_libraries(${PROJECT_NAME}
