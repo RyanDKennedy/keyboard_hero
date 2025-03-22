@@ -3,5 +3,6 @@
 #include "sy_render_settings.hpp"
 #include "sy_render_info.hpp"
 #include "sy_pipeline.hpp"
+#include "sy_input_info.hpp"
 
-void sy_render_draw(SyRenderInfo *render_info, SyPipeline *pipeline);
+void sy_render_draw(SyRenderInfo *render_info, SyPipeline *pipeline, SyInputInfo *input_info);

@@ -227,7 +227,7 @@ void engine_run(SyPlatformInfo *platform_info, SyAppInfo *app_info)
 	platform_info->end_engine = true;
     }
 
-    sy_render_draw(&platform_info->render_info, &platform_info->pipeline);
+    sy_render_draw(&platform_info->render_info, &platform_info->pipeline, &platform_info->input_info);
 
 }
 

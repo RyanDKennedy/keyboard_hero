@@ -1,6 +1,23 @@
 #include "sy_drawing.hpp"
+#include "render/sy_resources.hpp"
 #include "sy_macros.hpp"
+#include "sy_swapchain.hpp"
 #include <stdlib.h>
+
+void recreate_swapchain(SyRenderInfo *render_info, SyInputInfo *input_info)
+{
+    vkDeviceWaitIdle(render_info->logical_device);
+
+    for (int i = 0; i < render_info->swapchain_framebuffers_amt; ++i)
+    {
+	vkDestroyFramebuffer(render_info->logical_device, render_info->swapchain_framebuffers[i], NULL);
+    }
+    free(render_info->swapchain_framebuffers);
+    sy_render_destroy_swapchain(render_info);
+
+    sy_render_create_swapchain(render_info, input_info->window_width, input_info->window_height);
+    sy_render_create_swapchain_framebuffers(render_info);
+}
 
 void record_command_buffer(SyRenderInfo *render_info, VkCommandBuffer command_buffer, uint32_t image_index, SyPipeline *pipeline)
 {
@@ -61,7 +78,7 @@ void record_command_buffer(SyRenderInfo *render_info, VkCommandBuffer command_bu
     SY_ERROR_COND(vkEndCommandBuffer(command_buffer) != VK_SUCCESS, "RENDER: Failed to end command buffer.");
 }
 
-void sy_render_draw(SyRenderInfo *render_info, SyPipeline *pipeline)
+void sy_render_draw(SyRenderInfo *render_info, SyPipeline *pipeline, SyInputInfo *input_info)
 {
     VkResult result;
 
@@ -73,18 +90,16 @@ void sy_render_draw(SyRenderInfo *render_info, SyPipeline *pipeline)
     result = vkAcquireNextImageKHR(render_info->logical_device, render_info->swapchain, UINT64_MAX,
 			  render_info->image_available_semaphores[render_info->current_frame], VK_NULL_HANDLE, &image_index);
 
-/*
     // Check results of acquiring the image, and if we need to recreate swapchain
     if (result == VK_ERROR_OUT_OF_DATE_KHR)
     { // has to resize
-	recreate_swap_chain(render_info, xcb_info);
+	recreate_swapchain(render_info, input_info);
 	return;
     }
     else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR)
     { // error code returned, you can still present if if it is VK_SUBOPTIMAL_KHR
 	SY_ERROR("Failed to acquire swap chain miage.");
     }
-*/
 
     // Only reset fence if we know for sure that we will be submitting work
     vkResetFences(render_info->logical_device, 1, &render_info->in_flight_fences[render_info->current_frame]);
@@ -132,17 +147,14 @@ void sy_render_draw(SyRenderInfo *render_info, SyPipeline *pipeline)
 
     result = vkQueuePresentKHR(render_info->present_queue, &present_info);
 
-/*
     if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || input_info->window_resized)
     {
-	input_info->window_resized = false;
-	recreate_swap_chain(render_info, xcb_info);
+	recreate_swapchain(render_info, input_info);
     }
     else if (result != VK_SUCCESS)
     {
 	SY_ERROR("Failed to present swap chain image.");
     }
-*/
 
     render_info->current_frame = (render_info->current_frame + 1) % render_info->max_frames_in_flight;
 
