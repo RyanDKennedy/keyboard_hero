@@ -3,9 +3,12 @@
 #include "render/sy_render_settings.hpp" // this needs to be first because it sets up some #define's
 
 #include <vulkan/vulkan.h>
+#include "vk_mem_alloc.h"
 
 struct SyRenderInfo
 {
+    VmaAllocator vma_allocator;
+    
     VkInstance instance;
     VkDebugUtilsMessengerEXT debug_messenger;
     VkSurfaceKHR surface;

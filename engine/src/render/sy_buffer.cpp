@@ -1,104 +1,105 @@
 #include "sy_buffer.hpp"
+#include "render/sy_render_info.hpp"
 
 #include <stdlib.h>
 #include <string.h>
 
 uint32_t find_memory_type(VkPhysicalDevice physical_device, uint32_t type_filter, VkMemoryPropertyFlags properties);
 
-void sy_render_create_vertex_buffer(SyRenderInfo *render_info, size_t vertex_amt, size_t vertex_size, void *vertices, VkBuffer *out_buffer, VkDeviceMemory *out_buffer_memory)
+void sy_render_create_vertex_buffer(SyRenderInfo *render_info, size_t vertex_amt, size_t vertex_size, void *vertices, VkBuffer *out_buffer, VmaAllocation *out_buffer_alloc)
 {
     VkBuffer result;
-    VkDeviceMemory result_memory;
+    VmaAllocation result_alloc;
 
     VkDeviceSize buffer_size = vertex_amt * vertex_size;
 
     // Create Staging Buffer
     VkBuffer staging_buffer;
-    VkDeviceMemory staging_buffer_memory;
-    sy_render_create_buffer(render_info, buffer_size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, &staging_buffer, &staging_buffer_memory);
+    VmaAllocation staging_buffer_alloc;
+    {
+	VkBufferCreateInfo buffer_info = { VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO };
+	buffer_info.size = buffer_size;
+	buffer_info.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
+	
+	VmaAllocationCreateInfo alloc_info = {};
+	alloc_info.usage = VMA_MEMORY_USAGE_AUTO;
+	alloc_info.flags = VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT;
+	
+	vmaCreateBuffer(render_info->vma_allocator, &buffer_info, &alloc_info, &staging_buffer, &staging_buffer_alloc, nullptr);
+    }
 
     // Copy the vertices into the staging buffer
-    void *data;
-    SY_ERROR_COND(vkMapMemory(render_info->logical_device, staging_buffer_memory, 0, buffer_size, 0, &data) != VK_SUCCESS, "RENDER: Failed to map vertex buffer memory.");
-    memcpy(data, vertices, (size_t)buffer_size);
-    vkUnmapMemory(render_info->logical_device, staging_buffer_memory);
+    vmaCopyMemoryToAllocation(render_info->vma_allocator, &vertices, staging_buffer_alloc, 0, buffer_size);
 
     // Create Vertex Buffer
-    sy_render_create_buffer(render_info, buffer_size, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, &result, &result_memory);
+    {
+	VkBufferCreateInfo buffer_info = { VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO };
+	buffer_info.size = buffer_size;
+	buffer_info.usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
+	
+	VmaAllocationCreateInfo alloc_info = {};
+	alloc_info.usage = VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE;
+	
+	vmaCreateBuffer(render_info->vma_allocator, &buffer_info, &alloc_info, &result, &result_alloc, nullptr);
+    }
+
 
     // Copy Staging Buffer to Vertex Buffer
     sy_render_copy_buffer(render_info, staging_buffer, result, buffer_size);
 
     // Destroy Staging Buffer
-    vkDestroyBuffer(render_info->logical_device, staging_buffer, NULL);
-    vkFreeMemory(render_info->logical_device, staging_buffer_memory, NULL);
+    vmaDestroyBuffer(render_info->vma_allocator, staging_buffer, staging_buffer_alloc);
 
     *out_buffer = result;
-    *out_buffer_memory = result_memory;
+    *out_buffer_alloc = result_alloc;
 }
 
-void sy_render_create_index_buffer(SyRenderInfo *render_info, size_t index_amt, uint32_t *indices, VkBuffer *out_buffer, VkDeviceMemory *out_buffer_memory)
+void sy_render_create_index_buffer(SyRenderInfo *render_info, size_t index_amt, uint32_t *indices, VkBuffer *out_buffer, VmaAllocation *out_buffer_alloc)
 {
     VkDeviceSize buffer_size = index_amt * sizeof(uint32_t);
     
     // Create Staging Buffer
     VkBuffer staging_buffer;
-    VkDeviceMemory staging_buffer_memory;
-    sy_render_create_buffer(render_info, buffer_size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, &staging_buffer, &staging_buffer_memory);
+    VmaAllocation staging_buffer_alloc;
+    {
+	VkBufferCreateInfo buffer_info = { VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO };
+	buffer_info.size = buffer_size;
+	buffer_info.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
+	
+	VmaAllocationCreateInfo alloc_info = {};
+	alloc_info.usage = VMA_MEMORY_USAGE_AUTO;
+	alloc_info.flags = VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT;
+	
+	vmaCreateBuffer(render_info->vma_allocator, &buffer_info, &alloc_info, &staging_buffer, &staging_buffer_alloc, nullptr);
+    }
 
     // Copy data into Staging Buffer
-    void *data;
-    SY_ERROR_COND(vkMapMemory(render_info->logical_device, staging_buffer_memory, 0, buffer_size, 0, &data) != VK_SUCCESS, "RENDER: Failed to map vertex buffer memory.");
-    memcpy(data, indices, (size_t)buffer_size);
-    vkUnmapMemory(render_info->logical_device, staging_buffer_memory);
+    vmaCopyMemoryToAllocation(render_info->vma_allocator, &indices, staging_buffer_alloc, 0, buffer_size);
 
     VkBuffer result;
-    VkDeviceMemory result_memory;
+    VmaAllocation result_alloc;
 
     // Create Index Buffer
-    sy_render_create_buffer(render_info, buffer_size, VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, &result, &result_memory);
+    {
+	VkBufferCreateInfo buffer_info = { VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO };
+	buffer_info.size = buffer_size;
+	buffer_info.usage = VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
+	
+	VmaAllocationCreateInfo alloc_info = {};
+	alloc_info.usage = VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE;
+	
+	vmaCreateBuffer(render_info->vma_allocator, &buffer_info, &alloc_info, &result, &result_alloc, nullptr);
+    }
+
     
     // Copy from Staging Buffer to Index Buffer
     sy_render_copy_buffer(render_info, staging_buffer, result, buffer_size);
 
     // Destroy Staging Buffer
-    vkDestroyBuffer(render_info->logical_device, staging_buffer, NULL);
-    vkFreeMemory(render_info->logical_device, staging_buffer_memory, NULL);
+    vmaDestroyBuffer(render_info->vma_allocator, staging_buffer, staging_buffer_alloc);
 
     *out_buffer = result;
-    *out_buffer_memory = result_memory;
-}
-
-
-void sy_render_create_buffer(SyRenderInfo *render_info, VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer *buffer, VkDeviceMemory *buffer_memory)
-{
-    VkBufferCreateInfo buffer_create_info;
-    buffer_create_info.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-    buffer_create_info.pNext = NULL;
-    buffer_create_info.flags = 0;
-    buffer_create_info.size = size;
-    buffer_create_info.usage = usage;
-    buffer_create_info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-    buffer_create_info.queueFamilyIndexCount = 0;
-    buffer_create_info.pQueueFamilyIndices = NULL; // don't have to do this because of sharing mode
-
-    SY_ERROR_COND(vkCreateBuffer(render_info->logical_device, &buffer_create_info, NULL, buffer) != VK_SUCCESS, "RENDER: Failed to create buffer.");
-
-    VkMemoryRequirements memory_requirements;
-    vkGetBufferMemoryRequirements(render_info->logical_device, *buffer, &memory_requirements);
-
-    VkMemoryAllocateInfo allocate_info;
-    allocate_info.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-    allocate_info.pNext = NULL;
-    allocate_info.allocationSize = memory_requirements.size;
-    allocate_info.memoryTypeIndex = find_memory_type(render_info->physical_device, memory_requirements.memoryTypeBits, properties);
-
-    SY_ERROR_COND(vkAllocateMemory(render_info->logical_device, &allocate_info, NULL, buffer_memory) != VK_SUCCESS, "RENDER: Failed to allocate memory for buffer.");
-
-    SY_ERROR_COND(vkBindBufferMemory(render_info->logical_device, *buffer, *buffer_memory, 0) != VK_SUCCESS, "RENDER: Failed to bind buffer memory to buffer");
-
-
-
+    *out_buffer_alloc = result_alloc;
 }
 
 void sy_render_copy_buffer(SyRenderInfo *render_info, VkBuffer src_buffer, VkBuffer dst_buffer, VkDeviceSize size)

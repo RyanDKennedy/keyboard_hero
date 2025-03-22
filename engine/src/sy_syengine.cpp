@@ -28,6 +28,8 @@ void app_destroy(SyAppInfo *app_info);
 
 void renderer_init(SyPlatformInfo *platform_info, SyAppInfo *app_info)
 {
+
+
     platform_info->render_info.max_frames_in_flight = 2;
     sy_render_create_physical_device(&platform_info->render_info);
     {
@@ -42,7 +44,16 @@ void renderer_init(SyPlatformInfo *platform_info, SyAppInfo *app_info)
     sy_render_create_swapchain_framebuffers(&platform_info->render_info);
     sy_render_create_command_buffers(&platform_info->render_info);
     sy_render_create_sync_objects(&platform_info->render_info);
-    // sy_render_create_descriptor_set_layouts(&platform_info->render_info);    
+    // sy_render_create_descriptor_set_layouts(&platform_info->render_info);
+
+    VmaAllocatorCreateInfo vma_allocator_create_info = {};
+    vma_allocator_create_info.flags = 0;
+    vma_allocator_create_info.vulkanApiVersion = VK_API_VERSION_1_0;
+    vma_allocator_create_info.physicalDevice = platform_info->render_info.physical_device;
+    vma_allocator_create_info.device = platform_info->render_info.logical_device;
+    vma_allocator_create_info.instance = platform_info->render_info.instance;
+    vma_allocator_create_info.pVulkanFunctions = NULL;
+    vmaCreateAllocator(&vma_allocator_create_info, &platform_info->render_info.vma_allocator);
 
     { // Create single color pipeline
 	VkVertexInputBindingDescription binding_description;
@@ -75,6 +86,7 @@ void renderer_init(SyPlatformInfo *platform_info, SyAppInfo *app_info)
 
     // init render types in ecs
     sy_render_init_ecs(&app_info->ecs);
+    SY_ECS_REGISTER_TYPE(app_info->ecs, SyMesh);
 
 
     // FIXME:
@@ -96,10 +108,10 @@ void renderer_init(SyPlatformInfo *platform_info, SyAppInfo *app_info)
 	app_info->ecs.entity_add_component<SyMesh>(square);
 	SyMesh *mesh = app_info->ecs.component<SyMesh>(square);
 	
-	sy_render_create_vertex_buffer(&platform_info->render_info, SY_ARRLEN(vertex_data), sizeof(float) * 2, vertex_data, &mesh->vertex_buffer, &mesh->vertex_buffer_memory);    
+	sy_render_create_vertex_buffer(&platform_info->render_info, SY_ARRLEN(vertex_data), sizeof(float) * 2, vertex_data, &mesh->vertex_buffer, &mesh->vertex_buffer_alloc);    
 	
 	mesh->index_amt = SY_ARRLEN(index_data);
-	sy_render_create_index_buffer(&platform_info->render_info, SY_ARRLEN(index_data), index_data, &mesh->index_buffer, &mesh->index_buffer_memory);
+	sy_render_create_index_buffer(&platform_info->render_info, SY_ARRLEN(index_data), index_data, &mesh->index_buffer, &mesh->index_buffer_alloc);
     }
 
 }
@@ -116,15 +128,15 @@ void renderer_cleanup(SyPlatformInfo *platform_info, SyAppInfo *app_info)
 	    {
 		SyMesh *mesh = app_info->ecs.component<SyMesh>(i);
 
-		vkDestroyBuffer(platform_info->render_info.logical_device, mesh->vertex_buffer, NULL);
-		vkFreeMemory(platform_info->render_info.logical_device, mesh->vertex_buffer_memory, NULL);
-		vkDestroyBuffer(platform_info->render_info.logical_device, mesh->index_buffer, NULL);
-		vkFreeMemory(platform_info->render_info.logical_device, mesh->index_buffer_memory, NULL);
+		vmaDestroyBuffer(platform_info->render_info.vma_allocator, mesh->vertex_buffer, mesh->vertex_buffer_alloc);
+		vmaDestroyBuffer(platform_info->render_info.vma_allocator, mesh->index_buffer, mesh->index_buffer_alloc);
 	    }
 	}
     }
 
     sy_render_destroy_pipeline(&platform_info->render_info, &platform_info->pipeline);
+
+    vmaDestroyAllocator(platform_info->render_info.vma_allocator);
 
     free(platform_info->render_info.command_buffers);
 

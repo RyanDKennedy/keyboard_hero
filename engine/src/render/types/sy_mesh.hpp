@@ -6,10 +6,10 @@
 struct SyMesh
 {
     VkBuffer vertex_buffer;
-    VkDeviceMemory vertex_buffer_memory;
+    VmaAllocation vertex_buffer_alloc;
 
     VkBuffer index_buffer;
-    VkDeviceMemory index_buffer_memory;
+    VmaAllocation index_buffer_alloc;
     uint32_t index_amt;
 };
 
