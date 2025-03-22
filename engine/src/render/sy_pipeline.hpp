@@ -18,13 +18,12 @@ struct SyPipelineCreateInfo
     uint32_t vertex_input_attribute_descriptions_amt;
     
     VkPrimitiveTopology render_type;
-    
-    VkDescriptorSetLayout *descriptor_set_layouts;
-    uint32_t descriptor_set_layouts_amt;
-    
-    uint32_t subpass_number;
 
-    size_t ubo_size;
+    uint32_t subpass_number;
+    
+    // VkDescriptorSetLayout *descriptor_set_layouts;
+    // uint32_t descriptor_set_layouts_amt;
+    // size_t ubo_size;
 };
 
 
@@ -33,14 +32,14 @@ struct SyPipeline
     VkPipeline pipeline;
     VkPipelineLayout pipeline_layout;
 
-    uint32_t uniform_buffers_amt;
-    VkBuffer *uniform_buffers;
-    VkDeviceMemory *uniform_buffers_memory;
-    void **uniform_buffers_mapped;
+    // uint32_t uniform_buffers_amt;
+    // VkBuffer *uniform_buffers;
+    // VkDeviceMemory *uniform_buffers_memory;
+    // void **uniform_buffers_mapped;
 
-    VkDescriptorPool descriptor_pool;
-    VkDescriptorSet *descriptor_sets;
-    uint32_t descriptor_sets_amt;
+    // VkDescriptorPool descriptor_pool;
+    // VkDescriptorSet *descriptor_sets;
+    // uint32_t descriptor_sets_amt;
 };
 
 

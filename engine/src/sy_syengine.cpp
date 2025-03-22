@@ -3,6 +3,8 @@
 #include <stdio.h>
 #include <vulkan/vulkan_core.h>
 
+#include "render/sy_buffer.hpp"
+#include "render/sy_drawing.hpp"
 #include "sy_ecs.hpp"
 #include "sy_macros.hpp"
 
@@ -36,6 +38,7 @@ void renderer_init(SyPlatformInfo *platform_info, SyAppInfo *app_info)
 
      */
     
+    platform_info->render_info.max_frames_in_flight = 2;
     sy_render_create_physical_device(&platform_info->render_info);
     {
 	VkPhysicalDeviceProperties props;
@@ -44,11 +47,13 @@ void renderer_init(SyPlatformInfo *platform_info, SyAppInfo *app_info)
     }
     sy_render_create_logical_device(&platform_info->render_info);
     sy_render_create_swapchain(&platform_info->render_info, platform_info->input_info.window_width, platform_info->input_info.window_height);
-    sy_create_command_pool(&platform_info->render_info);
-    sy_render_create_descriptor_set_layouts(&platform_info->render_info);
+    sy_render_create_command_pool(&platform_info->render_info);
+    // sy_render_create_descriptor_set_layouts(&platform_info->render_info);
     platform_info->render_info.render_pass = sy_render_create_simple_render_pass(&platform_info->render_info);
     sy_render_create_swapchain_framebuffers(&platform_info->render_info);
-    platform_info->render_info.max_frames_in_flight = 2;
+    sy_render_create_command_buffers(&platform_info->render_info);
+    sy_render_create_sync_objects(&platform_info->render_info);
+    
 
     { // Create single color pipeline
 	VkVertexInputBindingDescription binding_description;
@@ -69,23 +74,54 @@ void renderer_init(SyPlatformInfo *platform_info, SyAppInfo *app_info)
 	create_info.vertex_input_attribute_descriptions = attr;
 	create_info.vertex_input_attribute_descriptions_amt = 1;
 	create_info.render_type = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
-	create_info.descriptor_set_layouts = &platform_info->render_info.single_ubo_descriptor_set_layout;
-	create_info.descriptor_set_layouts_amt = 1;
 	create_info.subpass_number = 0;
-	create_info.ubo_size = sizeof(float) * 1;
+	// create_info.descriptor_set_layouts = &platform_info->render_info.single_ubo_descriptor_set_layout;
+	// create_info.descriptor_set_layouts = VK_NULL_HANDLE;
+	// create_info.descriptor_set_layouts_amt = 0;
+	// create_info.ubo_size = sizeof(float) * 1;
+	// create_info.ubo_size = sizeof(float) * 1;
 
-	platform_info->single_color_pipeline = sy_render_create_pipeline(&platform_info->render_info, &create_info);
+	platform_info->pipeline = sy_render_create_pipeline(&platform_info->render_info, &create_info);
     }
 
     // init render types in ecs
     sy_render_init_ecs(&app_info->ecs);
+
+    // FIXME:
+    float vertex_data[] =
+	{
+	    -0.5f, -0.5f,
+	    0.5f, -0.5f,
+	    0.5f, 0.5f,
+	    -0.5f, 0.5f
+	};
+    sy_render_create_vertex_buffer(&platform_info->render_info, SY_ARRLEN(vertex_data), sizeof(float) * 2, vertex_data, &platform_info->render_info.vertex_buffer, &platform_info->render_info.vertex_buffer_memory);
+
+    uint32_t index_data[] =
+	{
+	    0, 3, 2, 2, 1, 0
+	};
+    platform_info->render_info.index_amt = SY_ARRLEN(index_data);
+    sy_render_create_index_buffer(&platform_info->render_info, SY_ARRLEN(index_data), index_data, &platform_info->render_info.index_buffer, &platform_info->render_info.index_buffer_memory);
 
 }
 
 void renderer_cleanup(SyPlatformInfo *platform_info, SyAppInfo *app_info)
 {
 
-    sy_render_destroy_pipeline(&platform_info->render_info, &platform_info->single_color_pipeline);
+    sy_render_destroy_pipeline(&platform_info->render_info, &platform_info->pipeline);
+
+    free(platform_info->render_info.command_buffers);
+
+    for (int i = 0; i < platform_info->render_info.max_frames_in_flight; ++i)
+    {
+	vkDestroySemaphore(platform_info->render_info.logical_device, platform_info->render_info.image_available_semaphores[i], NULL);
+	vkDestroySemaphore(platform_info->render_info.logical_device, platform_info->render_info.render_finished_semaphores[i], NULL);
+	vkDestroyFence(platform_info->render_info.logical_device, platform_info->render_info.in_flight_fences[i], NULL);
+    }
+    free(platform_info->render_info.image_available_semaphores);
+    free(platform_info->render_info.render_finished_semaphores);
+    free(platform_info->render_info.in_flight_fences);
     
     for (int i = 0; i < platform_info->render_info.swapchain_framebuffers_amt; ++i)
     {
@@ -93,14 +129,15 @@ void renderer_cleanup(SyPlatformInfo *platform_info, SyAppInfo *app_info)
     }
     free(platform_info->render_info.swapchain_framebuffers);
 
-
     vkDestroyRenderPass(platform_info->render_info.logical_device, platform_info->render_info.render_pass, NULL);
-    vkDestroyDescriptorSetLayout(platform_info->render_info.logical_device, platform_info->render_info.single_ubo_descriptor_set_layout, NULL);
+    // vkDestroyDescriptorSetLayout(platform_info->render_info.logical_device, platform_info->render_info.single_ubo_descriptor_set_layout, NULL);
 
     vkDestroyCommandPool(platform_info->render_info.logical_device, platform_info->render_info.command_pool, NULL); // command buffers are freed when command pool is freed
 
     sy_render_destroy_swapchain(&platform_info->render_info);
     vkDestroyDevice(platform_info->render_info.logical_device, NULL);
+
+    
 }
 
 
@@ -190,10 +227,14 @@ void engine_run(SyPlatformInfo *platform_info, SyAppInfo *app_info)
 	platform_info->end_engine = true;
     }
 
+    sy_render_draw(&platform_info->render_info, &platform_info->pipeline);
+
 }
 
 void engine_destroy(SyPlatformInfo *platform_info, SyAppInfo *app_info)
 {
+    vkDeviceWaitIdle(platform_info->render_info.logical_device);
+
     SY_OUTPUT_INFO("Ending Engine");
 
 #ifndef NDEBUG

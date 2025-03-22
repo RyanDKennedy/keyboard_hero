@@ -31,12 +31,31 @@ struct SyRenderInfo
 
     VkCommandPool command_pool;
 
+    uint32_t command_buffers_amt;
+    VkCommandBuffer *command_buffers;
+
     // descriptors
-    VkDescriptorSetLayout single_ubo_descriptor_set_layout;
+    // VkDescriptorSetLayout single_ubo_descriptor_set_layout;
 
     // The render pass
     VkRenderPass render_pass;
 
+    VkSemaphore *image_available_semaphores;
+    VkSemaphore *render_finished_semaphores;
+    VkFence *in_flight_fences;
+
     int max_frames_in_flight;
+    uint32_t current_frame;
+
+
+    // FIXME:
+    VkBuffer vertex_buffer;
+    VkDeviceMemory vertex_buffer_memory;
+
+    VkBuffer index_buffer;
+    VkDeviceMemory index_buffer_memory;
+    uint32_t index_amt;
+
+
     
 };

@@ -1,6 +1,7 @@
 #include "sy_resources.hpp"
 
 #include <stdlib.h>
+#include <vulkan/vulkan_core.h>
 
 #include "sy_physical_device.hpp"
 #include "sy_logical_device.hpp"
@@ -37,7 +38,53 @@ index buffer     by user / render system
 
  */
 
-void sy_create_command_pool(SyRenderInfo *render_info)
+void sy_render_create_sync_objects(SyRenderInfo *render_info)
+{
+    render_info->image_available_semaphores = (VkSemaphore*)calloc(render_info->max_frames_in_flight, sizeof(VkSemaphore));
+    render_info->render_finished_semaphores = (VkSemaphore*)calloc(render_info->max_frames_in_flight, sizeof(VkSemaphore));
+    render_info->in_flight_fences = (VkFence*)calloc(render_info->max_frames_in_flight, sizeof(VkFence));
+
+    
+    VkSemaphoreCreateInfo semaphore_create_info;
+    semaphore_create_info.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+    semaphore_create_info.pNext = NULL;
+    semaphore_create_info.flags = 0;
+
+    VkFenceCreateInfo fence_create_info;
+    fence_create_info.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+    fence_create_info.pNext = NULL;
+    fence_create_info.flags = VK_FENCE_CREATE_SIGNALED_BIT;
+
+    for (size_t i = 0; i < render_info->max_frames_in_flight; ++i)
+    {
+
+	SY_ERROR_COND(vkCreateSemaphore(render_info->logical_device, &semaphore_create_info, NULL,
+					&render_info->image_available_semaphores[i]) != VK_SUCCESS ||
+		      vkCreateSemaphore(render_info->logical_device, &semaphore_create_info, NULL,
+					&render_info->render_finished_semaphores[i]) != VK_SUCCESS ||
+		      vkCreateFence(render_info->logical_device, &fence_create_info, NULL,
+				    &render_info->in_flight_fences[i]) != VK_SUCCESS,
+		      "RENDER: Failed to create semaphores or fence.");
+    }
+
+}
+
+void sy_render_create_command_buffers(SyRenderInfo *render_info)
+{
+    render_info->command_buffers_amt = render_info->max_frames_in_flight;
+    render_info->command_buffers = (VkCommandBuffer*)calloc(render_info->command_buffers_amt, sizeof(VkCommandBuffer));
+
+    VkCommandBufferAllocateInfo allocate_info;
+    allocate_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+    allocate_info.pNext = NULL;
+    allocate_info.commandPool = render_info->command_pool;
+    allocate_info.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY; // primary or secondary command buffer
+    allocate_info.commandBufferCount = (uint32_t)render_info->command_buffers_amt;
+
+    SY_ERROR_COND(vkAllocateCommandBuffers(render_info->logical_device, &allocate_info, render_info->command_buffers) != VK_SUCCESS, "RENDER: Failed to allocate command buffers.");
+}
+
+void sy_render_create_command_pool(SyRenderInfo *render_info)
 {
     VkCommandPoolCreateInfo command_pool_create_info;
     command_pool_create_info.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
@@ -49,32 +96,32 @@ void sy_create_command_pool(SyRenderInfo *render_info)
 }
 
 
-void sy_render_create_descriptor_set_layouts(SyRenderInfo *render_info)
-{
-    { // single ubo shader layout
-	VkDescriptorSetLayoutBinding ubo_layout_binding;
-	ubo_layout_binding.binding = 0; // the binding of the uniform inside of the shader
-	ubo_layout_binding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-	ubo_layout_binding.descriptorCount = 1;
-	ubo_layout_binding.stageFlags = VK_SHADER_STAGE_ALL_GRAPHICS;
-	ubo_layout_binding.pImmutableSamplers = NULL; // for image sampling
+// void sy_render_create_descriptor_set_layouts(SyRenderInfo *render_info)
+// {
+//     { // single ubo shader layout
+// 	VkDescriptorSetLayoutBinding ubo_layout_binding;
+// 	ubo_layout_binding.binding = 0; // the binding of the uniform inside of the shader
+// 	ubo_layout_binding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+// 	ubo_layout_binding.descriptorCount = 1;
+// 	ubo_layout_binding.stageFlags = VK_SHADER_STAGE_ALL_GRAPHICS;
+// 	ubo_layout_binding.pImmutableSamplers = NULL; // for image sampling
 
-	VkDescriptorSetLayoutBinding bindings[] = {ubo_layout_binding};
-	uint32_t bindings_amt = SY_ARRLEN(bindings);
+// 	VkDescriptorSetLayoutBinding bindings[] = {ubo_layout_binding};
+// 	uint32_t bindings_amt = SY_ARRLEN(bindings);
 
-	VkDescriptorSetLayoutCreateInfo layout_create_info;
-	layout_create_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-	layout_create_info.pNext = NULL;
-	layout_create_info.flags = 0;
-	layout_create_info.bindingCount = bindings_amt;
-	layout_create_info.pBindings = bindings;
+// 	VkDescriptorSetLayoutCreateInfo layout_create_info;
+// 	layout_create_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+// 	layout_create_info.pNext = NULL;
+// 	layout_create_info.flags = 0;
+// 	layout_create_info.bindingCount = bindings_amt;
+// 	layout_create_info.pBindings = bindings;
 	
-	VkDescriptorSetLayout result;
+// 	VkDescriptorSetLayout result;
 	
-	SY_ERROR_COND(vkCreateDescriptorSetLayout(render_info->logical_device, &layout_create_info, NULL, &render_info->single_ubo_descriptor_set_layout) != VK_SUCCESS, "RENDER: Failed to create descriptor set layout - single ubo.");
-    }
+// 	SY_ERROR_COND(vkCreateDescriptorSetLayout(render_info->logical_device, &layout_create_info, NULL, &render_info->single_ubo_descriptor_set_layout) != VK_SUCCESS, "RENDER: Failed to create descriptor set layout - single ubo.");
+//     }
 
-}
+// }
 
 VkRenderPass sy_render_create_simple_render_pass(SyRenderInfo *render_info)
 {
