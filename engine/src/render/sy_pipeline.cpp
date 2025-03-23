@@ -7,129 +7,12 @@
 #include "sy_utils.hpp"
 #include "sy_buffer.hpp"
 
-SyPipeline create_pipeline_object(SyRenderInfo *render_info, SyPipelineCreateInfo *pipeline_create_info);
 VkShaderModule create_shader_module(SyRenderInfo *render_info, char *code, ssize_t code_size);
-void create_descriptor_pool(SyRenderInfo *render_info, SyPipeline *pipeline);
-void create_uniforms(SyRenderInfo *render_info, SyPipeline *pipeline, size_t ubo_size);
-void create_descriptor_sets(SyRenderInfo *render_info, SyPipeline *pipeline, VkDeviceSize uniform_size);
 
-SyPipeline sy_render_create_pipeline(SyRenderInfo *render_info, SyPipelineCreateInfo *pipeline_create_info)
-{
-    SyPipeline result = create_pipeline_object(render_info, pipeline_create_info);
-    // create_uniforms(render_info, &result, pipeline_create_info->ubo_size);
-    // create_descriptor_pool(render_info, &result);
-    // create_descriptor_sets(render_info, &result, sizeof(float)); // FIXME: change from sizeof(int)
-
-    return result;
-}
-
-void sy_render_destroy_pipeline(SyRenderInfo *render_info, SyPipeline *pipeline)
-{
-    // vkDestroyDescriptorPool(render_info->logical_device, pipeline->descriptor_pool, NULL);
-
-    // for (size_t i = 0; i < render_info->max_frames_in_flight; ++i)
-    // {
-    // 	vkDestroyBuffer(render_info->logical_device, pipeline->uniform_buffers[i], NULL);
-    // 	vkFreeMemory(render_info->logical_device, pipeline->uniform_buffers_memory[i], NULL);
-    // }
-    // free(pipeline->uniform_buffers);
-    // free(pipeline->uniform_buffers_memory);
-    // free(pipeline->uniform_buffers_mapped);
-
-    vkDestroyPipelineLayout(render_info->logical_device, pipeline->pipeline_layout, NULL);
-    
-    vkDestroyPipeline(render_info->logical_device, pipeline->pipeline, NULL);
-
-}
-
-// void create_descriptor_sets(SyRenderInfo *render_info, SyPipeline *pipeline, VkDeviceSize uniform_size)
-// {
-//     // Allocate descriptor sets
-
-//     // Initialize layouts array with every member set to vk_info->descriptor_set_layout
-//     uint32_t layout_amt = render_info->max_frames_in_flight;
-//     VkDescriptorSetLayout *layouts = (VkDescriptorSetLayout*)calloc(layout_amt, sizeof(VkDescriptorSetLayout));
-//     for (int i = 0; i < layout_amt; ++i)
-//     {
-// 	layouts[i] = render_info->single_ubo_descriptor_set_layout;
-//     }
-
-//     VkDescriptorSetAllocateInfo allocate_info;
-//     allocate_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-//     allocate_info.pNext = NULL;
-//     allocate_info.pSetLayouts = layouts;
-//     allocate_info.descriptorSetCount = layout_amt;
-//     allocate_info.descriptorPool = pipeline->descriptor_pool;
-
-//     pipeline->descriptor_sets_amt = render_info->max_frames_in_flight;
-//     pipeline->descriptor_sets = (VkDescriptorSet*)calloc(pipeline->descriptor_sets_amt, sizeof(VkDescriptorSet));
-    
-//     SY_ERROR_COND(vkAllocateDescriptorSets(render_info->logical_device, &allocate_info, pipeline->descriptor_sets) != VK_SUCCESS, "PIPELINE: Failed to allocate descriptor sets.");
-
-//     // Populate every descriptor set
-//     for (size_t i = 0; i < pipeline->descriptor_sets_amt; ++i)
-//     {
-// 	VkDescriptorBufferInfo buffer_info;
-// 	buffer_info.buffer = pipeline->uniform_buffers[i];
-// 	buffer_info.offset = 0;
-// 	buffer_info.range = uniform_size;
-
-// 	VkWriteDescriptorSet descriptor_write;
-// 	descriptor_write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-// 	descriptor_write.pNext = NULL;
-// 	descriptor_write.dstSet = pipeline->descriptor_sets[i];
-// 	descriptor_write.dstBinding = 0;
-// 	descriptor_write.dstArrayElement = 0;
-// 	descriptor_write.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-// 	descriptor_write.descriptorCount = 1;
-// 	descriptor_write.pBufferInfo = &buffer_info;
-// 	descriptor_write.pImageInfo = NULL;
-// 	descriptor_write.pTexelBufferView = NULL;
-
-// 	vkUpdateDescriptorSets(render_info->logical_device, 1, &descriptor_write, 0, NULL);
-//     }
-
-//     // Cleanup
-//     free(layouts);
-// }
-
-// void create_descriptor_pool(SyRenderInfo *render_info, SyPipeline *pipeline)
-// {
-//     VkDescriptorPoolSize pool_size;
-//     pool_size.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-//     pool_size.descriptorCount = render_info->max_frames_in_flight;
-
-//     VkDescriptorPoolCreateInfo pool_create_info;
-//     pool_create_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-//     pool_create_info.pNext = NULL;
-//     pool_create_info.flags = 0;
-//     pool_create_info.poolSizeCount = 1;
-//     pool_create_info.pPoolSizes = &pool_size;
-//     pool_create_info.maxSets = render_info->max_frames_in_flight;
-
-//     SY_ERROR_COND(vkCreateDescriptorPool(render_info->logical_device, &pool_create_info, NULL, &pipeline->descriptor_pool) != VK_SUCCESS, "PIPELINE: Failed to create descriptor pool.");
-// }
-
-// void create_uniforms(SyRenderInfo *render_info, SyPipeline *pipeline, size_t ubo_size)
-// {
-//     pipeline->uniform_buffers_amt = render_info->max_frames_in_flight;
-//     pipeline->uniform_buffers = (VkBuffer*)calloc(pipeline->uniform_buffers_amt, sizeof(VkBuffer));
-//     pipeline->uniform_buffers_memory = (VkDeviceMemory*)calloc(pipeline->uniform_buffers_amt, sizeof(VkDeviceMemory));
-//     pipeline->uniform_buffers_mapped = (void**)calloc(pipeline->uniform_buffers_amt, sizeof(void*));
-
-//     for (size_t i = 0; i < render_info->max_frames_in_flight; ++i)
-//     {
-// 	sy_create_buffer(render_info, ubo_size, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, &pipeline->uniform_buffers[i], &pipeline->uniform_buffers_memory[i]);
-
-// 	SY_ERROR_COND(vkMapMemory(render_info->logical_device, pipeline->uniform_buffers_memory[i], 0, ubo_size, 0, &pipeline->uniform_buffers_mapped[i]) != VK_SUCCESS, "PIPELINE: Failed to map uniform buffer %lu", i);
-//     }
-
-// }
-
-SyPipeline create_pipeline_object(SyRenderInfo *render_info, SyPipelineCreateInfo *pipeline_create_info)
+VkPipeline sy_render_create_pipeline(SyRenderInfo *render_info, SyPipelineCreateInfo *pipeline_create_info)
 {
 
-    SyPipeline result;
+    VkPipeline result;
 
     // Creating Shaders
 
@@ -196,8 +79,6 @@ SyPipeline create_pipeline_object(SyRenderInfo *render_info, SyPipelineCreateInf
     vertex_input_create_info.pVertexBindingDescriptions = binding_descriptions;
     vertex_input_create_info.vertexAttributeDescriptionCount = attr_descriptions_amt;
     vertex_input_create_info.pVertexAttributeDescriptions = attr_descriptions;
-
-
 
     // input assembly
 
@@ -301,21 +182,6 @@ SyPipeline create_pipeline_object(SyRenderInfo *render_info, SyPipelineCreateInf
     color_blend_create_info.blendConstants[2] = 0.0f;
     color_blend_create_info.blendConstants[3] = 0.0f;
 
-    // pipeline layout - this is where you specify your uniforms and their layout (pos 0: 16 bit, pos1: 64 bit, pos2: 32bit)
-    VkPipelineLayoutCreateInfo layout_create_info;
-    layout_create_info.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-    layout_create_info.pNext = NULL;
-    layout_create_info.flags = 0;
-    layout_create_info.setLayoutCount = 0;
-    layout_create_info.pSetLayouts = NULL;
-    // layout_create_info.setLayoutCount = pipeline_create_info->descriptor_set_layouts_amt;
-    // layout_create_info.pSetLayouts = pipeline_create_info->descriptor_set_layouts;
-    layout_create_info.pushConstantRangeCount = 0;
-    layout_create_info.pPushConstantRanges = NULL;
-
-    SY_ERROR_COND(vkCreatePipelineLayout(render_info->logical_device, &layout_create_info, NULL, &result.pipeline_layout) != VK_SUCCESS,
-		  "PIPELINE: Failed to create a pipeline layout.");
-
     VkGraphicsPipelineCreateInfo vulkan_pipeline_create_info;
     vulkan_pipeline_create_info.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
     vulkan_pipeline_create_info.pNext = NULL;
@@ -330,13 +196,13 @@ SyPipeline create_pipeline_object(SyRenderInfo *render_info, SyPipelineCreateInf
     vulkan_pipeline_create_info.pDepthStencilState = NULL;
     vulkan_pipeline_create_info.pColorBlendState = &color_blend_create_info;
     vulkan_pipeline_create_info.pDynamicState = &dynamic_state_create_info;
-    vulkan_pipeline_create_info.layout = result.pipeline_layout;
+    vulkan_pipeline_create_info.layout = pipeline_create_info->pipeline_layout;
     vulkan_pipeline_create_info.renderPass = render_info->render_pass;
     vulkan_pipeline_create_info.subpass = pipeline_create_info->subpass_number; // index of subpass where this pipeline will be used
     vulkan_pipeline_create_info.basePipelineHandle = VK_NULL_HANDLE;
     vulkan_pipeline_create_info.basePipelineIndex = -1;
 
-    SY_ERROR_COND(vkCreateGraphicsPipelines(render_info->logical_device, VK_NULL_HANDLE, 1, &vulkan_pipeline_create_info, NULL, &result.pipeline) != VK_SUCCESS, "PIPELINE: Failed to create graphics pipeline.");
+    SY_ERROR_COND(vkCreateGraphicsPipelines(render_info->logical_device, VK_NULL_HANDLE, 1, &vulkan_pipeline_create_info, NULL, &result) != VK_SUCCESS, "PIPELINE: Failed to create graphics pipeline.");
 
     // Cleanup
     vkDestroyShaderModule(render_info->logical_device, vertex_shader_module, NULL);

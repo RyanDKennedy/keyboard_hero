@@ -50,4 +50,6 @@ struct SyRenderInfo
     int max_frames_in_flight;
     uint32_t current_frame;
 
+    VkPipelineLayout single_color_pipeline_layout;
+    VkPipeline single_color_pipeline;
 };

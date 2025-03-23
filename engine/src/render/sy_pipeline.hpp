@@ -21,27 +21,10 @@ struct SyPipelineCreateInfo
 
     uint32_t subpass_number;
     
-    // VkDescriptorSetLayout *descriptor_set_layouts;
-    // uint32_t descriptor_set_layouts_amt;
-    // size_t ubo_size;
-};
-
-
-struct SyPipeline
-{
-    VkPipeline pipeline;
     VkPipelineLayout pipeline_layout;
-
-    // uint32_t uniform_buffers_amt;
-    // VkBuffer *uniform_buffers;
-    // VkDeviceMemory *uniform_buffers_memory;
-    // void **uniform_buffers_mapped;
-
-    // VkDescriptorPool descriptor_pool;
-    // VkDescriptorSet *descriptor_sets;
-    // uint32_t descriptor_sets_amt;
 };
 
 
-SyPipeline sy_render_create_pipeline(SyRenderInfo *render_info, SyPipelineCreateInfo *pipeline_create_info);
-void sy_render_destroy_pipeline(SyRenderInfo *render_info, SyPipeline *pipeline);
+
+VkPipeline sy_render_create_pipeline(SyRenderInfo *render_info, SyPipelineCreateInfo *pipeline_create_info);
+void sy_render_destroy_pipeline(SyRenderInfo *render_info, VkPipeline *pipeline);

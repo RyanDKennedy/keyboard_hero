@@ -43,7 +43,7 @@ void renderer_init(SyPlatformInfo *platform_info, SyAppInfo *app_info)
     sy_render_create_swapchain_framebuffers(&platform_info->render_info);
     sy_render_create_command_buffers(&platform_info->render_info);
     sy_render_create_sync_objects(&platform_info->render_info);
-    // sy_render_create_descriptor_set_layouts(&platform_info->render_info);
+    sy_render_create_descriptor_set_layouts(&platform_info->render_info);
 
     VmaAllocatorCreateInfo vma_allocator_create_info = {};
     vma_allocator_create_info.flags = 0;
@@ -53,6 +53,21 @@ void renderer_init(SyPlatformInfo *platform_info, SyAppInfo *app_info)
     vma_allocator_create_info.instance = platform_info->render_info.instance;
     vma_allocator_create_info.pVulkanFunctions = NULL;
     vmaCreateAllocator(&vma_allocator_create_info, &platform_info->render_info.vma_allocator);
+
+    { // Create Pipeline Layouts
+	VkDescriptorSetLayout layouts[] = {platform_info->render_info.frame_data_descriptor_set_layout};
+
+	VkPipelineLayoutCreateInfo create_info;
+	create_info.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+	create_info.pNext = NULL;
+	create_info.flags = 0;
+	create_info.pushConstantRangeCount = 0;
+	create_info.pPushConstantRanges = NULL;
+	create_info.setLayoutCount = SY_ARRLEN(layouts);
+	create_info.pSetLayouts = layouts;
+
+	vkCreatePipelineLayout(platform_info->render_info.logical_device, &create_info, NULL, &platform_info->render_info.single_color_pipeline_layout);
+    }
 
     { // Create single color pipeline
 	VkVertexInputBindingDescription binding_description;
@@ -74,13 +89,9 @@ void renderer_init(SyPlatformInfo *platform_info, SyAppInfo *app_info)
 	create_info.vertex_input_attribute_descriptions_amt = 1;
 	create_info.render_type = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
 	create_info.subpass_number = 0;
-	// create_info.descriptor_set_layouts = &platform_info->render_info.single_ubo_descriptor_set_layout;
-	// create_info.descriptor_set_layouts = VK_NULL_HANDLE;
-	// create_info.descriptor_set_layouts_amt = 0;
-	// create_info.ubo_size = sizeof(float) * 1;
-	// create_info.ubo_size = sizeof(float) * 1;
+	create_info.pipeline_layout = platform_info->render_info.single_color_pipeline_layout;
 
-	platform_info->pipeline = sy_render_create_pipeline(&platform_info->render_info, &create_info);
+	platform_info->render_info.single_color_pipeline = sy_render_create_pipeline(&platform_info->render_info, &create_info);
     }
 
     // init render types in ecs
@@ -133,9 +144,13 @@ void renderer_cleanup(SyPlatformInfo *platform_info, SyAppInfo *app_info)
 	}
     }
 
-    sy_render_destroy_pipeline(&platform_info->render_info, &platform_info->pipeline);
+    vkDestroyPipeline(platform_info->render_info.logical_device, platform_info->render_info.single_color_pipeline, NULL);
+
+    vkDestroyPipelineLayout(platform_info->render_info.logical_device, platform_info->render_info.single_color_pipeline_layout, NULL);
 
     vmaDestroyAllocator(platform_info->render_info.vma_allocator);
+
+    vkDestroyDescriptorSetLayout(platform_info->render_info.logical_device, platform_info->render_info.frame_data_descriptor_set_layout, NULL);
 
     free(platform_info->render_info.command_buffers);
 
@@ -156,7 +171,6 @@ void renderer_cleanup(SyPlatformInfo *platform_info, SyAppInfo *app_info)
     free(platform_info->render_info.swapchain_framebuffers);
 
     vkDestroyRenderPass(platform_info->render_info.logical_device, platform_info->render_info.render_pass, NULL);
-    // vkDestroyDescriptorSetLayout(platform_info->render_info.logical_device, platform_info->render_info.single_ubo_descriptor_set_layout, NULL);
 
     vkDestroyCommandPool(platform_info->render_info.logical_device, platform_info->render_info.command_pool, NULL); // command buffers are freed when command pool is freed
 
@@ -251,7 +265,7 @@ void engine_run(SyPlatformInfo *platform_info, SyAppInfo *app_info)
 	platform_info->end_engine = true;
     }
 
-    sy_render_draw(&platform_info->render_info, &platform_info->pipeline, &platform_info->input_info, &app_info->ecs);
+    sy_render_draw(&platform_info->render_info, &platform_info->input_info, &app_info->ecs);
 
 }
 

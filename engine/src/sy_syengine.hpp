@@ -37,7 +37,6 @@ struct SyPlatformInfo
     size_t delta_time; // in microseconds
 
     SyRenderInfo render_info;
-    SyPipeline pipeline;
 };
 
 void engine_init(SyPlatformInfo *platform_info, SyAppInfo *app_info);
