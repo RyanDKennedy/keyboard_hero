@@ -32,7 +32,7 @@ void app_run(SyAppInfo *app_info)
 	app_info->stop_game = true;
 
     if (app_info->input_info.p)
-	printf("hi\n");
+	printf("FPS: %f\n", 1.0f / app_info->delta_time);
 
 
 }

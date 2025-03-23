@@ -95,6 +95,7 @@ void sy_render_create_swapchain(SyRenderInfo *render_info, int window_width, int
 		present_mode = present_modes[i];
 		break;
 	    }
+
 	}
 	
 	free(present_modes);

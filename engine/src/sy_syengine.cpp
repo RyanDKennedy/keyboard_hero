@@ -28,9 +28,8 @@ void app_destroy(SyAppInfo *app_info);
 
 void renderer_init(SyPlatformInfo *platform_info, SyAppInfo *app_info)
 {
-
-
     platform_info->render_info.max_frames_in_flight = 2;
+    platform_info->render_info.current_frame = 0;
     sy_render_create_physical_device(&platform_info->render_info);
     {
 	VkPhysicalDeviceProperties props;

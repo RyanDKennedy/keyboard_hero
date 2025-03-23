@@ -90,7 +90,6 @@ void record_command_buffer(SyRenderInfo *render_info, VkCommandBuffer command_bu
     }
 
 
-
     vkCmdEndRenderPass(command_buffer);
     SY_ERROR_COND(vkEndCommandBuffer(command_buffer) != VK_SUCCESS, "RENDER: Failed to end command buffer.");
 }
@@ -106,6 +105,7 @@ void sy_render_draw(SyRenderInfo *render_info, SyPipeline *pipeline, SyInputInfo
     uint32_t image_index;
     result = vkAcquireNextImageKHR(render_info->logical_device, render_info->swapchain, UINT64_MAX,
 			  render_info->image_available_semaphores[render_info->current_frame], VK_NULL_HANDLE, &image_index);
+
 
     // Check results of acquiring the image, and if we need to recreate swapchain
     if (result == VK_ERROR_OUT_OF_DATE_KHR)
@@ -174,5 +174,4 @@ void sy_render_draw(SyRenderInfo *render_info, SyPipeline *pipeline, SyInputInfo
     }
 
     render_info->current_frame = (render_info->current_frame + 1) % render_info->max_frames_in_flight;
-
 }
