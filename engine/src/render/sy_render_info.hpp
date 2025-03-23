@@ -2,6 +2,8 @@
 
 #include "render/sy_render_settings.hpp" // this needs to be first because it sets up some #define's
 
+#include "sy_descriptor_set_data.hpp"
+
 #include <vulkan/vulkan.h>
 #include "vk_mem_alloc.h"
 
@@ -44,25 +46,28 @@ struct SyRenderInfo
     VkSemaphore *render_finished_semaphores; // array of size max_frames_in_flight
     VkFence *in_flight_fences; // array of size max_frames_in_flight
 
-    int max_frames_in_flight;
+    const int max_frames_in_flight = 2;
     uint32_t current_frame;
 
     VkDescriptorSetLayout frame_data_descriptor_set_layout;
+    VkDescriptorSetLayout material_descriptor_set_layout;
     VkPipelineLayout single_color_pipeline_layout;
     VkPipeline single_color_pipeline;
 
-    // FIXME:]
+
     VkDescriptorPool descriptor_pool;
-    VkDescriptorSet *frame_data_descriptor_sets; // array of size max_frames_in_flight
-    VkBuffer *frame_data_uniform_buffers; // array of size max_frames_in_flight
-    VmaAllocation *frame_data_uniform_buffer_allocations; // array of size max_frames_in_flight
-    
+    const size_t max_descriptor_sets_amt = 20;
+    SyDescriptorSetDataGroup *descriptor_sets;
+    bool *descriptor_sets_used;
+
+    int frame_data_descriptor_index;
+
 };
 
 // FIXME:
 struct FrameData
 {
-    float r;
-    float g;
-    float b;
+    float test;
+    float test1;
+    float test2;
 };

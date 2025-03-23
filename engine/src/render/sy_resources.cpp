@@ -7,37 +7,6 @@
 #include "sy_logical_device.hpp"
 #include "sy_swapchain.hpp"
 
-/*
-p   create_render_pass(vk_info);
-p   create_descriptor_set_layout(vk_info);
-p   create_pipeline(vk_info);
-p   create_framebuffers(vk_info);
-r   create_command_pool(vk_info);
-r   create_vertex_buffer(vk_info);
-r   create_index_buffer(vk_info);
-p   create_uniform_buffers(vk_info);
-p   create_descriptor_pool(vk_info);
-p   create_descriptor_sets(vk_info);
-r   create_command_buffers(vk_info);
-r   create_sync_objects(vk_info);
-
-PIPELINE
-
-renderpass                  by engine
-sync objects                by engine
-descriptor set/pool/layout  by engine
-framebuffers                by engine
-uniform                     by user / render system
-
-RENDERER
-command pool     by engine
-command buffer   by engine
-vertex buffer    by user / render system
-index buffer     by user / render system
-
-
- */
-
 void sy_render_create_sync_objects(SyRenderInfo *render_info)
 {
     render_info->image_available_semaphores = (VkSemaphore*)calloc(render_info->max_frames_in_flight, sizeof(VkSemaphore));
@@ -119,6 +88,29 @@ void sy_render_create_descriptor_set_layouts(SyRenderInfo *render_info)
 	VkDescriptorSetLayout result;
 	
 	SY_ERROR_COND(vkCreateDescriptorSetLayout(render_info->logical_device, &layout_create_info, NULL, &render_info->frame_data_descriptor_set_layout) != VK_SUCCESS, "RENDER: Failed to create descriptor set layout - frame data layout.");
+    }
+
+    { // material layout
+	VkDescriptorSetLayoutBinding ubo_layout_binding;
+	ubo_layout_binding.binding = 1; // the binding of the uniform inside of the shader
+	ubo_layout_binding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+	ubo_layout_binding.descriptorCount = 1;
+	ubo_layout_binding.stageFlags = VK_SHADER_STAGE_ALL_GRAPHICS;
+	ubo_layout_binding.pImmutableSamplers = NULL; // for image sampling
+
+	VkDescriptorSetLayoutBinding bindings[] = {ubo_layout_binding};
+	uint32_t bindings_amt = SY_ARRLEN(bindings);
+
+	VkDescriptorSetLayoutCreateInfo layout_create_info;
+	layout_create_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+	layout_create_info.pNext = NULL;
+	layout_create_info.flags = 0;
+	layout_create_info.bindingCount = bindings_amt;
+	layout_create_info.pBindings = bindings;
+	
+	VkDescriptorSetLayout result;
+	
+	SY_ERROR_COND(vkCreateDescriptorSetLayout(render_info->logical_device, &layout_create_info, NULL, &render_info->material_descriptor_set_layout) != VK_SUCCESS, "RENDER: Failed to create descriptor set layout - material layout.");
     }
 
 }
@@ -212,4 +204,84 @@ void sy_render_create_swapchain_framebuffers(SyRenderInfo *render_info)
 
 
 
+}
+
+size_t sy_render_create_descriptor_set(SyRenderInfo *render_info, size_t uniform_size, void *data, VkDescriptorSetLayout descriptor_layout, uint32_t layout_binding)
+{
+    // find unused index
+    int index = -1;
+    for (int i = 0; i < render_info->max_descriptor_sets_amt; ++i)
+    {
+	if (render_info->descriptor_sets_used[i] == false)
+	{
+	    render_info->descriptor_sets_used[i] = true;
+	    index = i;
+	    break;
+	}
+    }
+    SY_ERROR_COND(index == -1, "RENDER: Ran out of descriptor sets.");
+	
+    // Allocate buffers, and copy data to them
+    for (int i = 0; i < render_info->max_frames_in_flight; ++i)
+    {
+	VkBufferCreateInfo buffer_info = { VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO };
+	buffer_info.size = uniform_size;
+	buffer_info.usage = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
+	
+	VmaAllocationCreateInfo alloc_info = {0};
+	alloc_info.usage = VMA_MEMORY_USAGE_AUTO_PREFER_HOST;
+	alloc_info.flags = VMA_ALLOCATION_CREATE_HOST_ACCESS_RANDOM_BIT;
+	
+	vmaCreateBuffer(render_info->vma_allocator, &buffer_info, &alloc_info, &render_info->descriptor_sets[index].uniform_buffer[i], &render_info->descriptor_sets[index].uniform_buffer_allocation[i], nullptr);
+
+	vmaCopyMemoryToAllocation(render_info->vma_allocator, data, render_info->descriptor_sets[index].uniform_buffer_allocation[i], 0, uniform_size);
+    }
+
+    // Allocate descriptor sets
+    
+    // Initialize layouts array
+    uint32_t layout_amt = render_info->max_frames_in_flight;
+    VkDescriptorSetLayout *layouts = (VkDescriptorSetLayout*)calloc(layout_amt, sizeof(VkDescriptorSetLayout));
+    for (int i = 0; i < layout_amt; ++i)
+    {
+	layouts[i] = descriptor_layout;
+    }
+    
+    VkDescriptorSetAllocateInfo allocate_info;
+    allocate_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+    allocate_info.pNext = NULL;
+    allocate_info.pSetLayouts = layouts;
+    allocate_info.descriptorSetCount = layout_amt;
+    allocate_info.descriptorPool = render_info->descriptor_pool;
+    
+    VkResult result;
+    SY_ERROR_COND((result = vkAllocateDescriptorSets(render_info->logical_device, &allocate_info, render_info->descriptor_sets[index].descriptor_set)) != VK_SUCCESS, "RENDER: Failed to allocate descriptor sets. out of pool mem: %d", result == VK_ERROR_OUT_OF_POOL_MEMORY);
+
+    // Populate every descriptor set
+    for (size_t i = 0; i < render_info->max_frames_in_flight; ++i)
+    {
+	VkDescriptorBufferInfo buffer_info;
+	buffer_info.buffer = render_info->descriptor_sets[index].uniform_buffer[i];
+	buffer_info.offset = 0;
+	buffer_info.range = uniform_size;
+	
+	VkWriteDescriptorSet descriptor_write;
+	descriptor_write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+	descriptor_write.pNext = NULL;
+	descriptor_write.dstSet = render_info->descriptor_sets[index].descriptor_set[i];
+	descriptor_write.dstBinding = layout_binding;
+	descriptor_write.dstArrayElement = 0;
+	descriptor_write.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+	descriptor_write.descriptorCount = 1;
+	descriptor_write.pBufferInfo = &buffer_info;
+	descriptor_write.pImageInfo = NULL;
+	descriptor_write.pTexelBufferView = NULL;
+	
+	vkUpdateDescriptorSets(render_info->logical_device, 1, &descriptor_write, 0, NULL);
+    }
+
+    // Cleanup
+    free(layouts);
+
+    return index;
 }

@@ -197,7 +197,7 @@ struct SyEcs
 	m_component_used_arr[type_id].get<bool>(i) = true;
 	
 	// Set the component to 0
-	memset(&m_component_data_arr[type_id].get<T>(i), 0, sizeof(T));
+	// memset(&m_component_data_arr[type_id].get<T>(i), 0, sizeof(T)); FIXME this makes it pause for some reason
 	
 	return i;
     }
@@ -211,11 +211,6 @@ struct SyEcs
     {
 	const size_t type_id = get_type_id<T>();
 	m_component_used_arr[type_id].get<bool>(index) = false;
-
-	// This is just for catching errors
-#ifndef NDEBUG
-	memset(&m_component_data_arr[type_id].get<T>(index), 0, sizeof(T));
-#endif
     }
 
     /**
@@ -311,5 +306,29 @@ struct SyEcs
 	
 	entity_data.mask[type_id] = false;
 	release_component<T>(entity_data.indices[type_id]);
+    }
+
+    template <typename T>
+    void entity_assign_component(SyEntityHandle entity, size_t component_id)
+    {
+	SyEntityData &entity_data = m_entity_data.get<SyEntityData>(entity);
+	const size_t type_id = get_type_id<T>();
+
+	SY_ASSERT(entity_data.mask[type_id] == false);
+	entity_data.mask[type_id] = true;
+
+	entity_data.indices[type_id] = component_id;
+    }
+
+    template <typename T>
+    void entity_unassign_component(SyEntityHandle entity)
+    {
+	SyEntityData &entity_data = m_entity_data.get<SyEntityData>(entity);
+	const size_t type_id = get_type_id<T>();
+
+	SY_ASSERT(entity_data.mask[type_id] == true);
+	entity_data.mask[type_id] = false;
+
+	entity_data.indices[type_id] = 0;
     }
 };
