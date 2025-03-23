@@ -46,6 +46,7 @@ void record_command_buffer(SyRenderInfo *render_info, VkCommandBuffer command_bu
     vkCmdBeginRenderPass(command_buffer, &render_pass_begin_info, VK_SUBPASS_CONTENTS_INLINE);
 
     vkCmdBindPipeline(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, render_info->single_color_pipeline);
+    vkCmdBindDescriptorSets(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, render_info->single_color_pipeline_layout, 0, 1, &render_info->frame_data_descriptor_sets[render_info->current_frame], 0, NULL);
 
     // set the dynamic things in the pipeline (viewport and scissor)
 

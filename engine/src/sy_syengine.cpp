@@ -5,6 +5,7 @@
 
 #include "render/sy_buffer.hpp"
 #include "render/sy_drawing.hpp"
+#include "render/sy_render_info.hpp"
 #include "sy_ecs.hpp"
 #include "sy_macros.hpp"
 
@@ -98,6 +99,96 @@ void renderer_init(SyPlatformInfo *platform_info, SyAppInfo *app_info)
     sy_render_init_ecs(&app_info->ecs);
     SY_ECS_REGISTER_TYPE(app_info->ecs, SyMesh);
 
+    { // Create descriptor pool
+	VkDescriptorPoolSize pool_size;
+	pool_size.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+	pool_size.descriptorCount = (uint32_t)platform_info->render_info.max_frames_in_flight;
+	
+	VkDescriptorPoolCreateInfo pool_create_info;
+	pool_create_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+	pool_create_info.pNext = NULL;
+	pool_create_info.flags = 0;
+	pool_create_info.poolSizeCount = 1;
+	pool_create_info.pPoolSizes = &pool_size;
+	pool_create_info.maxSets = (uint32_t)platform_info->render_info.max_frames_in_flight;
+	
+	SY_ERROR_COND(vkCreateDescriptorPool(platform_info->render_info.logical_device, &pool_create_info, NULL, &platform_info->render_info.descriptor_pool) != VK_SUCCESS, "RENDER: Failed to create descriptor pool.");
+
+    }
+
+    { // Create the frame data descriptor sets / uniform buffers
+	platform_info->render_info.frame_data_uniform_buffers = (VkBuffer*)calloc(platform_info->render_info.max_frames_in_flight, sizeof(VkBuffer));
+	platform_info->render_info.frame_data_uniform_buffer_allocations = (VmaAllocation*)calloc(platform_info->render_info.max_frames_in_flight, sizeof(VmaAllocation));
+
+	FrameData data;
+	data.r = 0.5;
+	data.g = 1.0;
+	data.b = 0.0;
+
+	for (int i = 0; i < platform_info->render_info.max_frames_in_flight; ++i)
+	{
+	    VkBufferCreateInfo buffer_info = { VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO };
+	    buffer_info.size = sizeof(FrameData);
+	    buffer_info.usage = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
+	    
+	    VmaAllocationCreateInfo alloc_info = {0};
+	    alloc_info.usage = VMA_MEMORY_USAGE_AUTO_PREFER_HOST;
+	    alloc_info.flags = VMA_ALLOCATION_CREATE_HOST_ACCESS_RANDOM_BIT;
+	    
+	    vmaCreateBuffer(platform_info->render_info.vma_allocator, &buffer_info, &alloc_info, &platform_info->render_info.frame_data_uniform_buffers[i], &platform_info->render_info.frame_data_uniform_buffer_allocations[i], nullptr);
+	    
+	    // Copy the frame data into the buffer
+	    vmaCopyMemoryToAllocation(platform_info->render_info.vma_allocator, &data, platform_info->render_info.frame_data_uniform_buffer_allocations[i], 0, sizeof(FrameData));	
+	}
+	
+	// Allocate descriptor sets
+	
+	// Initialize layouts array with every member set to vk_info->descriptor_set_layout
+	uint32_t layout_amt = platform_info->render_info.max_frames_in_flight;
+	VkDescriptorSetLayout *layouts = (VkDescriptorSetLayout*)calloc(layout_amt, sizeof(VkDescriptorSetLayout));
+	for (int i = 0; i < layout_amt; ++i)
+	{
+	    layouts[i] = platform_info->render_info.frame_data_descriptor_set_layout;
+	}
+	
+	VkDescriptorSetAllocateInfo allocate_info;
+	allocate_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+	allocate_info.pNext = NULL;
+	allocate_info.pSetLayouts = layouts;
+	allocate_info.descriptorSetCount = layout_amt;
+	allocate_info.descriptorPool = platform_info->render_info.descriptor_pool;
+	
+	platform_info->render_info.frame_data_descriptor_sets = (VkDescriptorSet*)calloc(platform_info->render_info.max_frames_in_flight, sizeof(VkDescriptorSet));
+	
+	SY_ERROR_COND(vkAllocateDescriptorSets(platform_info->render_info.logical_device, &allocate_info, platform_info->render_info.frame_data_descriptor_sets) != VK_SUCCESS, "RENDER: Failed to allocate descriptor sets.");
+	
+	// Populate every descriptor set
+	for (size_t i = 0; i < platform_info->render_info.max_frames_in_flight; ++i)
+	{
+	    VkDescriptorBufferInfo buffer_info;
+	    buffer_info.buffer = platform_info->render_info.frame_data_uniform_buffers[i];
+	    buffer_info.offset = 0;
+	    buffer_info.range = sizeof(FrameData);
+	    
+	    VkWriteDescriptorSet descriptor_write;
+	    descriptor_write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+	    descriptor_write.pNext = NULL;
+	    descriptor_write.dstSet = platform_info->render_info.frame_data_descriptor_sets[i];
+	    descriptor_write.dstBinding = 0;
+	    descriptor_write.dstArrayElement = 0;
+	    descriptor_write.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+	    descriptor_write.descriptorCount = 1;
+	    descriptor_write.pBufferInfo = &buffer_info;
+	    descriptor_write.pImageInfo = NULL;
+	    descriptor_write.pTexelBufferView = NULL;
+	    
+	    vkUpdateDescriptorSets(platform_info->render_info.logical_device, 1, &descriptor_write, 0, NULL);
+	}
+	
+	// Cleanup
+	free(layouts);
+	
+    }
 
     // FIXME:
     {
@@ -143,6 +234,18 @@ void renderer_cleanup(SyPlatformInfo *platform_info, SyAppInfo *app_info)
 	    }
 	}
     }
+
+    // Cleanup descriptor sets
+    vkDestroyDescriptorPool(platform_info->render_info.logical_device, platform_info->render_info.descriptor_pool, NULL);
+    free(platform_info->render_info.frame_data_descriptor_sets);
+
+    // Cleanup uniform buffers
+    for (int i = 0; i < platform_info->render_info.max_frames_in_flight; ++i)
+    {
+	vmaDestroyBuffer(platform_info->render_info.vma_allocator, platform_info->render_info.frame_data_uniform_buffers[i], platform_info->render_info.frame_data_uniform_buffer_allocations[i]);
+    }
+    free(platform_info->render_info.frame_data_uniform_buffers);
+    free(platform_info->render_info.frame_data_uniform_buffer_allocations);
 
     vkDestroyPipeline(platform_info->render_info.logical_device, platform_info->render_info.single_color_pipeline, NULL);
 
