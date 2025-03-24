@@ -131,7 +131,6 @@ void renderer_init(SyPlatformInfo *platform_info, SyAppInfo *app_info)
 
     }
 
-    // FIXME:
     {
 
 	int material_type_id = app_info->ecs.get_type_id<SyMaterialComponent>();
@@ -147,8 +146,6 @@ void renderer_init(SyPlatformInfo *platform_info, SyAppInfo *app_info)
 	material_comp->material.specular[0] = 0.0f;
 	material_comp->material.specular[1] = 0.0f;
 	material_comp->material.specular[2] = 0.0f;
-
-	//SY_OUTPUT_DEBUG("hi");
 
 	float vertex_data[] =
 	    {
@@ -197,16 +194,19 @@ void renderer_cleanup(SyPlatformInfo *platform_info, SyAppInfo *app_info)
     }
 
     // Cleanup descriptor sets
+    for (int i = 0; i < platform_info->render_info.max_descriptor_sets_amt; ++i)
+    {
+	if (platform_info->render_info.descriptor_sets_used[i] == true)
+	{
+	    for (int j = 0; j < platform_info->render_info.max_frames_in_flight; ++j)
+	    {
+		vmaDestroyBuffer(platform_info->render_info.vma_allocator, platform_info->render_info.descriptor_sets[i].uniform_buffer[j], platform_info->render_info.descriptor_sets[i].uniform_buffer_allocation[j]);
+	    }
+	}
+    }
+    free(platform_info->render_info.descriptor_sets);
+    free(platform_info->render_info.descriptor_sets_used);
     vkDestroyDescriptorPool(platform_info->render_info.logical_device, platform_info->render_info.descriptor_pool, NULL);
-    //free(platform_info->render_info.frame_data_descriptor_sets);
-
-    // Cleanup uniform buffers
-    // for (int i = 0; i < platform_info->render_info.max_frames_in_flight; ++i)
-    // {
-    // 	vmaDestroyBuffer(platform_info->render_info.vma_allocator, platform_info->render_info.frame_data_uniform_buffers[i], platform_info->render_info.frame_data_uniform_buffer_allocations[i]);
-    // }
-    // free(platform_info->render_info.frame_data_uniform_buffers);
-    // free(platform_info->render_info.frame_data_uniform_buffer_allocations);
 
     vkDestroyPipeline(platform_info->render_info.logical_device, platform_info->render_info.single_color_pipeline, NULL);
 
@@ -215,6 +215,7 @@ void renderer_cleanup(SyPlatformInfo *platform_info, SyAppInfo *app_info)
     vmaDestroyAllocator(platform_info->render_info.vma_allocator);
 
     vkDestroyDescriptorSetLayout(platform_info->render_info.logical_device, platform_info->render_info.frame_data_descriptor_set_layout, NULL);
+    vkDestroyDescriptorSetLayout(platform_info->render_info.logical_device, platform_info->render_info.material_descriptor_set_layout, NULL);
 
     free(platform_info->render_info.command_buffers);
 
