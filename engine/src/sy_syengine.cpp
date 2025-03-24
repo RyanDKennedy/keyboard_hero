@@ -56,7 +56,7 @@ void renderer_init(SyPlatformInfo *platform_info, SyAppInfo *app_info)
     vmaCreateAllocator(&vma_allocator_create_info, &platform_info->render_info.vma_allocator);
 
     { // Create Pipeline Layouts
-	VkDescriptorSetLayout layouts[] = {platform_info->render_info.frame_data_descriptor_set_layout, platform_info->render_info.material_descriptor_set_layout};
+	VkDescriptorSetLayout layouts[] = {platform_info->render_info.frame_descriptor_set_layout, platform_info->render_info.material_descriptor_set_layout};
 	
 	VkPipelineLayoutCreateInfo create_info;
 	create_info.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
@@ -119,15 +119,14 @@ void renderer_init(SyPlatformInfo *platform_info, SyAppInfo *app_info)
 	platform_info->render_info.descriptor_sets_used = (bool*)calloc(platform_info->render_info.max_descriptor_sets_amt, sizeof(bool));
 
     }
-
+    
     { // Create the frame data descriptor sets / uniform buffers
 
-	FrameData data;
-	data.test = 1.0f;
-	data.test1 = 0.0f;
-	data.test2 = 0.0f;
+	SyFrameData frame_data;
+	frame_data.vp_matrix = glm::perspective(90.0f, 1.0f, 0.1f, 100.0f) * glm::translate(glm::mat4(1.0f), glm::vec3(-0.5f, -0.5f, 1.0f));
 
-	platform_info->render_info.frame_data_descriptor_index = sy_render_create_descriptor_set(&platform_info->render_info, sizeof(FrameData), &data, platform_info->render_info.frame_data_descriptor_set_layout, 0);
+
+	platform_info->render_info.frame_descriptor_index = sy_render_create_descriptor_set(&platform_info->render_info, sizeof(SyFrameData), &frame_data, platform_info->render_info.frame_descriptor_set_layout, 0);
 
     }
 
@@ -214,8 +213,9 @@ void renderer_cleanup(SyPlatformInfo *platform_info, SyAppInfo *app_info)
 
     vmaDestroyAllocator(platform_info->render_info.vma_allocator);
 
-    vkDestroyDescriptorSetLayout(platform_info->render_info.logical_device, platform_info->render_info.frame_data_descriptor_set_layout, NULL);
+    vkDestroyDescriptorSetLayout(platform_info->render_info.logical_device, platform_info->render_info.frame_descriptor_set_layout, NULL);
     vkDestroyDescriptorSetLayout(platform_info->render_info.logical_device, platform_info->render_info.material_descriptor_set_layout, NULL);
+    vkDestroyDescriptorSetLayout(platform_info->render_info.logical_device, platform_info->render_info.object_descriptor_set_layout, NULL);
 
     free(platform_info->render_info.command_buffers);
 

@@ -7,6 +7,10 @@
 #include <vulkan/vulkan.h>
 #include "vk_mem_alloc.h"
 
+#include "sy_render_defines.hpp"
+
+#include "glm_include.hpp"
+
 struct SyRenderInfo
 {
     VmaAllocator vma_allocator;
@@ -46,11 +50,13 @@ struct SyRenderInfo
     VkSemaphore *render_finished_semaphores; // array of size max_frames_in_flight
     VkFence *in_flight_fences; // array of size max_frames_in_flight
 
-    const int max_frames_in_flight = 2;
+    const int max_frames_in_flight = SY_RENDER_MAX_FRAMES_IN_FLIGHT;
     uint32_t current_frame;
 
-    VkDescriptorSetLayout frame_data_descriptor_set_layout;
+    VkDescriptorSetLayout frame_descriptor_set_layout;
     VkDescriptorSetLayout material_descriptor_set_layout;
+    VkDescriptorSetLayout object_descriptor_set_layout;
+
     VkPipelineLayout single_color_pipeline_layout;
     VkPipeline single_color_pipeline;
 
@@ -60,14 +66,12 @@ struct SyRenderInfo
     SyDescriptorSetDataGroup *descriptor_sets;
     bool *descriptor_sets_used;
 
-    int frame_data_descriptor_index;
+    int frame_descriptor_index;
 
 };
 
 // FIXME:
-struct FrameData
+struct SyFrameData
 {
-    float test;
-    float test1;
-    float test2;
+    glm::mat4 vp_matrix;
 };

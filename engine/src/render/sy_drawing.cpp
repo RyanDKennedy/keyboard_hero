@@ -26,7 +26,7 @@ void create_descriptor_set_for_material(SyRenderInfo *render_info, SyEcs *ecs, S
 {
     SyMaterialComponent *data = (*ecs).component<SyMaterialComponent>(entity);
 
-    size_t index = sy_render_create_descriptor_set(render_info, sizeof(SyMaterial), &data->material, render_info->material_descriptor_set_layout, 1);
+    size_t index = sy_render_create_descriptor_set(render_info, sizeof(SyMaterial), &data->material, render_info->material_descriptor_set_layout, 0);
 
     ecs->component<SyMaterialComponent>(entity)->descriptor_set_index = index;
     data->descriptor_set_index = index;
@@ -60,7 +60,7 @@ void record_command_buffer(SyRenderInfo *render_info, VkCommandBuffer command_bu
     vkCmdBeginRenderPass(command_buffer, &render_pass_begin_info, VK_SUBPASS_CONTENTS_INLINE);
 
     vkCmdBindPipeline(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, render_info->single_color_pipeline);
-    vkCmdBindDescriptorSets(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, render_info->single_color_pipeline_layout, 0, 1, &render_info->descriptor_sets[render_info->frame_data_descriptor_index].descriptor_set[render_info->current_frame], 0, NULL);
+    vkCmdBindDescriptorSets(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, render_info->single_color_pipeline_layout, 0, 1, &render_info->descriptor_sets[render_info->frame_descriptor_index].descriptor_set[render_info->current_frame], 0, NULL);
 
     // set the dynamic things in the pipeline (viewport and scissor)
 

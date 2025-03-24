@@ -1,7 +1,7 @@
 #pragma once
 
 #include <stdlib.h>
-#include <glm/vec3.hpp>
+#include "glm_include.hpp"
 
 struct SyMaterial
 {

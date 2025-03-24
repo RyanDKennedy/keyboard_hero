@@ -2,11 +2,7 @@
 
 layout (location = 0) out vec4 out_color;
 
-layout (binding = 0) uniform FrameDataUniform {
-    vec3 color;
-} u_frame_data;
-
-layout (binding = 1) uniform Material {
+layout (set = 1, binding = 0) uniform Material {
 	vec3 diffuse;
 	vec3 specular;
 	vec3 ambient;

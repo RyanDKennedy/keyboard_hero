@@ -87,12 +87,12 @@ void sy_render_create_descriptor_set_layouts(SyRenderInfo *render_info)
 	
 	VkDescriptorSetLayout result;
 	
-	SY_ERROR_COND(vkCreateDescriptorSetLayout(render_info->logical_device, &layout_create_info, NULL, &render_info->frame_data_descriptor_set_layout) != VK_SUCCESS, "RENDER: Failed to create descriptor set layout - frame data layout.");
+	SY_ERROR_COND(vkCreateDescriptorSetLayout(render_info->logical_device, &layout_create_info, NULL, &render_info->frame_descriptor_set_layout) != VK_SUCCESS, "RENDER: Failed to create descriptor set layout - frame data layout.");
     }
 
     { // material layout
 	VkDescriptorSetLayoutBinding ubo_layout_binding;
-	ubo_layout_binding.binding = 1; // the binding of the uniform inside of the shader
+	ubo_layout_binding.binding = 0; // the binding of the uniform inside of the shader
 	ubo_layout_binding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 	ubo_layout_binding.descriptorCount = 1;
 	ubo_layout_binding.stageFlags = VK_SHADER_STAGE_ALL_GRAPHICS;
@@ -111,6 +111,29 @@ void sy_render_create_descriptor_set_layouts(SyRenderInfo *render_info)
 	VkDescriptorSetLayout result;
 	
 	SY_ERROR_COND(vkCreateDescriptorSetLayout(render_info->logical_device, &layout_create_info, NULL, &render_info->material_descriptor_set_layout) != VK_SUCCESS, "RENDER: Failed to create descriptor set layout - material layout.");
+    }
+
+    { // object layout
+	VkDescriptorSetLayoutBinding ubo_layout_binding;
+	ubo_layout_binding.binding = 0; // the binding of the uniform inside of the shader
+	ubo_layout_binding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+	ubo_layout_binding.descriptorCount = 1;
+	ubo_layout_binding.stageFlags = VK_SHADER_STAGE_ALL_GRAPHICS;
+	ubo_layout_binding.pImmutableSamplers = NULL; // for image sampling
+
+	VkDescriptorSetLayoutBinding bindings[] = {ubo_layout_binding};
+	uint32_t bindings_amt = SY_ARRLEN(bindings);
+
+	VkDescriptorSetLayoutCreateInfo layout_create_info;
+	layout_create_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+	layout_create_info.pNext = NULL;
+	layout_create_info.flags = 0;
+	layout_create_info.bindingCount = bindings_amt;
+	layout_create_info.pBindings = bindings;
+	
+	VkDescriptorSetLayout result;
+	
+	SY_ERROR_COND(vkCreateDescriptorSetLayout(render_info->logical_device, &layout_create_info, NULL, &render_info->object_descriptor_set_layout) != VK_SUCCESS, "RENDER: Failed to create descriptor set layout - object layout.");
     }
 
 }
