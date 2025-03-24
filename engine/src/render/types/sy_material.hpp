@@ -13,5 +13,5 @@ struct SyMaterial
 struct SyMaterialComponent
 {
     SyMaterial material;
-    ssize_t descriptor_set_index; // used by the renderer, users shouldn't set this, if set to 0 then create descriptor set for this material
+    ssize_t descriptor_set_index = -1; // used by the renderer, users shouldn't set this, if set to 0 then create descriptor set for this material
 };

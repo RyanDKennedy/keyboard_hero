@@ -3,6 +3,7 @@
 #include "sy_input_info.hpp"
 #include "sy_arena.hpp"
 #include "sy_ecs.hpp"
+#include "glm_include.hpp"
 
 // used to communicate engine <--> app
 struct SyAppInfo
@@ -16,4 +17,6 @@ struct SyAppInfo
 
     void *global_mem; // pointer to memory that the user can use
     size_t global_mem_size;
+
+
 };

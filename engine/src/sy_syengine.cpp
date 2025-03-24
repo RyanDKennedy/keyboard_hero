@@ -123,7 +123,7 @@ void renderer_init(SyPlatformInfo *platform_info, SyAppInfo *app_info)
     { // Create the frame data descriptor sets / uniform buffers
 
 	SyFrameData frame_data;
-	frame_data.vp_matrix = glm::perspective(90.0f, 1.0f, 0.1f, 100.0f) * glm::translate(glm::mat4(1.0f), glm::vec3(-0.5f, -0.5f, 1.0f));
+	frame_data.vp_matrix = glm::perspective(90.0f, 1.0f, 0.1f, 100.0f) * glm::translate(glm::scale(glm::mat4(1.0f), glm::vec3(1.0f, -1.0f, 1.0f)), glm::vec3(-platform_info->render_info.pos[0], -platform_info->render_info.pos[1], -platform_info->render_info.pos[2]));
 
 
 	platform_info->render_info.frame_descriptor_index = sy_render_create_descriptor_set(&platform_info->render_info, sizeof(SyFrameData), &frame_data, platform_info->render_info.frame_descriptor_set_layout, 0);
@@ -137,11 +137,11 @@ void renderer_init(SyPlatformInfo *platform_info, SyAppInfo *app_info)
 	size_t component_index = app_info->ecs.get_unused_component<SyMaterialComponent>();
 	SyMaterialComponent *material_comp = &app_info->ecs.m_component_data_arr[material_type_id].get<SyMaterialComponent>(component_index);
 
-	material_comp->descriptor_set_index = -1;
+	// material_comp->descriptor_set_index = -1;
 	material_comp->material.ambient[0] = 0.0f;
 	material_comp->material.ambient[1] = 0.0f;
 	material_comp->material.ambient[2] = 0.0f;
-	material_comp->material.diffuse = {1.0f, 0.0f, 1.0f};
+	material_comp->material.diffuse = {1.0f, 1.0f, 1.0f};
 	material_comp->material.specular[0] = 0.0f;
 	material_comp->material.specular[1] = 0.0f;
 	material_comp->material.specular[2] = 0.0f;
@@ -261,6 +261,9 @@ void engine_init(SyPlatformInfo *platform_info, SyAppInfo *app_info)
 
     app_info->delta_time = 0.0;
 
+    platform_info->render_info.pos = {0.0f, 0.0f, 0.0f};
+    platform_info->render_info.rot = {0.0f, 0.0f, 0.0f};
+
     renderer_init(platform_info, app_info);
 
 #ifndef NDEBUG
@@ -268,7 +271,6 @@ void engine_init(SyPlatformInfo *platform_info, SyAppInfo *app_info)
 #else
     app_init(app_info);
 #endif
-
 
     // stop the game signal
     if (app_info->stop_game == true)
@@ -316,6 +318,25 @@ void engine_run(SyPlatformInfo *platform_info, SyAppInfo *app_info)
     {
 	platform_info->app_dll_exit(app_info);
     }
+
+    if (app_info->input_info.w)
+	platform_info->render_info.pos[2] -= 1.f * app_info->delta_time;
+
+    if (app_info->input_info.s)
+	platform_info->render_info.pos[2] += 1.f * app_info->delta_time;
+
+    if (app_info->input_info.a)
+	platform_info->render_info.pos[0] -= 1.f * app_info->delta_time;
+
+    if (app_info->input_info.d)
+	platform_info->render_info.pos[0] += 1.f * app_info->delta_time;
+
+    if (app_info->input_info.space)
+	platform_info->render_info.pos[1] += 1.f * app_info->delta_time;
+
+    if (app_info->input_info.shift_left)
+	platform_info->render_info.pos[1] -= 1.f * app_info->delta_time;
+
 #else
 
     app_run(app_info);

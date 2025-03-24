@@ -19,5 +19,6 @@ endif()
 target_include_directories(${PROJECT_NAME}
   PUBLIC
   ${CMAKE_SOURCE_DIR}/engine/src/
+  ${CMAKE_SOURCE_DIR}/engine/external/
 )
 

@@ -1,4 +1,5 @@
 #include "sy_drawing.hpp"
+#include "render/sy_render_info.hpp"
 #include "render/sy_resources.hpp"
 #include "render/types/sy_material.hpp"
 #include "sy_ecs.hpp"
@@ -60,6 +61,9 @@ void record_command_buffer(SyRenderInfo *render_info, VkCommandBuffer command_bu
     vkCmdBeginRenderPass(command_buffer, &render_pass_begin_info, VK_SUBPASS_CONTENTS_INLINE);
 
     vkCmdBindPipeline(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, render_info->single_color_pipeline);
+
+
+
     vkCmdBindDescriptorSets(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, render_info->single_color_pipeline_layout, 0, 1, &render_info->descriptor_sets[render_info->frame_descriptor_index].descriptor_set[render_info->current_frame], 0, NULL);
 
     // set the dynamic things in the pipeline (viewport and scissor)
@@ -149,7 +153,11 @@ void sy_render_draw(SyRenderInfo *render_info, SyInputInfo *input_info, SyEcs *e
     vkResetCommandBuffer(render_info->command_buffers[render_info->current_frame], 0);
     record_command_buffer(render_info, render_info->command_buffers[render_info->current_frame], image_index, ecs);
 
-    // update_uniform_buffer(render_info, render_info->current_frame);
+    // FIXME:
+    SyFrameData frame_data = {};
+    frame_data.vp_matrix = glm::perspective(90.0f, (float)input_info->window_width / input_info->window_height, 0.1f, 100.0f) * glm::translate(glm::scale(glm::mat4(1.0f), glm::vec3(1.0f, -1.0f, 1.0f)), glm::vec3(-render_info->pos[0], -render_info->pos[1], -render_info->pos[2]));
+    vmaCopyMemoryToAllocation(render_info->vma_allocator, &frame_data, render_info->descriptor_sets[render_info->frame_descriptor_index].uniform_buffer_allocation[render_info->current_frame], 0, sizeof(SyFrameData));
+
 
     // Submit command buffer
 

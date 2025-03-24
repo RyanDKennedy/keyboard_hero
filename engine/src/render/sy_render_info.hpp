@@ -68,6 +68,10 @@ struct SyRenderInfo
 
     int frame_descriptor_index;
 
+    // FIXME:
+    glm::vec3 pos;
+    glm::vec3 rot;
+
 };
 
 // FIXME:
