@@ -23,6 +23,13 @@ void sy_render_create_physical_device(SyRenderInfo *render_info)
     uint32_t present_family_index = -1;
     uint32_t graphics_family_index = -1;
 
+    for (int i = 0; i < device_count; ++i)
+    {
+	VkPhysicalDeviceProperties props;
+	vkGetPhysicalDeviceProperties(devices[i], &props);
+	SY_OUTPUT_INFO("POSSIBLE device %s", props.deviceName);
+    }
+
     // Choose device
     for (int i = 0; i < device_count; ++i)
     {

@@ -6,6 +6,73 @@
 #include "sy_physical_device.hpp"
 #include "sy_logical_device.hpp"
 #include "sy_swapchain.hpp"
+#include "sy_pipeline.hpp"
+#include "sy_macros.hpp"
+
+void sy_render_create_pipelines(SyRenderInfo *render_info)
+{
+    { // Create Pipeline Layouts
+	VkDescriptorSetLayout layouts[] = {render_info->frame_descriptor_set_layout, render_info->material_descriptor_set_layout};
+	
+	VkPipelineLayoutCreateInfo create_info;
+	create_info.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+	create_info.pNext = NULL;
+	create_info.flags = 0;
+	create_info.pushConstantRangeCount = 0;
+	create_info.pPushConstantRanges = NULL;
+	create_info.setLayoutCount = SY_ARRLEN(layouts);
+	create_info.pSetLayouts = layouts;
+	
+	vkCreatePipelineLayout(render_info->logical_device, &create_info, NULL, &render_info->single_color_pipeline_layout);
+    }
+
+    { // Create single color pipeline
+	VkVertexInputBindingDescription binding_description;
+	binding_description.binding = 0;
+	binding_description.stride = sizeof(float) * 3;
+	binding_description.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;    
+
+	VkVertexInputAttributeDescription attr[1];
+	attr[0].binding = 0;
+	attr[0].location = 0;
+	attr[0].format = VK_FORMAT_R32G32B32_SFLOAT;
+	attr[0].offset = 0;
+
+	SyPipelineCreateInfo create_info;
+	create_info.vertex_shader_path = "single_color/vertex.spv";
+	create_info.fragment_shader_path = "single_color/fragment.spv";
+	create_info.vertex_input_binding_description = binding_description;
+	create_info.vertex_input_attribute_descriptions = attr;
+	create_info.vertex_input_attribute_descriptions_amt = 1;
+	create_info.render_type = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+	create_info.subpass_number = 0;
+	create_info.pipeline_layout = render_info->single_color_pipeline_layout;
+
+	render_info->single_color_pipeline = sy_render_create_pipeline(render_info, &create_info);
+    }
+
+}
+
+void sy_render_create_descriptor_pool(SyRenderInfo *render_info)
+{
+    VkDescriptorPoolSize pool_size;
+    pool_size.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+    pool_size.descriptorCount = render_info->max_descriptor_sets_amt;
+    
+    VkDescriptorPoolCreateInfo pool_create_info;
+    pool_create_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+    pool_create_info.pNext = NULL;
+    pool_create_info.flags = 0;
+    pool_create_info.poolSizeCount = 1;
+    pool_create_info.pPoolSizes = &pool_size;
+    pool_create_info.maxSets = render_info->max_descriptor_sets_amt;
+    
+    SY_ERROR_COND(vkCreateDescriptorPool(render_info->logical_device, &pool_create_info, NULL, &render_info->descriptor_pool) != VK_SUCCESS, "RENDER: Failed to create descriptor pool.");
+    
+    render_info->descriptor_sets = (SyDescriptorSetDataGroup*)calloc(render_info->max_descriptor_sets_amt, sizeof(SyDescriptorSetDataGroup));
+    render_info->descriptor_sets_used = (bool*)calloc(render_info->max_descriptor_sets_amt, sizeof(bool));
+    
+}
 
 void sy_render_create_sync_objects(SyRenderInfo *render_info)
 {

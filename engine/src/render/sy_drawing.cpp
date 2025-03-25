@@ -155,7 +155,12 @@ void sy_render_draw(SyRenderInfo *render_info, SyInputInfo *input_info, SyEcs *e
 
     // FIXME:
     SyFrameData frame_data = {};
-    frame_data.vp_matrix = glm::perspective(90.0f, (float)input_info->window_width / input_info->window_height, 0.1f, 100.0f) * glm::translate(glm::scale(glm::mat4(1.0f), glm::vec3(1.0f, -1.0f, 1.0f)), glm::vec3(-render_info->pos[0], -render_info->pos[1], -render_info->pos[2]));
+    glm::mat4 view_matrix = glm::mat4(1);
+    view_matrix = glm::rotate(view_matrix, glm::radians(render_info->rot[1]), glm::vec3(1, 0, 0));
+    view_matrix = glm::rotate(view_matrix, glm::radians(render_info->rot[0]), glm::vec3(0, 1, 0));
+    view_matrix = glm::translate(view_matrix, glm::vec3(-render_info->pos[0], render_info->pos[1], -render_info->pos[2]));
+    frame_data.vp_matrix = glm::perspective(45.0f, (float)input_info->window_width / input_info->window_height, 0.1f, 100.0f) * view_matrix;
+
     vmaCopyMemoryToAllocation(render_info->vma_allocator, &frame_data, render_info->descriptor_sets[render_info->frame_descriptor_index].uniform_buffer_allocation[render_info->current_frame], 0, sizeof(SyFrameData));
 
 

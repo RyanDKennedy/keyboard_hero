@@ -55,103 +55,48 @@ void renderer_init(SyPlatformInfo *platform_info, SyAppInfo *app_info)
     vma_allocator_create_info.pVulkanFunctions = NULL;
     vmaCreateAllocator(&vma_allocator_create_info, &platform_info->render_info.vma_allocator);
 
-    { // Create Pipeline Layouts
-	VkDescriptorSetLayout layouts[] = {platform_info->render_info.frame_descriptor_set_layout, platform_info->render_info.material_descriptor_set_layout};
-	
-	VkPipelineLayoutCreateInfo create_info;
-	create_info.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-	create_info.pNext = NULL;
-	create_info.flags = 0;
-	create_info.pushConstantRangeCount = 0;
-	create_info.pPushConstantRanges = NULL;
-	create_info.setLayoutCount = SY_ARRLEN(layouts);
-	create_info.pSetLayouts = layouts;
-	
-	vkCreatePipelineLayout(platform_info->render_info.logical_device, &create_info, NULL, &platform_info->render_info.single_color_pipeline_layout);
-    }
-
-    { // Create single color pipeline
-	VkVertexInputBindingDescription binding_description;
-	binding_description.binding = 0;
-	binding_description.stride = sizeof(float) * 2;
-	binding_description.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;    
-
-	VkVertexInputAttributeDescription attr[1];
-	attr[0].binding = 0;
-	attr[0].location = 0;
-	attr[0].format = VK_FORMAT_R32G32_SFLOAT;
-	attr[0].offset = 0;
-
-	SyPipelineCreateInfo create_info;
-	create_info.vertex_shader_path = "single_color/vertex.spv";
-	create_info.fragment_shader_path = "single_color/fragment.spv";
-	create_info.vertex_input_binding_description = binding_description;
-	create_info.vertex_input_attribute_descriptions = attr;
-	create_info.vertex_input_attribute_descriptions_amt = 1;
-	create_info.render_type = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
-	create_info.subpass_number = 0;
-	create_info.pipeline_layout = platform_info->render_info.single_color_pipeline_layout;
-
-	platform_info->render_info.single_color_pipeline = sy_render_create_pipeline(&platform_info->render_info, &create_info);
-    }
+    sy_render_create_pipelines(&platform_info->render_info);
 
     // init render types in ecs
     sy_render_init_ecs(&app_info->ecs);
     SY_ECS_REGISTER_TYPE(app_info->ecs, SyMesh);
     SY_ECS_REGISTER_TYPE(app_info->ecs, SyMaterialComponent);
 
-    { // Create descriptor pool
-	VkDescriptorPoolSize pool_size;
-	pool_size.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-	pool_size.descriptorCount = platform_info->render_info.max_descriptor_sets_amt;
-	
-	VkDescriptorPoolCreateInfo pool_create_info;
-	pool_create_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-	pool_create_info.pNext = NULL;
-	pool_create_info.flags = 0;
-	pool_create_info.poolSizeCount = 1;
-	pool_create_info.pPoolSizes = &pool_size;
-	pool_create_info.maxSets = platform_info->render_info.max_descriptor_sets_amt;
-	
-	SY_ERROR_COND(vkCreateDescriptorPool(platform_info->render_info.logical_device, &pool_create_info, NULL, &platform_info->render_info.descriptor_pool) != VK_SUCCESS, "RENDER: Failed to create descriptor pool.");
+    sy_render_create_descriptor_pool(&platform_info->render_info);
 
-	platform_info->render_info.descriptor_sets = (SyDescriptorSetDataGroup*)calloc(platform_info->render_info.max_descriptor_sets_amt, sizeof(SyDescriptorSetDataGroup));
-	platform_info->render_info.descriptor_sets_used = (bool*)calloc(platform_info->render_info.max_descriptor_sets_amt, sizeof(bool));
-
-    }
-    
     { // Create the frame data descriptor sets / uniform buffers
-
-	SyFrameData frame_data;
-	frame_data.vp_matrix = glm::perspective(90.0f, 1.0f, 0.1f, 100.0f) * glm::translate(glm::scale(glm::mat4(1.0f), glm::vec3(1.0f, -1.0f, 1.0f)), glm::vec3(-platform_info->render_info.pos[0], -platform_info->render_info.pos[1], -platform_info->render_info.pos[2]));
-
-
+	SyFrameData frame_data = {};
 	platform_info->render_info.frame_descriptor_index = sy_render_create_descriptor_set(&platform_info->render_info, sizeof(SyFrameData), &frame_data, platform_info->render_info.frame_descriptor_set_layout, 0);
-
     }
 
+    size_t material_component_index;
     {
-
 	int material_type_id = app_info->ecs.get_type_id<SyMaterialComponent>();
+	material_component_index = app_info->ecs.get_unused_component<SyMaterialComponent>();
+	SyMaterialComponent *material_comp = &app_info->ecs.m_component_data_arr[material_type_id].get<SyMaterialComponent>(material_component_index);
 
-	size_t component_index = app_info->ecs.get_unused_component<SyMaterialComponent>();
-	SyMaterialComponent *material_comp = &app_info->ecs.m_component_data_arr[material_type_id].get<SyMaterialComponent>(component_index);
-
-	// material_comp->descriptor_set_index = -1;
+	material_comp->descriptor_set_index = -1;
 	material_comp->material.ambient[0] = 0.0f;
 	material_comp->material.ambient[1] = 0.0f;
 	material_comp->material.ambient[2] = 0.0f;
-	material_comp->material.diffuse = {1.0f, 1.0f, 1.0f};
+	material_comp->material.diffuse = {0.0f, 1.0f, 1.0f};
 	material_comp->material.specular[0] = 0.0f;
 	material_comp->material.specular[1] = 0.0f;
 	material_comp->material.specular[2] = 0.0f;
+    }
+
+    size_t mesh_component_index;
+    {
+	int mesh_type_id = app_info->ecs.get_type_id<SyMesh>();
+	mesh_component_index = app_info->ecs.get_unused_component<SyMesh>();
+	SyMesh *mesh_comp = &app_info->ecs.m_component_data_arr[mesh_type_id].get<SyMesh>(mesh_component_index);
 
 	float vertex_data[] =
 	    {
-		-0.5f, -0.5f,
-		0.5f, -0.5f,
-		0.5f, 0.5f,
-		-0.5f, 0.5f
+		-0.5f, -0.5f, 0.0f,
+		0.5f, -0.5f, 0.0f,
+		0.5f, 0.5f, 0.0f,
+		-0.5f, 0.5f, 0.0f
 	    };
 	
 	uint32_t index_data[] =
@@ -159,16 +104,14 @@ void renderer_init(SyPlatformInfo *platform_info, SyAppInfo *app_info)
 		0, 3, 2, 2, 1, 0
 	    };
 
-	SyEntityHandle square = app_info->ecs.new_entity();
-	app_info->ecs.entity_assign_component<SyMaterialComponent>(square, component_index);
-	app_info->ecs.entity_add_component<SyMesh>(square);
-	SyMesh *mesh = app_info->ecs.component<SyMesh>(square);
-	
-	sy_render_create_vertex_buffer(&platform_info->render_info, SY_ARRLEN(vertex_data), sizeof(float) * 2, vertex_data, &mesh->vertex_buffer, &mesh->vertex_buffer_alloc);    
-
-	mesh->index_amt = SY_ARRLEN(index_data);
-	sy_render_create_index_buffer(&platform_info->render_info, SY_ARRLEN(index_data), index_data, &mesh->index_buffer, &mesh->index_buffer_alloc);
+	mesh_comp->index_amt = SY_ARRLEN(index_data);
+	sy_render_create_vertex_buffer(&platform_info->render_info, SY_ARRLEN(vertex_data), sizeof(float) * 3, vertex_data, &mesh_comp->vertex_buffer, &mesh_comp->vertex_buffer_alloc);
+	sy_render_create_index_buffer(&platform_info->render_info, SY_ARRLEN(index_data), index_data, &mesh_comp->index_buffer, &mesh_comp->index_buffer_alloc);
     }
+
+    SyEntityHandle square = app_info->ecs.new_entity();
+    app_info->ecs.entity_assign_component<SyMaterialComponent>(square, material_component_index);
+    app_info->ecs.entity_assign_component<SyMesh>(square, mesh_component_index);
 
     SY_OUTPUT_INFO("finished render init");
 
@@ -262,7 +205,7 @@ void engine_init(SyPlatformInfo *platform_info, SyAppInfo *app_info)
     app_info->delta_time = 0.0;
 
     platform_info->render_info.pos = {0.0f, 0.0f, 0.0f};
-    platform_info->render_info.rot = {0.0f, 0.0f, 0.0f};
+    platform_info->render_info.rot = {0.0f, 0.0f};
 
     renderer_init(platform_info, app_info);
 
@@ -293,6 +236,41 @@ void engine_run(SyPlatformInfo *platform_info, SyAppInfo *app_info)
 	platform_info->end_engine = true;
     }
 
+        float rot_speed = 180;
+    if (app_info->input_info.arrow_up && platform_info->render_info.rot[1] < 85.f)
+	platform_info->render_info.rot[1] += rot_speed * app_info->delta_time;
+
+    if (app_info->input_info.arrow_down && platform_info->render_info.rot[1] > -85.f)
+	platform_info->render_info.rot[1] -= rot_speed * app_info->delta_time;
+
+    if (app_info->input_info.arrow_left)
+	platform_info->render_info.rot[0] -= rot_speed * app_info->delta_time;
+
+    if (app_info->input_info.arrow_right)
+	platform_info->render_info.rot[0] += rot_speed * app_info->delta_time;
+
+
+    float move_speed = 2.0f;
+    if (app_info->input_info.w)
+	platform_info->render_info.pos[2] -= move_speed * app_info->delta_time;
+
+    if (app_info->input_info.s)
+	platform_info->render_info.pos[2] += move_speed * app_info->delta_time;
+
+    if (app_info->input_info.a)
+	platform_info->render_info.pos[0] -= move_speed * app_info->delta_time;
+
+    if (app_info->input_info.d)
+	platform_info->render_info.pos[0] += move_speed * app_info->delta_time;
+
+    if (app_info->input_info.space)
+	platform_info->render_info.pos[1] += move_speed * app_info->delta_time;
+
+    if (app_info->input_info.shift_left)
+	platform_info->render_info.pos[1] -= move_speed * app_info->delta_time;
+
+
+
 #ifndef NDEBUG
     // THIS IS DLL HOT RELOAD STUFF, SO DON'T INCLUDE IN RELEASE VERSION
     
@@ -319,23 +297,7 @@ void engine_run(SyPlatformInfo *platform_info, SyAppInfo *app_info)
 	platform_info->app_dll_exit(app_info);
     }
 
-    if (app_info->input_info.w)
-	platform_info->render_info.pos[2] -= 1.f * app_info->delta_time;
 
-    if (app_info->input_info.s)
-	platform_info->render_info.pos[2] += 1.f * app_info->delta_time;
-
-    if (app_info->input_info.a)
-	platform_info->render_info.pos[0] -= 1.f * app_info->delta_time;
-
-    if (app_info->input_info.d)
-	platform_info->render_info.pos[0] += 1.f * app_info->delta_time;
-
-    if (app_info->input_info.space)
-	platform_info->render_info.pos[1] += 1.f * app_info->delta_time;
-
-    if (app_info->input_info.shift_left)
-	platform_info->render_info.pos[1] -= 1.f * app_info->delta_time;
 
 #else
 

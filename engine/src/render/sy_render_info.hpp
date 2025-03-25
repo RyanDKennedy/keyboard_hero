@@ -70,7 +70,7 @@ struct SyRenderInfo
 
     // FIXME:
     glm::vec3 pos;
-    glm::vec3 rot;
+    glm::vec2 rot;
 
 };
 
