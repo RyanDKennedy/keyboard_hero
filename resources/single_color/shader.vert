@@ -6,7 +6,10 @@ layout (set = 0, binding = 0) uniform FrameDataUniform {
     mat4 vp_matrix;
 } u_frame_data;
 
+layout (location = 0) out vec3 v_pos;
+
 void main()
 {
+    v_pos = a_in_position;
     gl_Position = u_frame_data.vp_matrix * vec4(a_in_position.xyz, 1.0);
 }

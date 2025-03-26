@@ -91,19 +91,58 @@ void renderer_init(SyPlatformInfo *platform_info, SyAppInfo *app_info)
 	mesh_component_index = app_info->ecs.get_unused_component<SyMesh>();
 	SyMesh *mesh_comp = &app_info->ecs.m_component_data_arr[mesh_type_id].get<SyMesh>(mesh_component_index);
 
+	// float vertex_data[] =
+	//     {
+	// 	-0.5f, -0.5f, 0.0f,
+	// 	0.5f, -0.5f, 0.0f,
+	// 	0.5f, 0.5f, 0.0f,
+	// 	-0.5f, 0.5f, 0.0f
+	//     };
+
 	float vertex_data[] =
 	    {
-		-0.5f, -0.5f, 0.0f,
-		0.5f, -0.5f, 0.0f,
-		0.5f, 0.5f, 0.0f,
-		-0.5f, 0.5f, 0.0f
+		-0.5, -0.5,  0.5, //0
+		0.5, -0.5,  0.5, //1
+		-0.5,  0.5,  0.5, //2
+		0.5,  0.5,  0.5, //3
+		-0.5, -0.5, -0.5, //4
+		0.5, -0.5, -0.5, //5
+		-0.5,  0.5, -0.5, //6
+		0.5,  0.5, -0.5  //7
 	    };
-	
+	    
+	// uint32_t index_data[] =
+	//     {
+	// 	0, 3, 2, 2, 1, 0
+	//     };
+
 	uint32_t index_data[] =
 	    {
-		0, 3, 2, 2, 1, 0
+		//Top
+		7, 6, 2,
+		2, 3, 7,
+		
+		//Bottom
+		0, 4, 5,
+		5, 1, 0,
+		
+		//Left
+		0, 2, 6,
+		6, 4, 0,
+		
+		//Right
+		7, 3, 1,
+		1, 5, 7,
+		
+		//Front
+		3, 2, 0,
+		0, 1, 3,
+		
+		//Back
+		4, 6, 7,
+		7, 5, 4
 	    };
-
+	
 	mesh_comp->index_amt = SY_ARRLEN(index_data);
 	sy_render_create_vertex_buffer(&platform_info->render_info, SY_ARRLEN(vertex_data), sizeof(float) * 3, vertex_data, &mesh_comp->vertex_buffer, &mesh_comp->vertex_buffer_alloc);
 	sy_render_create_index_buffer(&platform_info->render_info, SY_ARRLEN(index_data), index_data, &mesh_comp->index_buffer, &mesh_comp->index_buffer_alloc);

@@ -125,8 +125,8 @@ VkPipeline sy_render_create_pipeline(SyRenderInfo *render_info, SyPipelineCreate
     rasterizer_create_info.rasterizerDiscardEnable = VK_FALSE; // This field disables going beyond rasterization
     rasterizer_create_info.polygonMode = VK_POLYGON_MODE_FILL; // This is like wireframe mode, vertice mode, fill mode
     rasterizer_create_info.lineWidth = 1.0f; // self explanatory
-//    rasterizer_create_info.cullMode = VK_CULL_MODE_BACK_BIT; // what faces do you want to cull
-    rasterizer_create_info.cullMode = VK_CULL_MODE_NONE;
+    rasterizer_create_info.cullMode = VK_CULL_MODE_BACK_BIT; // what faces do you want to cull
+    //rasterizer_create_info.cullMode = VK_CULL_MODE_NONE;
     rasterizer_create_info.frontFace = VK_FRONT_FACE_CLOCKWISE; // defines what order faces go in, needed for face culling
     rasterizer_create_info.depthBiasEnable = VK_FALSE; // adds a number to the depth
     rasterizer_create_info.depthClampEnable = VK_FALSE; // clamps the depth

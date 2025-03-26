@@ -8,7 +8,11 @@ layout (set = 1, binding = 0) uniform Material {
 	vec3 ambient;
 } u_material;
 
+layout (location = 0) in vec3 v_pos;
+
 void main()
 {
-    out_color = vec4(u_material.diffuse.rgb, 1.0);
+    vec3 color = u_material.diffuse.rgb * (sqrt(v_pos.x * v_pos.x + v_pos.y * v_pos.y + v_pos.z * v_pos.z)) / (0.5 * sqrt(3));
+
+    out_color = vec4(color.rgb, 1.0);
 }
