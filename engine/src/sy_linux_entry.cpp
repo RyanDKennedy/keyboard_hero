@@ -69,53 +69,55 @@ int main(int argc, char *argv[])
     // Goto root path
     SY_ERROR_COND(go_to_root_path() == -1, "Failed to go to root path.");
 
-    SyPlatformInfo platform_info; // Stuff used to communicate platform <--> engine
-    SyXCBInfo xcb_info;
-    SyAppInfo app_info; // Stuff used to communicate engine <--> app
+
+    SyXCBInfo *xcb_info = (SyXCBInfo*)calloc(1, sizeof(SyXCBInfo));
+    SyPlatformInfo *platform_info = (SyPlatformInfo*)calloc(1, sizeof(SyPlatformInfo)); // Stuff used to communicate platform <--> engine
+    SyAppInfo *app_info = (SyAppInfo*)calloc(1, sizeof(SyAppInfo)); // Stuff used to communicate engine <--> app
+    SyEngineState *engine_state = (SyEngineState*)calloc(1, sizeof(SyEngineState));
 
     int status;
 
     // Linux Init
-    init_window(&xcb_info, 600, 600, "Syengine");
+    init_window(xcb_info, 600, 600, "Syengine");
 
     { // Platform Info Init
 	// App Dyanamic function load
 #ifndef NDEBUG
-	platform_info.dll_handle = nullptr;
-	platform_info.app_init = nullptr;
-	platform_info.app_run = nullptr;
-	platform_info.app_destroy = nullptr;
-	platform_info.app_dll_init = nullptr;
-	platform_info.app_dll_exit = nullptr;
-	platform_info.reload_dll = false;
-	load_app_functions(&platform_info, dll_file);
+	platform_info->dll_handle = nullptr;
+	platform_info->app_init = nullptr;
+	platform_info->app_run = nullptr;
+	platform_info->app_destroy = nullptr;
+	platform_info->app_dll_init = nullptr;
+	platform_info->app_dll_exit = nullptr;
+	platform_info->reload_dll = false;
+	load_app_functions(platform_info, dll_file);
 	SY_OUTPUT_INFO("Loaded the dll app functions.");
 #endif
 
 	// Flags Init
-	platform_info.end_engine = false;
+	platform_info->end_engine = false;
 
 	// Input Init
-	memset(&platform_info.input_info, 0, sizeof(SyInputInfo));
-	poll_events(&xcb_info, &platform_info.input_info);
+	memset(&platform_info->input_info, 0, sizeof(SyInputInfo));
+	poll_events(xcb_info, &platform_info->input_info);
 
 	// Init render system
-	status = sy_render_init(&xcb_info, &platform_info.render_info);
+	status = sy_render_init(xcb_info, &platform_info->render_info);
 	// FIXME CHECK STATUS VAR
 
     }
 
     // Init Engine
-    engine_init(&platform_info, &app_info);
+    engine_init(platform_info, app_info, engine_state);
 
     // RENDER LOOP
 
     // Delta time stuff
-    size_t frame_limit_frame_time = SY_MICROSECOND / 60;
+    size_t frame_limit_frame_time = SY_MICROSECOND / 240;
     size_t delta_time_frame_start = get_current_time_us();
     size_t delta_time_frame_end;
 
-    while (platform_info.end_engine == false)
+    while (platform_info->end_engine == false)
     {
 	
 	{ // Enforce Frame Rate
@@ -126,27 +128,27 @@ int main(int argc, char *argv[])
 		usleep(frame_limit_frame_time - diff);
 		size_t old_start = delta_time_frame_start;
 		delta_time_frame_start = get_current_time_us();
-		platform_info.delta_time = delta_time_frame_start - old_start;
+		platform_info->delta_time = delta_time_frame_start - old_start;
 	    }
 	    else
 	    {
 		delta_time_frame_start = delta_time_frame_end;
-		platform_info.delta_time = diff;
+		platform_info->delta_time = diff;
 	    }
 	}
 
 	// Input
-	poll_events(&xcb_info, &platform_info.input_info);
+	poll_events(xcb_info, &platform_info->input_info);
 
 	// Calls engine
-	engine_run(&platform_info, &app_info);
+	engine_run(platform_info, app_info, engine_state);
 
 #ifndef NDEBUG
-	if (platform_info.reload_dll)
+	if (platform_info->reload_dll)
 	{
-	    platform_info.reload_dll = false;
-	    platform_info.dll_first_run = true;
-	    load_app_functions(&platform_info, dll_file);
+	    platform_info->reload_dll = false;
+	    platform_info->dll_first_run = true;
+	    load_app_functions(platform_info, dll_file);
 	    SY_OUTPUT_INFO("Reloaded the dll app functions.");
 	    sleep(1);
 	}
@@ -156,18 +158,23 @@ int main(int argc, char *argv[])
     }
 
     // Destroys engine
-    engine_destroy(&platform_info, &app_info);
+    engine_destroy(platform_info, app_info, engine_state);
 
     { // Cleanup Platform Info
 #ifndef NDEBUG
-	dlclose(platform_info.dll_handle);
+	dlclose(platform_info->dll_handle);
 #endif
 
-	sy_render_deinit(&platform_info.render_info);
+	sy_render_deinit(&platform_info->render_info);
     }
 
     // Cleanup Linux
-    cleanup_window(&xcb_info);
+    cleanup_window(xcb_info);
+
+    free(engine_state);
+    free(app_info);
+    free(platform_info);
+    free(xcb_info);
 
     return 0;
 }

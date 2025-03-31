@@ -7,7 +7,6 @@ project(app)
 set(APP_SOURCE_FILES
   ${CMAKE_CURRENT_SOURCE_DIR}/app.cpp
   ${CMAKE_SOURCE_DIR}/engine/src/sy_arena.cpp
-  ${CMAKE_SOURCE_DIR}/engine/src/render/sy_render.cpp
 )
 
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")

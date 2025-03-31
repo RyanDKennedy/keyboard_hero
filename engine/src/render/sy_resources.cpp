@@ -3,9 +3,6 @@
 #include <stdlib.h>
 #include <vulkan/vulkan_core.h>
 
-#include "sy_physical_device.hpp"
-#include "sy_logical_device.hpp"
-#include "sy_swapchain.hpp"
 #include "sy_pipeline.hpp"
 #include "sy_macros.hpp"
 
@@ -53,6 +50,7 @@ void sy_render_create_pipelines(SyRenderInfo *render_info)
 
 }
 
+/* FIXME:
 void sy_render_create_descriptor_pool(SyRenderInfo *render_info)
 {
     VkDescriptorPoolSize pool_size;
@@ -73,12 +71,13 @@ void sy_render_create_descriptor_pool(SyRenderInfo *render_info)
     render_info->descriptor_sets_used = (bool*)calloc(render_info->max_descriptor_sets_amt, sizeof(bool));
     
 }
+*/
 
 void sy_render_create_sync_objects(SyRenderInfo *render_info)
 {
-    render_info->image_available_semaphores = (VkSemaphore*)calloc(render_info->max_frames_in_flight, sizeof(VkSemaphore));
-    render_info->render_finished_semaphores = (VkSemaphore*)calloc(render_info->max_frames_in_flight, sizeof(VkSemaphore));
-    render_info->in_flight_fences = (VkFence*)calloc(render_info->max_frames_in_flight, sizeof(VkFence));
+    render_info->image_available_semaphores = (VkSemaphore*)calloc(SY_RENDER_MAX_FRAMES_IN_FLIGHT, sizeof(VkSemaphore));
+    render_info->render_finished_semaphores = (VkSemaphore*)calloc(SY_RENDER_MAX_FRAMES_IN_FLIGHT, sizeof(VkSemaphore));
+    render_info->in_flight_fences = (VkFence*)calloc(SY_RENDER_MAX_FRAMES_IN_FLIGHT, sizeof(VkFence));
 
     VkSemaphoreCreateInfo image_available_semaphore_create_info;
     image_available_semaphore_create_info.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
@@ -95,7 +94,7 @@ void sy_render_create_sync_objects(SyRenderInfo *render_info)
     fence_create_info.pNext = NULL;
     fence_create_info.flags = VK_FENCE_CREATE_SIGNALED_BIT;
     
-    for (size_t i = 0; i < render_info->max_frames_in_flight; ++i)
+    for (size_t i = 0; i < SY_RENDER_MAX_FRAMES_IN_FLIGHT; ++i)
     {
 	VkResult result1 = vkCreateSemaphore(render_info->logical_device, &image_available_semaphore_create_info, NULL, &render_info->image_available_semaphores[i]);
 	VkResult result2 = vkCreateSemaphore(render_info->logical_device, &render_finished_semaphore_create_info, NULL, &render_info->render_finished_semaphores[i]);
@@ -108,7 +107,7 @@ void sy_render_create_sync_objects(SyRenderInfo *render_info)
 
 void sy_render_create_command_buffers(SyRenderInfo *render_info)
 {
-    render_info->command_buffers_amt = render_info->max_frames_in_flight;
+    render_info->command_buffers_amt = SY_RENDER_MAX_FRAMES_IN_FLIGHT;
     render_info->command_buffers = (VkCommandBuffer*)calloc(render_info->command_buffers_amt, sizeof(VkCommandBuffer));
 
     VkCommandBufferAllocateInfo allocate_info;
@@ -296,6 +295,7 @@ void sy_render_create_swapchain_framebuffers(SyRenderInfo *render_info)
 
 }
 
+/* FIXME
 size_t sy_render_create_descriptor_set(SyRenderInfo *render_info, size_t uniform_size, void *data, VkDescriptorSetLayout descriptor_layout, uint32_t layout_binding)
 {
     // find unused index
@@ -312,7 +312,7 @@ size_t sy_render_create_descriptor_set(SyRenderInfo *render_info, size_t uniform
     SY_ERROR_COND(index == -1, "RENDER: Ran out of descriptor sets.");
 	
     // Allocate buffers, and copy data to them
-    for (int i = 0; i < render_info->max_frames_in_flight; ++i)
+    for (int i = 0; i < SY_RENDER_MAX_FRAMES_IN_FLIGHT; ++i)
     {
 	VkBufferCreateInfo buffer_info = { VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO };
 	buffer_info.size = uniform_size;
@@ -330,7 +330,7 @@ size_t sy_render_create_descriptor_set(SyRenderInfo *render_info, size_t uniform
     // Allocate descriptor sets
     
     // Initialize layouts array
-    uint32_t layout_amt = render_info->max_frames_in_flight;
+    uint32_t layout_amt = SY_RENDER_MAX_FRAMES_IN_FLIGHT;
     VkDescriptorSetLayout *layouts = (VkDescriptorSetLayout*)calloc(layout_amt, sizeof(VkDescriptorSetLayout));
     for (int i = 0; i < layout_amt; ++i)
     {
@@ -348,7 +348,7 @@ size_t sy_render_create_descriptor_set(SyRenderInfo *render_info, size_t uniform
     SY_ERROR_COND((result = vkAllocateDescriptorSets(render_info->logical_device, &allocate_info, render_info->descriptor_sets[index].descriptor_set)) != VK_SUCCESS, "RENDER: Failed to allocate descriptor sets. out of pool mem: %d", result == VK_ERROR_OUT_OF_POOL_MEMORY);
 
     // Populate every descriptor set
-    for (size_t i = 0; i < render_info->max_frames_in_flight; ++i)
+    for (size_t i = 0; i < SY_RENDER_MAX_FRAMES_IN_FLIGHT; ++i)
     {
 	VkDescriptorBufferInfo buffer_info;
 	buffer_info.buffer = render_info->descriptor_sets[index].uniform_buffer[i];
@@ -375,3 +375,4 @@ size_t sy_render_create_descriptor_set(SyRenderInfo *render_info, size_t uniform
 
     return index;
 }
+*/

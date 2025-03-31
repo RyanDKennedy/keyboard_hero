@@ -1,11 +1,10 @@
 #include "sy_drawing.hpp"
 #include "render/sy_render_info.hpp"
 #include "render/sy_resources.hpp"
-#include "render/types/sy_material.hpp"
 #include "sy_ecs.hpp"
 #include "sy_macros.hpp"
 #include "sy_swapchain.hpp"
-#include "sy_opaque_types.hpp"
+#include "types/sy_mesh.hpp"
 #include <stdlib.h>
 
 void recreate_swapchain(SyRenderInfo *render_info, SyInputInfo *input_info)
@@ -22,18 +21,6 @@ void recreate_swapchain(SyRenderInfo *render_info, SyInputInfo *input_info)
     sy_render_create_swapchain(render_info, input_info->window_width, input_info->window_height);
     sy_render_create_swapchain_framebuffers(render_info);
 }
-
-void create_descriptor_set_for_material(SyRenderInfo *render_info, SyEcs *ecs, SyEntityHandle entity)
-{
-    SyMaterialComponent *data = (*ecs).component<SyMaterialComponent>(entity);
-
-    size_t index = sy_render_create_descriptor_set(render_info, sizeof(SyMaterial), &data->material, render_info->material_descriptor_set_layout, 0);
-
-    ecs->component<SyMaterialComponent>(entity)->descriptor_set_index = index;
-    data->descriptor_set_index = index;
-
-}
-
 
 
 void record_command_buffer(SyRenderInfo *render_info, VkCommandBuffer command_buffer, uint32_t image_index, SyEcs *ecs)
@@ -62,10 +49,6 @@ void record_command_buffer(SyRenderInfo *render_info, VkCommandBuffer command_bu
 
     vkCmdBindPipeline(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, render_info->single_color_pipeline);
 
-
-
-    vkCmdBindDescriptorSets(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, render_info->single_color_pipeline_layout, 0, 1, &render_info->descriptor_sets[render_info->frame_descriptor_index].descriptor_set[render_info->current_frame], 0, NULL);
-
     // set the dynamic things in the pipeline (viewport and scissor)
 
     VkViewport viewport;
@@ -85,13 +68,11 @@ void record_command_buffer(SyRenderInfo *render_info, VkCommandBuffer command_bu
     vkCmdSetScissor(command_buffer, 0, 1, &scissor);
 
     size_t mesh_type_id = ecs->get_type_id<SyMesh>();
-    size_t material_type_id = ecs->get_type_id<SyMaterialComponent>();
     for (size_t i = 0; i < ecs->m_entity_used.m_filled_length; ++i)
     {
 	if (ecs->m_entity_used.get<bool>(i) == true)
 	{
-	    if (ecs->m_entity_data.get<SyEntityData>(i).mask[mesh_type_id] == true &&
-	        ecs->m_entity_data.get<SyEntityData>(i).mask[material_type_id] == true)
+	    if (ecs->m_entity_data.get<SyEntityData>(i).mask[mesh_type_id] == true)
 	    {
 		SyMesh *mesh = ecs->component<SyMesh>(i);
 
@@ -100,19 +81,8 @@ void record_command_buffer(SyRenderInfo *render_info, VkCommandBuffer command_bu
 		vkCmdBindVertexBuffers(command_buffer, 0, 1, &mesh->vertex_buffer, &vertex_buffer_offset);
 		vkCmdBindIndexBuffer(command_buffer, mesh->index_buffer, 0, VK_INDEX_TYPE_UINT32);
 		
-		// Uniforms
-		SyMaterialComponent *material_comp = ecs->component<SyMaterialComponent>(i);
-		// Make it a descriptor set if it doesn't have one
-		if (material_comp->descriptor_set_index < 0)
-		{
-		    create_descriptor_set_for_material(render_info, ecs, i);
-		}
-
-		vkCmdBindDescriptorSets(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, render_info->single_color_pipeline_layout, 1, 1, &render_info->descriptor_sets[material_comp->descriptor_set_index].descriptor_set[render_info->current_frame], 0, NULL);
-
 		// Draw
 		vkCmdDrawIndexed(command_buffer, mesh->index_amt, 1, 0, 0, 0);
-		
 	    }
 	}
     }
@@ -152,17 +122,6 @@ void sy_render_draw(SyRenderInfo *render_info, SyInputInfo *input_info, SyEcs *e
     // Record command buffer
     vkResetCommandBuffer(render_info->command_buffers[render_info->current_frame], 0);
     record_command_buffer(render_info, render_info->command_buffers[render_info->current_frame], image_index, ecs);
-
-    // FIXME:
-    SyFrameData frame_data = {};
-    glm::mat4 view_matrix = glm::mat4(1);
-    view_matrix = glm::rotate(view_matrix, glm::radians(render_info->rot[1]), glm::vec3(1, 0, 0));
-    view_matrix = glm::rotate(view_matrix, glm::radians(render_info->rot[0]), glm::vec3(0, 1, 0));
-    view_matrix = glm::translate(view_matrix, glm::vec3(-render_info->pos[0], render_info->pos[1], -render_info->pos[2]));
-    frame_data.vp_matrix = glm::perspective(45.0f, (float)input_info->window_width / input_info->window_height, 0.1f, 100.0f) * view_matrix;
-
-    vmaCopyMemoryToAllocation(render_info->vma_allocator, &frame_data, render_info->descriptor_sets[render_info->frame_descriptor_index].uniform_buffer_allocation[render_info->current_frame], 0, sizeof(SyFrameData));
-
 
     // Submit command buffer
 
@@ -210,5 +169,5 @@ void sy_render_draw(SyRenderInfo *render_info, SyInputInfo *input_info, SyEcs *e
 	SY_ERROR("Failed to present swap chain image.");
     }
 
-    render_info->current_frame = (render_info->current_frame + 1) % render_info->max_frames_in_flight;
+    render_info->current_frame = (render_info->current_frame + 1) % SY_RENDER_MAX_FRAMES_IN_FLIGHT;
 }

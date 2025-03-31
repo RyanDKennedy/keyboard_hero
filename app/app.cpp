@@ -2,13 +2,15 @@
 
 #include "sy_ecs.hpp"
 #include "sy_app_info.hpp"
-#include "render/sy_render.hpp"
 
 #include "global.hpp"
 
 extern "C"
 void app_init(SyAppInfo *app_info)
 {
+    app_info->global_mem_size = 2048;
+    app_info->global_mem = app_info->persistent_arena.alloc(app_info->global_mem_size);
+
     // Check if global_mem is enough for global struct
     if (app_info->global_mem_size < sizeof(Global))
     {
@@ -18,9 +20,6 @@ void app_init(SyAppInfo *app_info)
     }
 
     g_state = (Global*)app_info->global_mem;
-
-    sy_render_init_ecs(&app_info->ecs);
-
 }
 
 extern "C"

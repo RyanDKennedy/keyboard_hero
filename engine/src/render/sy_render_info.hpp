@@ -7,8 +7,6 @@
 #include <vulkan/vulkan.h>
 #include "vk_mem_alloc.h"
 
-#include "sy_render_defines.hpp"
-
 #include "glm_include.hpp"
 
 struct SyRenderInfo
@@ -46,12 +44,11 @@ struct SyRenderInfo
     // The render pass
     VkRenderPass render_pass;
 
-    VkSemaphore *image_available_semaphores; // array of size max_frames_in_flight
-    VkSemaphore *render_finished_semaphores; // array of size max_frames_in_flight
-    VkFence *in_flight_fences; // array of size max_frames_in_flight
+    VkSemaphore *image_available_semaphores; // array of size SY_RENDER_MAX_FRAMES_IN_FLIGHT
+    VkSemaphore *render_finished_semaphores; // array of size SY_RENDER_MAX_FRAMES_IN_FLIGHT
+    VkFence *in_flight_fences; // array of size SY_RENDER_MAX_FRAMES_IN_FLIGHT
 
-    const int max_frames_in_flight = SY_RENDER_MAX_FRAMES_IN_FLIGHT;
-    uint32_t current_frame;
+    uint32_t current_frame; // 0 - SY_RENDER_MAX_FRAMES_IN_FLIGHT
 
     VkDescriptorSetLayout frame_descriptor_set_layout;
     VkDescriptorSetLayout material_descriptor_set_layout;
@@ -59,23 +56,4 @@ struct SyRenderInfo
 
     VkPipelineLayout single_color_pipeline_layout;
     VkPipeline single_color_pipeline;
-
-
-    VkDescriptorPool descriptor_pool;
-    const size_t max_descriptor_sets_amt = 20;
-    SyDescriptorSetDataGroup *descriptor_sets;
-    bool *descriptor_sets_used;
-
-    int frame_descriptor_index;
-
-    // FIXME:
-    glm::vec3 pos;
-    glm::vec2 rot;
-
-};
-
-// FIXME:
-struct SyFrameData
-{
-    glm::mat4 vp_matrix;
 };

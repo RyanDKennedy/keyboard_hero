@@ -1,21 +1,19 @@
 #include "sy_syengine.hpp"
 
 #include <stdio.h>
-#include <vulkan/vulkan_core.h>
 
-#include "render/sy_buffer.hpp"
-#include "render/sy_drawing.hpp"
-#include "render/sy_render_info.hpp"
-#include "render/types/sy_material.hpp"
 #include "sy_ecs.hpp"
 #include "sy_macros.hpp"
 
-#include "render/sy_render.hpp"
+#include "render/sy_render_defines.hpp"
 #include "render/sy_resources.hpp"
 #include "render/sy_physical_device.hpp"
 #include "render/sy_logical_device.hpp"
 #include "render/sy_swapchain.hpp"
-#include "sy_utils.hpp"
+#include "render/sy_buffer.hpp"
+#include "render/sy_drawing.hpp"
+#include "render/sy_render_info.hpp"
+#include "render/types/sy_mesh.hpp"
 
 #ifdef NDEBUG
 extern "C"
@@ -28,7 +26,7 @@ extern "C"
 void app_destroy(SyAppInfo *app_info);
 #endif
 
-void renderer_init(SyPlatformInfo *platform_info, SyAppInfo *app_info)
+void renderer_init(SyPlatformInfo *platform_info)
 {
     platform_info->render_info.current_frame = 0;
     sy_render_create_physical_device(&platform_info->render_info);
@@ -57,107 +55,13 @@ void renderer_init(SyPlatformInfo *platform_info, SyAppInfo *app_info)
 
     sy_render_create_pipelines(&platform_info->render_info);
 
-    // init render types in ecs
-    sy_render_init_ecs(&app_info->ecs);
-    SY_ECS_REGISTER_TYPE(app_info->ecs, SyMesh);
-    SY_ECS_REGISTER_TYPE(app_info->ecs, SyMaterialComponent);
-
-    sy_render_create_descriptor_pool(&platform_info->render_info);
-
-    { // Create the frame data descriptor sets / uniform buffers
-	SyFrameData frame_data = {};
-	platform_info->render_info.frame_descriptor_index = sy_render_create_descriptor_set(&platform_info->render_info, sizeof(SyFrameData), &frame_data, platform_info->render_info.frame_descriptor_set_layout, 0);
-    }
-
-    size_t material_component_index;
-    {
-	int material_type_id = app_info->ecs.get_type_id<SyMaterialComponent>();
-	material_component_index = app_info->ecs.get_unused_component<SyMaterialComponent>();
-	SyMaterialComponent *material_comp = &app_info->ecs.m_component_data_arr[material_type_id].get<SyMaterialComponent>(material_component_index);
-
-	material_comp->descriptor_set_index = -1;
-	material_comp->material.ambient[0] = 0.0f;
-	material_comp->material.ambient[1] = 0.0f;
-	material_comp->material.ambient[2] = 0.0f;
-	material_comp->material.diffuse = {0.0f, 1.0f, 1.0f};
-	material_comp->material.specular[0] = 0.0f;
-	material_comp->material.specular[1] = 0.0f;
-	material_comp->material.specular[2] = 0.0f;
-    }
-
-    size_t mesh_component_index;
-    {
-	int mesh_type_id = app_info->ecs.get_type_id<SyMesh>();
-	mesh_component_index = app_info->ecs.get_unused_component<SyMesh>();
-	SyMesh *mesh_comp = &app_info->ecs.m_component_data_arr[mesh_type_id].get<SyMesh>(mesh_component_index);
-
-	// float vertex_data[] =
-	//     {
-	// 	-0.5f, -0.5f, 0.0f,
-	// 	0.5f, -0.5f, 0.0f,
-	// 	0.5f, 0.5f, 0.0f,
-	// 	-0.5f, 0.5f, 0.0f
-	//     };
-
-	float vertex_data[] =
-	    {
-		-0.5, -0.5,  0.5, //0
-		0.5, -0.5,  0.5, //1
-		-0.5,  0.5,  0.5, //2
-		0.5,  0.5,  0.5, //3
-		-0.5, -0.5, -0.5, //4
-		0.5, -0.5, -0.5, //5
-		-0.5,  0.5, -0.5, //6
-		0.5,  0.5, -0.5  //7
-	    };
-	    
-	// uint32_t index_data[] =
-	//     {
-	// 	0, 3, 2, 2, 1, 0
-	//     };
-
-	uint32_t index_data[] =
-	    {
-		//Top
-		7, 6, 2,
-		2, 3, 7,
-		
-		//Bottom
-		0, 4, 5,
-		5, 1, 0,
-		
-		//Left
-		0, 2, 6,
-		6, 4, 0,
-		
-		//Right
-		7, 3, 1,
-		1, 5, 7,
-		
-		//Front
-		3, 2, 0,
-		0, 1, 3,
-		
-		//Back
-		4, 6, 7,
-		7, 5, 4
-	    };
-	
-	mesh_comp->index_amt = SY_ARRLEN(index_data);
-	sy_render_create_vertex_buffer(&platform_info->render_info, SY_ARRLEN(vertex_data), sizeof(float) * 3, vertex_data, &mesh_comp->vertex_buffer, &mesh_comp->vertex_buffer_alloc);
-	sy_render_create_index_buffer(&platform_info->render_info, SY_ARRLEN(index_data), index_data, &mesh_comp->index_buffer, &mesh_comp->index_buffer_alloc);
-    }
-
-    SyEntityHandle square = app_info->ecs.new_entity();
-    app_info->ecs.entity_assign_component<SyMaterialComponent>(square, material_component_index);
-    app_info->ecs.entity_assign_component<SyMesh>(square, mesh_component_index);
-
-    SY_OUTPUT_INFO("finished render init");
-
 }
 
-void renderer_cleanup(SyPlatformInfo *platform_info, SyAppInfo *app_info)
+void renderer_cleanup(SyPlatformInfo *platform_info)
 {
+    vkDeviceWaitIdle(platform_info->render_info.logical_device);
+
+/*
     // Cleanup meshes
     size_t mesh_type_id = app_info->ecs.get_type_id<SyMesh>();
     for (size_t i = 0; i < app_info->ecs.m_entity_used.m_filled_length; ++i)
@@ -173,21 +77,7 @@ void renderer_cleanup(SyPlatformInfo *platform_info, SyAppInfo *app_info)
 	    }
 	}
     }
-
-    // Cleanup descriptor sets
-    for (int i = 0; i < platform_info->render_info.max_descriptor_sets_amt; ++i)
-    {
-	if (platform_info->render_info.descriptor_sets_used[i] == true)
-	{
-	    for (int j = 0; j < platform_info->render_info.max_frames_in_flight; ++j)
-	    {
-		vmaDestroyBuffer(platform_info->render_info.vma_allocator, platform_info->render_info.descriptor_sets[i].uniform_buffer[j], platform_info->render_info.descriptor_sets[i].uniform_buffer_allocation[j]);
-	    }
-	}
-    }
-    free(platform_info->render_info.descriptor_sets);
-    free(platform_info->render_info.descriptor_sets_used);
-    vkDestroyDescriptorPool(platform_info->render_info.logical_device, platform_info->render_info.descriptor_pool, NULL);
+*/
 
     vkDestroyPipeline(platform_info->render_info.logical_device, platform_info->render_info.single_color_pipeline, NULL);
 
@@ -201,7 +91,7 @@ void renderer_cleanup(SyPlatformInfo *platform_info, SyAppInfo *app_info)
 
     free(platform_info->render_info.command_buffers);
 
-    for (int i = 0; i < platform_info->render_info.max_frames_in_flight; ++i)
+    for (int i = 0; i < SY_RENDER_MAX_FRAMES_IN_FLIGHT; ++i)
     {
 	vkDestroySemaphore(platform_info->render_info.logical_device, platform_info->render_info.image_available_semaphores[i], NULL);
 	vkDestroySemaphore(platform_info->render_info.logical_device, platform_info->render_info.render_finished_semaphores[i], NULL);
@@ -225,28 +115,78 @@ void renderer_cleanup(SyPlatformInfo *platform_info, SyAppInfo *app_info)
     vkDestroyDevice(platform_info->render_info.logical_device, NULL);
 }
 
-
-void engine_init(SyPlatformInfo *platform_info, SyAppInfo *app_info)
+void engine_init(SyPlatformInfo *platform_info, SyAppInfo *app_info, SyEngineState *engine_state)
 {
     SY_OUTPUT_INFO("Starting Engine");
 
+
     app_info->stop_game = false;
-
-    // ECS Init
     app_info->ecs.initialize();
-
-    // Arena/Allocation Init
+    app_info->delta_time = 0.0;
     SY_ERROR_COND(app_info->persistent_arena.initialize(4096) != 0, "Failed to allocate data for persistent arena.");
     SY_ERROR_COND(app_info->frame_arena.initialize(4096) != 0, "Failed to allocate data for frame arena.");
-    app_info->global_mem_size = 2048;
-    app_info->global_mem = app_info->persistent_arena.alloc(app_info->global_mem_size);
 
-    app_info->delta_time = 0.0;
+    // Register ECS Types
+    SY_ECS_REGISTER_TYPE(app_info->ecs, SyMesh);
 
-    platform_info->render_info.pos = {0.0f, 0.0f, 0.0f};
-    platform_info->render_info.rot = {0.0f, 0.0f};
+    // Init renderer
+    renderer_init(platform_info);
 
-    renderer_init(platform_info, app_info);
+    if (0)
+    {
+	size_t mesh_component_index;
+	{
+	    int mesh_type_id = app_info->ecs.get_type_id<SyMesh>();
+	    mesh_component_index = app_info->ecs.get_unused_component<SyMesh>();
+	    SyMesh *mesh_comp = &app_info->ecs.m_component_data_arr[mesh_type_id].get<SyMesh>(mesh_component_index);
+	    
+	    float vertex_data[] =
+		{
+		    -0.5, -0.5,  0.5, //0
+		    0.5, -0.5,  0.5, //1
+		    -0.5,  0.5,  0.5, //2
+		    0.5,  0.5,  0.5, //3
+		    -0.5, -0.5, -0.5, //4
+		    0.5, -0.5, -0.5, //5
+		    -0.5,  0.5, -0.5, //6
+		    0.5,  0.5, -0.5  //7
+		};
+	    
+	    uint32_t index_data[] =
+		{
+		    //Top
+		    7, 6, 2,
+		    2, 3, 7,
+		    
+		    //Bottom
+		    0, 4, 5,
+		    5, 1, 0,
+		    
+		    //Left
+		    0, 2, 6,
+		    6, 4, 0,
+		    
+		    //Right
+		    7, 3, 1,
+		    1, 5, 7,
+		    
+		    //Front
+		    3, 2, 0,
+		    0, 1, 3,
+		    
+		    //Back
+		    4, 6, 7,
+		    7, 5, 4
+		};
+	    
+	    mesh_comp->index_amt = SY_ARRLEN(index_data);
+	    sy_render_create_vertex_buffer(&platform_info->render_info, SY_ARRLEN(vertex_data), sizeof(float) * 3, vertex_data, &mesh_comp->vertex_buffer, &mesh_comp->vertex_buffer_alloc);
+	    sy_render_create_index_buffer(&platform_info->render_info, SY_ARRLEN(index_data), index_data, &mesh_comp->index_buffer, &mesh_comp->index_buffer_alloc);
+	}
+	
+	SyEntityHandle square = app_info->ecs.new_entity();
+	app_info->ecs.entity_assign_component<SyMesh>(square, mesh_component_index);
+    }	    
 
 #ifndef NDEBUG
     platform_info->app_init(app_info);
@@ -259,9 +199,10 @@ void engine_init(SyPlatformInfo *platform_info, SyAppInfo *app_info)
     {
 	platform_info->end_engine = true;
     }
+
 }
 
-void engine_run(SyPlatformInfo *platform_info, SyAppInfo *app_info)
+void engine_run(SyPlatformInfo *platform_info, SyAppInfo *app_info, SyEngineState *engine_state)
 {
     app_info->frame_arena.free_all();
     app_info->input_info = platform_info->input_info;
@@ -275,41 +216,6 @@ void engine_run(SyPlatformInfo *platform_info, SyAppInfo *app_info)
 	platform_info->end_engine = true;
     }
 
-        float rot_speed = 180;
-    if (app_info->input_info.arrow_up && platform_info->render_info.rot[1] < 85.f)
-	platform_info->render_info.rot[1] += rot_speed * app_info->delta_time;
-
-    if (app_info->input_info.arrow_down && platform_info->render_info.rot[1] > -85.f)
-	platform_info->render_info.rot[1] -= rot_speed * app_info->delta_time;
-
-    if (app_info->input_info.arrow_left)
-	platform_info->render_info.rot[0] -= rot_speed * app_info->delta_time;
-
-    if (app_info->input_info.arrow_right)
-	platform_info->render_info.rot[0] += rot_speed * app_info->delta_time;
-
-
-    float move_speed = 2.0f;
-    if (app_info->input_info.w)
-	platform_info->render_info.pos[2] -= move_speed * app_info->delta_time;
-
-    if (app_info->input_info.s)
-	platform_info->render_info.pos[2] += move_speed * app_info->delta_time;
-
-    if (app_info->input_info.a)
-	platform_info->render_info.pos[0] -= move_speed * app_info->delta_time;
-
-    if (app_info->input_info.d)
-	platform_info->render_info.pos[0] += move_speed * app_info->delta_time;
-
-    if (app_info->input_info.space)
-	platform_info->render_info.pos[1] += move_speed * app_info->delta_time;
-
-    if (app_info->input_info.shift_left)
-	platform_info->render_info.pos[1] -= move_speed * app_info->delta_time;
-
-
-
 #ifndef NDEBUG
     // THIS IS DLL HOT RELOAD STUFF, SO DON'T INCLUDE IN RELEASE VERSION
     
@@ -318,7 +224,6 @@ void engine_run(SyPlatformInfo *platform_info, SyAppInfo *app_info)
     {
 	platform_info->reload_dll = true;
     }
-
 
     // Run the app_dll_init function after dll has been reloaded 
     if (platform_info->dll_first_run == true)
@@ -336,15 +241,11 @@ void engine_run(SyPlatformInfo *platform_info, SyAppInfo *app_info)
 	platform_info->app_dll_exit(app_info);
     }
 
-
-
 #else
 
     app_run(app_info);
 
 #endif
-
-    // NOTE: The input below this is stuff responding to data received by running the app
 
     // stop the game signal
     if (app_info->stop_game == true)
@@ -356,10 +257,8 @@ void engine_run(SyPlatformInfo *platform_info, SyAppInfo *app_info)
 
 }
 
-void engine_destroy(SyPlatformInfo *platform_info, SyAppInfo *app_info)
+void engine_destroy(SyPlatformInfo *platform_info, SyAppInfo *app_info, SyEngineState *engine_state)
 {
-    vkDeviceWaitIdle(platform_info->render_info.logical_device);
-
     SY_OUTPUT_INFO("Ending Engine");
 
 #ifndef NDEBUG
@@ -368,8 +267,9 @@ void engine_destroy(SyPlatformInfo *platform_info, SyAppInfo *app_info)
     app_destroy(app_info);
 #endif
 
-    renderer_cleanup(platform_info, app_info);
+    app_info->ecs.destroy();
 
+    renderer_cleanup(platform_info);
 
     { // Cleanup App Info
 	// Arena/Allocation Cleanup
@@ -377,5 +277,5 @@ void engine_destroy(SyPlatformInfo *platform_info, SyAppInfo *app_info)
 	app_info->frame_arena.destroy();
     }
 
-    app_info->ecs.destroy();
+
 }
