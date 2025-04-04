@@ -15,6 +15,9 @@
 #include "render/sy_render_info.hpp"
 #include "render/types/sy_mesh.hpp"
 
+#include "obj_parser/sy_obj_parser.hpp"
+
+
 #ifdef NDEBUG
 extern "C"
 void app_init(SyAppInfo *app_info);
@@ -132,7 +135,7 @@ void engine_init(SyPlatformInfo *platform_info, SyAppInfo *app_info, SyEngineSta
     // Init renderer
     renderer_init(platform_info);
 
-    if (0)
+    if (1)
     {
 	size_t mesh_component_index;
 	{
@@ -140,48 +143,16 @@ void engine_init(SyPlatformInfo *platform_info, SyAppInfo *app_info, SyEngineSta
 	    mesh_component_index = app_info->ecs.get_unused_component<SyMesh>();
 	    SyMesh *mesh_comp = &app_info->ecs.m_component_data_arr[mesh_type_id].get<SyMesh>(mesh_component_index);
 	    
-	    float vertex_data[] =
-		{
-		    -0.5, -0.5,  0.5, //0
-		    0.5, -0.5,  0.5, //1
-		    -0.5,  0.5,  0.5, //2
-		    0.5,  0.5,  0.5, //3
-		    -0.5, -0.5, -0.5, //4
-		    0.5, -0.5, -0.5, //5
-		    -0.5,  0.5, -0.5, //6
-		    0.5,  0.5, -0.5  //7
-		};
-	    
-	    uint32_t index_data[] =
-		{
-		    //Top
-		    7, 6, 2,
-		    2, 3, 7,
-		    
-		    //Bottom
-		    0, 4, 5,
-		    5, 1, 0,
-		    
-		    //Left
-		    0, 2, 6,
-		    6, 4, 0,
-		    
-		    //Right
-		    7, 3, 1,
-		    1, 5, 7,
-		    
-		    //Front
-		    3, 2, 0,
-		    0, 1, 3,
-		    
-		    //Back
-		    4, 6, 7,
-		    7, 5, 4
-		};
-	    
-	    mesh_comp->index_amt = SY_ARRLEN(index_data);
-	    sy_render_create_vertex_buffer(&platform_info->render_info, SY_ARRLEN(vertex_data), sizeof(float) * 3, vertex_data, &mesh_comp->vertex_buffer, &mesh_comp->vertex_buffer_alloc);
-	    sy_render_create_index_buffer(&platform_info->render_info, SY_ARRLEN(index_data), index_data, &mesh_comp->index_buffer, &mesh_comp->index_buffer_alloc);
+	    uint32_t *index_data = NULL;
+	    float *vertex_data = NULL;
+	    size_t index_data_size = 0;
+	    size_t vertex_data_size = 0;
+
+	    sy_parse_obj("cube.obj", &vertex_data, &vertex_data_size, &index_data, &index_data_size);
+
+	    mesh_comp->index_amt = index_data_size;
+	    sy_render_create_vertex_buffer(&platform_info->render_info, vertex_data_size, sizeof(float) * 3, vertex_data, &mesh_comp->vertex_buffer, &mesh_comp->vertex_buffer_alloc);
+	    sy_render_create_index_buffer(&platform_info->render_info, index_data_size, index_data, &mesh_comp->index_buffer, &mesh_comp->index_buffer_alloc);
 	}
 	
 	SyEntityHandle square = app_info->ecs.new_entity();

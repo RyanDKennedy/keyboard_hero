@@ -16,6 +16,7 @@ set(SY_SOURCE_FILES
     ${CMAKE_CURRENT_SOURCE_DIR}/src/render/sy_pipeline.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/render/sy_buffer.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/render/sy_drawing.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/obj_parser/sy_obj_parser.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/external/vma.cpp
 )
 
