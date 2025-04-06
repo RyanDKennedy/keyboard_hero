@@ -57,3 +57,6 @@ struct SyRenderInfo
     VkPipelineLayout single_color_pipeline_layout;
     VkPipeline single_color_pipeline;
 };
+
+void sy_render_info_init(SyRenderInfo *render_info, int win_width, int win_height);
+void sy_render_info_deinit(SyRenderInfo *render_info);

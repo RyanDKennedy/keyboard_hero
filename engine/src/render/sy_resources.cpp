@@ -6,6 +6,18 @@
 #include "sy_pipeline.hpp"
 #include "sy_macros.hpp"
 
+void sy_render_create_allocator(SyRenderInfo *render_info)
+{
+    VmaAllocatorCreateInfo vma_allocator_create_info = {};
+    vma_allocator_create_info.flags = 0;
+    vma_allocator_create_info.vulkanApiVersion = VK_API_VERSION_1_0;
+    vma_allocator_create_info.physicalDevice = render_info->physical_device;
+    vma_allocator_create_info.device = render_info->logical_device;
+    vma_allocator_create_info.instance = render_info->instance;
+    vma_allocator_create_info.pVulkanFunctions = NULL;
+    vmaCreateAllocator(&vma_allocator_create_info, &render_info->vma_allocator);
+}
+
 void sy_render_create_pipelines(SyRenderInfo *render_info)
 {
     { // Create Pipeline Layouts

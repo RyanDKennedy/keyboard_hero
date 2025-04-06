@@ -19,12 +19,6 @@
 },
 {
   "directory": "/home/kenne/programming/syengine/build/engine",
-  "command": "/usr/bin/c++  -I/home/kenne/programming/syengine/engine/src -I/home/kenne/programming/syengine/engine/external -g -std=gnu++17 -o CMakeFiles/syengine.dir/src/render/sy_render.cpp.o -c /home/kenne/programming/syengine/engine/src/render/sy_render.cpp",
-  "file": "/home/kenne/programming/syengine/engine/src/render/sy_render.cpp",
-  "output": "engine/CMakeFiles/syengine.dir/src/render/sy_render.cpp.o"
-},
-{
-  "directory": "/home/kenne/programming/syengine/build/engine",
   "command": "/usr/bin/c++  -I/home/kenne/programming/syengine/engine/src -I/home/kenne/programming/syengine/engine/external -g -std=gnu++17 -o CMakeFiles/syengine.dir/src/render/sy_resources.cpp.o -c /home/kenne/programming/syengine/engine/src/render/sy_resources.cpp",
   "file": "/home/kenne/programming/syengine/engine/src/render/sy_resources.cpp",
   "output": "engine/CMakeFiles/syengine.dir/src/render/sy_resources.cpp.o"
@@ -67,6 +61,12 @@
 },
 {
   "directory": "/home/kenne/programming/syengine/build/engine",
+  "command": "/usr/bin/c++  -I/home/kenne/programming/syengine/engine/src -I/home/kenne/programming/syengine/engine/external -g -std=gnu++17 -o CMakeFiles/syengine.dir/src/obj_parser/sy_obj_parser.cpp.o -c /home/kenne/programming/syengine/engine/src/obj_parser/sy_obj_parser.cpp",
+  "file": "/home/kenne/programming/syengine/engine/src/obj_parser/sy_obj_parser.cpp",
+  "output": "engine/CMakeFiles/syengine.dir/src/obj_parser/sy_obj_parser.cpp.o"
+},
+{
+  "directory": "/home/kenne/programming/syengine/build/engine",
   "command": "/usr/bin/c++  -I/home/kenne/programming/syengine/engine/src -I/home/kenne/programming/syengine/engine/external -g -std=gnu++17 -o CMakeFiles/syengine.dir/external/vma.cpp.o -c /home/kenne/programming/syengine/engine/external/vma.cpp",
   "file": "/home/kenne/programming/syengine/engine/external/vma.cpp",
   "output": "engine/CMakeFiles/syengine.dir/external/vma.cpp.o"
@@ -97,20 +97,14 @@
 },
 {
   "directory": "/home/kenne/programming/syengine/build/app",
-  "command": "/usr/bin/c++ -Dapp_EXPORTS -I/home/kenne/programming/syengine/engine/src -g -std=gnu++17 -fPIC -o CMakeFiles/app.dir/app.cpp.o -c /home/kenne/programming/syengine/app/app.cpp",
+  "command": "/usr/bin/c++ -Dapp_EXPORTS -I/home/kenne/programming/syengine/engine/src -I/home/kenne/programming/syengine/engine/external -g -std=gnu++17 -fPIC -o CMakeFiles/app.dir/app.cpp.o -c /home/kenne/programming/syengine/app/app.cpp",
   "file": "/home/kenne/programming/syengine/app/app.cpp",
   "output": "app/CMakeFiles/app.dir/app.cpp.o"
 },
 {
   "directory": "/home/kenne/programming/syengine/build/app",
-  "command": "/usr/bin/c++ -Dapp_EXPORTS -I/home/kenne/programming/syengine/engine/src -g -std=gnu++17 -fPIC -o CMakeFiles/app.dir/__/engine/src/sy_arena.cpp.o -c /home/kenne/programming/syengine/engine/src/sy_arena.cpp",
+  "command": "/usr/bin/c++ -Dapp_EXPORTS -I/home/kenne/programming/syengine/engine/src -I/home/kenne/programming/syengine/engine/external -g -std=gnu++17 -fPIC -o CMakeFiles/app.dir/__/engine/src/sy_arena.cpp.o -c /home/kenne/programming/syengine/engine/src/sy_arena.cpp",
   "file": "/home/kenne/programming/syengine/engine/src/sy_arena.cpp",
   "output": "app/CMakeFiles/app.dir/__/engine/src/sy_arena.cpp.o"
-},
-{
-  "directory": "/home/kenne/programming/syengine/build/app",
-  "command": "/usr/bin/c++ -Dapp_EXPORTS -I/home/kenne/programming/syengine/engine/src -g -std=gnu++17 -fPIC -o CMakeFiles/app.dir/__/engine/src/render/sy_render.cpp.o -c /home/kenne/programming/syengine/engine/src/render/sy_render.cpp",
-  "file": "/home/kenne/programming/syengine/engine/src/render/sy_render.cpp",
-  "output": "app/CMakeFiles/app.dir/__/engine/src/render/sy_render.cpp.o"
 }
 ]

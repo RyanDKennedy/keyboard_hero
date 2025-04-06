@@ -1,15 +1,11 @@
 #include "sy_syengine.hpp"
 
 #include <stdio.h>
+#include <vulkan/vulkan_core.h>
 
 #include "sy_ecs.hpp"
 #include "sy_macros.hpp"
 
-#include "render/sy_render_defines.hpp"
-#include "render/sy_resources.hpp"
-#include "render/sy_physical_device.hpp"
-#include "render/sy_logical_device.hpp"
-#include "render/sy_swapchain.hpp"
 #include "render/sy_buffer.hpp"
 #include "render/sy_drawing.hpp"
 #include "render/sy_render_info.hpp"
@@ -29,95 +25,6 @@ extern "C"
 void app_destroy(SyAppInfo *app_info);
 #endif
 
-void renderer_init(SyPlatformInfo *platform_info)
-{
-    platform_info->render_info.current_frame = 0;
-    sy_render_create_physical_device(&platform_info->render_info);
-    {
-	VkPhysicalDeviceProperties props;
-	vkGetPhysicalDeviceProperties(platform_info->render_info.physical_device, &props);
-	SY_OUTPUT_INFO("using device %s", props.deviceName);
-    }
-    sy_render_create_logical_device(&platform_info->render_info);
-    sy_render_create_swapchain(&platform_info->render_info, platform_info->input_info.window_width, platform_info->input_info.window_height);
-    sy_render_create_command_pool(&platform_info->render_info);
-    platform_info->render_info.render_pass = sy_render_create_simple_render_pass(&platform_info->render_info);
-    sy_render_create_swapchain_framebuffers(&platform_info->render_info);
-    sy_render_create_command_buffers(&platform_info->render_info);
-    sy_render_create_sync_objects(&platform_info->render_info);
-    sy_render_create_descriptor_set_layouts(&platform_info->render_info);
-
-    VmaAllocatorCreateInfo vma_allocator_create_info = {};
-    vma_allocator_create_info.flags = 0;
-    vma_allocator_create_info.vulkanApiVersion = VK_API_VERSION_1_0;
-    vma_allocator_create_info.physicalDevice = platform_info->render_info.physical_device;
-    vma_allocator_create_info.device = platform_info->render_info.logical_device;
-    vma_allocator_create_info.instance = platform_info->render_info.instance;
-    vma_allocator_create_info.pVulkanFunctions = NULL;
-    vmaCreateAllocator(&vma_allocator_create_info, &platform_info->render_info.vma_allocator);
-
-    sy_render_create_pipelines(&platform_info->render_info);
-
-}
-
-void renderer_cleanup(SyPlatformInfo *platform_info)
-{
-    vkDeviceWaitIdle(platform_info->render_info.logical_device);
-
-/*
-    // Cleanup meshes
-    size_t mesh_type_id = app_info->ecs.get_type_id<SyMesh>();
-    for (size_t i = 0; i < app_info->ecs.m_entity_used.m_filled_length; ++i)
-    {
-	if (app_info->ecs.m_entity_used.get<bool>(i) == true)
-	{
-	    if (app_info->ecs.m_entity_data.get<SyEntityData>(i).mask[mesh_type_id] == true)
-	    {
-		SyMesh *mesh = app_info->ecs.component<SyMesh>(i);
-
-		vmaDestroyBuffer(platform_info->render_info.vma_allocator, mesh->vertex_buffer, mesh->vertex_buffer_alloc);
-		vmaDestroyBuffer(platform_info->render_info.vma_allocator, mesh->index_buffer, mesh->index_buffer_alloc);
-	    }
-	}
-    }
-*/
-
-    vkDestroyPipeline(platform_info->render_info.logical_device, platform_info->render_info.single_color_pipeline, NULL);
-
-    vkDestroyPipelineLayout(platform_info->render_info.logical_device, platform_info->render_info.single_color_pipeline_layout, NULL);
-
-    vmaDestroyAllocator(platform_info->render_info.vma_allocator);
-
-    vkDestroyDescriptorSetLayout(platform_info->render_info.logical_device, platform_info->render_info.frame_descriptor_set_layout, NULL);
-    vkDestroyDescriptorSetLayout(platform_info->render_info.logical_device, platform_info->render_info.material_descriptor_set_layout, NULL);
-    vkDestroyDescriptorSetLayout(platform_info->render_info.logical_device, platform_info->render_info.object_descriptor_set_layout, NULL);
-
-    free(platform_info->render_info.command_buffers);
-
-    for (int i = 0; i < SY_RENDER_MAX_FRAMES_IN_FLIGHT; ++i)
-    {
-	vkDestroySemaphore(platform_info->render_info.logical_device, platform_info->render_info.image_available_semaphores[i], NULL);
-	vkDestroySemaphore(platform_info->render_info.logical_device, platform_info->render_info.render_finished_semaphores[i], NULL);
-	vkDestroyFence(platform_info->render_info.logical_device, platform_info->render_info.in_flight_fences[i], NULL);
-    }
-    free(platform_info->render_info.image_available_semaphores);
-    free(platform_info->render_info.render_finished_semaphores);
-    free(platform_info->render_info.in_flight_fences);
-    
-    for (int i = 0; i < platform_info->render_info.swapchain_framebuffers_amt; ++i)
-    {
-	vkDestroyFramebuffer(platform_info->render_info.logical_device, platform_info->render_info.swapchain_framebuffers[i], NULL);
-    }
-    free(platform_info->render_info.swapchain_framebuffers);
-
-    vkDestroyRenderPass(platform_info->render_info.logical_device, platform_info->render_info.render_pass, NULL);
-
-    vkDestroyCommandPool(platform_info->render_info.logical_device, platform_info->render_info.command_pool, NULL); // command buffers are freed when command pool is freed
-
-    sy_render_destroy_swapchain(&platform_info->render_info);
-    vkDestroyDevice(platform_info->render_info.logical_device, NULL);
-}
-
 void engine_init(SyPlatformInfo *platform_info, SyAppInfo *app_info, SyEngineState *engine_state)
 {
     SY_OUTPUT_INFO("Starting Engine");
@@ -133,26 +40,28 @@ void engine_init(SyPlatformInfo *platform_info, SyAppInfo *app_info, SyEngineSta
     SY_ECS_REGISTER_TYPE(app_info->ecs, SyMesh);
 
     // Init renderer
-    renderer_init(platform_info);
+    sy_render_info_init(&platform_info->render_info, platform_info->input_info.window_width, platform_info->input_info.window_height);
 
     if (1)
     {
 	size_t mesh_component_index;
 	{
+	    // Create component
 	    int mesh_type_id = app_info->ecs.get_type_id<SyMesh>();
 	    mesh_component_index = app_info->ecs.get_unused_component<SyMesh>();
 	    SyMesh *mesh_comp = &app_info->ecs.m_component_data_arr[mesh_type_id].get<SyMesh>(mesh_component_index);
 	    
+	    // Create and fill buffers
 	    uint32_t *index_data = NULL;
 	    float *vertex_data = NULL;
 	    size_t index_data_size = 0;
 	    size_t vertex_data_size = 0;
-
 	    sy_parse_obj("cube.obj", &vertex_data, &vertex_data_size, &index_data, &index_data_size);
-
 	    mesh_comp->index_amt = index_data_size;
 	    sy_render_create_vertex_buffer(&platform_info->render_info, vertex_data_size, sizeof(float) * 3, vertex_data, &mesh_comp->vertex_buffer, &mesh_comp->vertex_buffer_alloc);
 	    sy_render_create_index_buffer(&platform_info->render_info, index_data_size, index_data, &mesh_comp->index_buffer, &mesh_comp->index_buffer_alloc);
+	    free(vertex_data);
+	    free(index_data);
 	}
 	
 	SyEntityHandle square = app_info->ecs.new_entity();
@@ -238,9 +147,26 @@ void engine_destroy(SyPlatformInfo *platform_info, SyAppInfo *app_info, SyEngine
     app_destroy(app_info);
 #endif
 
+    // Cleanup meshes FIXME:
+    vkDeviceWaitIdle(platform_info->render_info.logical_device);
+    size_t mesh_type_id = app_info->ecs.get_type_id<SyMesh>();
+    for (size_t i = 0; i < app_info->ecs.m_entity_used.m_filled_length; ++i)
+    {
+	if (app_info->ecs.m_entity_used.get<bool>(i) == true)
+	{
+	    if (app_info->ecs.m_entity_data.get<SyEntityData>(i).mask[mesh_type_id] == true)
+	    {
+		SyMesh *mesh = app_info->ecs.component<SyMesh>(i);
+
+		vmaDestroyBuffer(platform_info->render_info.vma_allocator, mesh->vertex_buffer, mesh->vertex_buffer_alloc);
+		vmaDestroyBuffer(platform_info->render_info.vma_allocator, mesh->index_buffer, mesh->index_buffer_alloc);
+	    }
+	}
+    }
+
     app_info->ecs.destroy();
 
-    renderer_cleanup(platform_info);
+    sy_render_info_deinit(&platform_info->render_info);
 
     { // Cleanup App Info
 	// Arena/Allocation Cleanup

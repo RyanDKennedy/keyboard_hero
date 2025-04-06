@@ -9,6 +9,7 @@ set(SY_SOURCE_FILES
     ${CMAKE_CURRENT_SOURCE_DIR}/src/sy_syengine.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/sy_arena.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/sy_utils.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/render/sy_render_info.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/render/sy_resources.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/render/sy_physical_device.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/render/sy_logical_device.cpp

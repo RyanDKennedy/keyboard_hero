@@ -45,6 +45,10 @@ void sy_render_create_physical_device(SyRenderInfo *render_info)
     SY_ERROR_COND(render_info->physical_device == VK_NULL_HANDLE, "RENDER: Failed to find a suitable GPU.");
     render_info->graphics_queue_family_index = graphics_family_index;
     render_info->present_queue_family_index = present_family_index;
+
+    VkPhysicalDeviceProperties props;
+    vkGetPhysicalDeviceProperties(render_info->physical_device, &props);
+    SY_OUTPUT_INFO("using device %s", props.deviceName);
 }
 
 /* Checks for

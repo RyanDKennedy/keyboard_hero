@@ -11,4 +11,4 @@ void sy_render_create_sync_objects(SyRenderInfo *render_info);
 // size_t sy_render_create_descriptor_set(SyRenderInfo *render_info, size_t uniform_size, void *data, VkDescriptorSetLayout descriptor_layout, uint32_t layout_binding);
 // void sy_render_create_descriptor_pool(SyRenderInfo *render_info);
 void sy_render_create_pipelines(SyRenderInfo *render_info);
-
+void sy_render_create_allocator(SyRenderInfo *render_info);
