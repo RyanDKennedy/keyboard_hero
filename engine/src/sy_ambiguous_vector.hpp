@@ -1,5 +1,6 @@
 #pragma once
 
+#include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
 #include <string.h>
@@ -32,8 +33,10 @@ struct SyAmbiguousVector
 	m_element_size = sizeof(T);
 	m_filled_length = 0;
 	
-	m_memory = calloc(2, m_element_size);
-	m_alloc_length = 2;
+	m_memory = NULL;
+	m_alloc_length = 0;
+	reallocate(2);
+
     };
 
     /**
@@ -50,8 +53,11 @@ struct SyAmbiguousVector
      */
     void reallocate(size_t size)
     {
+	size_t old_alloc_length =  m_alloc_length;
 	m_memory = realloc(m_memory, size * m_element_size);
 	m_alloc_length = size;
+
+	memset((uint8_t*)m_memory + (old_alloc_length * m_element_size), 0, (m_alloc_length - old_alloc_length) * m_element_size);
     }
 
     /**
@@ -87,7 +93,7 @@ struct SyAmbiguousVector
 	{
 	    for (size_t i = m_filled_length; i < index + 1; ++i)
 	    {
-		T a;
+		T a = {};
 		push_back<T>(a);
 	    }
 	}

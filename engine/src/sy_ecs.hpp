@@ -197,9 +197,16 @@ struct SyEcs
 	m_component_used_arr[type_id].get<bool>(i) = true;
 	
 	// Set the component to 0
-	// memset(&m_component_data_arr[type_id].get<T>(i), 0, sizeof(T)); FIXME this makes it pause for some reason
+	memset(&m_component_data_arr[type_id].get<T>(i), 0, sizeof(T));
 	
 	return i;
+    }
+
+    template<typename T>
+    bool is_component_index_used(size_t index)
+    {
+	const size_t type_id = get_type_id<T>();
+	return m_component_used_arr[type_id].get<bool>(index);
     }
 
     /**
@@ -214,9 +221,21 @@ struct SyEcs
     }
 
     /**
+     * @brief Accesses the component using the index into the component array
+     * @param index the index into the component array
+     * @return A pointer to the specified component.
+     */
+    template <typename T>
+    T* component_from_index(size_t index)
+    {
+	const size_t type_id = get_type_id<T>();
+	return &m_component_data_arr[type_id].get<T>(index);
+    }
+
+    /**
      * @brief Accesses the component that belongs to the entity.
      * @param entity The entity that you want to access the component of.
-     * @return A reference to the specified component.
+     * @return A pointer to the specified component.
      */
     template<typename T>
     T* component(SyEntityHandle entity)
@@ -228,6 +247,20 @@ struct SyEcs
     }
 
     // SyEntity methods
+
+    bool is_entity_index_used(SyEntityHandle index)
+    {
+	return m_entity_used.get<bool>(index);
+    }
+
+    template<typename T>
+    bool entity_has_component(SyEntityHandle entity)
+    {
+	SyEntityData &entity_data = m_entity_data.get<SyEntityData>(entity);
+	const size_t type_id = get_type_id<T>();
+
+	return entity_data.mask[type_id];
+    }
     
     /**
      * @brief Gets a new unused entity.
@@ -240,7 +273,9 @@ struct SyEcs
 	for (;; ++i)
 	{
 	    if (m_entity_used.get<bool>(i) == false)
+	    {
 		break;
+	    }
 	}
 	m_entity_used.get<bool>(i) = true;
 	
@@ -331,4 +366,19 @@ struct SyEcs
 
 	entity_data.indices[type_id] = 0;
     }
+
+    /**
+     * @brief gets the index of a component belonging to an entity
+     * @param entity the handle of the entity
+     * @returns the component's index
+     */
+    template <typename T>
+    size_t entity_get_component_index(SyEntityHandle entity)
+    {
+	SyEntityData &entity_data = m_entity_data.get<SyEntityData>(entity);
+	const size_t type_id = get_type_id<T>();	
+	SY_ASSERT(entity_data.mask[type_id] == true);
+	return entity_data.indices[type_id];
+    }
+
 };

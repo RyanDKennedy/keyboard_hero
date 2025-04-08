@@ -12,6 +12,8 @@
 #include "render/types/sy_mesh.hpp"
 
 #include "obj_parser/sy_obj_parser.hpp"
+#include "render/types/sy_draw_info.hpp"
+#include "render/types/sy_asset_metadata.hpp"
 
 
 #ifdef NDEBUG
@@ -24,6 +26,43 @@ void app_run(SyAppInfo *app_info);
 extern "C"
 void app_destroy(SyAppInfo *app_info);
 #endif
+
+size_t load_mesh_from_obj(SyRenderInfo *render_info, SyEcs *ecs, const char *obj_path)
+{
+    size_t mesh_component_index;
+    {
+	// Create component
+	mesh_component_index = ecs->get_unused_component<SyMesh>();
+	SyMesh *mesh_comp = ecs->component_from_index<SyMesh>(mesh_component_index);
+	
+	// Create and fill buffers
+	uint32_t *index_data = NULL;
+	float *vertex_data = NULL;
+	size_t index_data_size = 0;
+	size_t vertex_data_size = 0;
+	sy_parse_obj(obj_path, &vertex_data, &vertex_data_size, &index_data, &index_data_size);
+	mesh_comp->index_amt = index_data_size;
+	sy_render_create_vertex_buffer(render_info, vertex_data_size, sizeof(float) * 3, vertex_data, &mesh_comp->vertex_buffer, &mesh_comp->vertex_buffer_alloc);
+	sy_render_create_index_buffer(render_info, index_data_size, index_data, &mesh_comp->index_buffer, &mesh_comp->index_buffer_alloc);
+	free(vertex_data);
+	free(index_data);
+    }
+
+    size_t asset_metadata_index;
+    {
+	asset_metadata_index = ecs->get_unused_component<SyAssetMetadata>();
+	SyAssetMetadata *asset_metadata = ecs->component_from_index<SyAssetMetadata>(asset_metadata_index);
+
+	strncpy(asset_metadata->name, obj_path, SY_ASSET_METADATA_NAME_BUFFER_SIZE);
+	asset_metadata->asset_type = SyAssetType::mesh;
+	asset_metadata->asset_component_index = mesh_component_index;
+	asset_metadata->children_amt = 0;
+    }
+    SY_OUTPUT_DEBUG("loaded %s into mesh index %lu", obj_path, mesh_component_index);
+
+
+    return asset_metadata_index;
+}
 
 void engine_init(SyPlatformInfo *platform_info, SyAppInfo *app_info, SyEngineState *engine_state)
 {
@@ -38,35 +77,20 @@ void engine_init(SyPlatformInfo *platform_info, SyAppInfo *app_info, SyEngineSta
 
     // Register ECS Types
     SY_ECS_REGISTER_TYPE(app_info->ecs, SyMesh);
+    SY_ECS_REGISTER_TYPE(app_info->ecs, SyAssetMetadata);
+    SY_ECS_REGISTER_TYPE(app_info->ecs, SyDrawInfo);
 
     // Init renderer
     sy_render_info_init(&platform_info->render_info, platform_info->input_info.window_width, platform_info->input_info.window_height);
 
     if (1)
     {
-	size_t mesh_component_index;
-	{
-	    // Create component
-	    int mesh_type_id = app_info->ecs.get_type_id<SyMesh>();
-	    mesh_component_index = app_info->ecs.get_unused_component<SyMesh>();
-	    SyMesh *mesh_comp = &app_info->ecs.m_component_data_arr[mesh_type_id].get<SyMesh>(mesh_component_index);
-	    
-	    // Create and fill buffers
-	    uint32_t *index_data = NULL;
-	    float *vertex_data = NULL;
-	    size_t index_data_size = 0;
-	    size_t vertex_data_size = 0;
-	    sy_parse_obj("cube.obj", &vertex_data, &vertex_data_size, &index_data, &index_data_size);
-	    mesh_comp->index_amt = index_data_size;
-	    sy_render_create_vertex_buffer(&platform_info->render_info, vertex_data_size, sizeof(float) * 3, vertex_data, &mesh_comp->vertex_buffer, &mesh_comp->vertex_buffer_alloc);
-	    sy_render_create_index_buffer(&platform_info->render_info, index_data_size, index_data, &mesh_comp->index_buffer, &mesh_comp->index_buffer_alloc);
-	    free(vertex_data);
-	    free(index_data);
-	}
-	
 	SyEntityHandle square = app_info->ecs.new_entity();
-	app_info->ecs.entity_assign_component<SyMesh>(square, mesh_component_index);
-    }	    
+	app_info->ecs.entity_add_component<SyDrawInfo>(square);
+	SyDrawInfo *draw_info = app_info->ecs.component<SyDrawInfo>(square);
+	draw_info->asset_metadata_id = load_mesh_from_obj(&platform_info->render_info, &app_info->ecs, "cube.obj");
+	draw_info->should_draw = true;
+    }
 
 #ifndef NDEBUG
     platform_info->app_init(app_info);
@@ -149,18 +173,16 @@ void engine_destroy(SyPlatformInfo *platform_info, SyAppInfo *app_info, SyEngine
 
     // Cleanup meshes FIXME:
     vkDeviceWaitIdle(platform_info->render_info.logical_device);
-    size_t mesh_type_id = app_info->ecs.get_type_id<SyMesh>();
-    for (size_t i = 0; i < app_info->ecs.m_entity_used.m_filled_length; ++i)
-    {
-	if (app_info->ecs.m_entity_used.get<bool>(i) == true)
-	{
-	    if (app_info->ecs.m_entity_data.get<SyEntityData>(i).mask[mesh_type_id] == true)
-	    {
-		SyMesh *mesh = app_info->ecs.component<SyMesh>(i);
 
-		vmaDestroyBuffer(platform_info->render_info.vma_allocator, mesh->vertex_buffer, mesh->vertex_buffer_alloc);
-		vmaDestroyBuffer(platform_info->render_info.vma_allocator, mesh->index_buffer, mesh->index_buffer_alloc);
-	    }
+    size_t mesh_component_index = app_info->ecs.get_type_id<SyMesh>();
+    for (size_t i = 0; i < app_info->ecs.m_component_used_arr[mesh_component_index].m_filled_length; ++i)
+    {
+	if (app_info->ecs.is_component_index_used<SyMesh>(i) == true)
+	{
+	    SY_OUTPUT_DEBUG("deleted mesh at index %lu", i);
+	    SyMesh *mesh = app_info->ecs.component_from_index<SyMesh>(i);
+	    vmaDestroyBuffer(platform_info->render_info.vma_allocator, mesh->vertex_buffer, mesh->vertex_buffer_alloc);
+	    vmaDestroyBuffer(platform_info->render_info.vma_allocator, mesh->index_buffer, mesh->index_buffer_alloc);
 	}
     }
 

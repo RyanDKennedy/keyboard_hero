@@ -1,6 +1,8 @@
 #include "sy_drawing.hpp"
 #include "render/sy_render_info.hpp"
 #include "render/sy_resources.hpp"
+#include "render/types/sy_asset_metadata.hpp"
+#include "render/types/sy_draw_info.hpp"
 #include "sy_ecs.hpp"
 #include "sy_macros.hpp"
 #include "sy_swapchain.hpp"
@@ -67,26 +69,38 @@ void record_command_buffer(SyRenderInfo *render_info, VkCommandBuffer command_bu
     scissor.offset.y = 0;
     vkCmdSetScissor(command_buffer, 0, 1, &scissor);
 
-    size_t mesh_type_id = ecs->get_type_id<SyMesh>();
     for (size_t i = 0; i < ecs->m_entity_used.m_filled_length; ++i)
     {
-	if (ecs->m_entity_used.get<bool>(i) == true)
+	if (ecs->is_entity_index_used(i) == true && ecs->entity_has_component<SyDrawInfo>(i) == true)
 	{
-	    if (ecs->m_entity_data.get<SyEntityData>(i).mask[mesh_type_id] == true)
-	    {
-		SyMesh *mesh = ecs->component<SyMesh>(i);
+	    SyDrawInfo *draw_info = ecs->component<SyDrawInfo>(i);
+	    if (draw_info->should_draw == false)
+		continue;
 
-		// Buffers
-		VkDeviceSize vertex_buffer_offset = 0;
-		vkCmdBindVertexBuffers(command_buffer, 0, 1, &mesh->vertex_buffer, &vertex_buffer_offset);
-		vkCmdBindIndexBuffer(command_buffer, mesh->index_buffer, 0, VK_INDEX_TYPE_UINT32);
-		
-		// Draw
-		vkCmdDrawIndexed(command_buffer, mesh->index_amt, 1, 0, 0, 0);
+	    SyAssetMetadata *asset_metadata = ecs->component_from_index<SyAssetMetadata>(draw_info->asset_metadata_id);
+	    switch(asset_metadata->asset_type)
+	    {
+		case SyAssetType::mesh:
+		{
+		    SyMesh *mesh = ecs->component_from_index<SyMesh>(asset_metadata->asset_component_index);
+
+		    // Buffers
+		    VkDeviceSize vertex_buffer_offset = 0;
+		    vkCmdBindVertexBuffers(command_buffer, 0, 1, &mesh->vertex_buffer, &vertex_buffer_offset);
+		    vkCmdBindIndexBuffer(command_buffer, mesh->index_buffer, 0, VK_INDEX_TYPE_UINT32);
+		    
+		    // Draw
+		    vkCmdDrawIndexed(command_buffer, mesh->index_amt, 1, 0, 0, 0);		    
+		}
+		break;
+
+		default:
+		    continue;
 	    }
+
+
 	}
     }
-
 
     vkCmdEndRenderPass(command_buffer);
     SY_ERROR_COND(vkEndCommandBuffer(command_buffer) != VK_SUCCESS, "RENDER: Failed to end command buffer.");
