@@ -91,8 +91,9 @@ void record_command_buffer(SyRenderInfo *render_info, VkCommandBuffer command_bu
 	// SY_OUTPUT_DEBUG("cam aspect ratio %f", camera_settings->aspect_ratio);
 
 	glm::mat4 vp_matrix = glm::mat4(1);
-	vp_matrix = glm::rotate(vp_matrix, glm::radians(transform->rotation[1]), glm::vec3(1, 0, 0));
-	vp_matrix = glm::rotate(vp_matrix, glm::radians(transform->rotation[0]), glm::vec3(0, 1, 0));
+	vp_matrix = glm::rotate(vp_matrix, -glm::radians(transform->rotation[0]), glm::vec3(1, 0, 0));
+	vp_matrix = glm::rotate(vp_matrix, -glm::radians(transform->rotation[1]), glm::vec3(0, 1, 0));
+	vp_matrix = glm::rotate(vp_matrix, -glm::radians(transform->rotation[2]), glm::vec3(0, 0, 2));
 	vp_matrix = glm::translate(vp_matrix, glm::vec3(-transform->position[0], -transform->position[1], -transform->position[2]));
 	glm::mat4 p_matrix = glm::perspective(camera_settings->fov, camera_settings->aspect_ratio, camera_settings->near_plane, camera_settings->far_plane);
 	p_matrix[1][1] *= -1;

@@ -5,6 +5,7 @@
 #include "components/sy_transform.hpp"
 #include "render/types/sy_draw_info.hpp"
 #include "render/types/sy_asset_metadata.hpp"
+#include "glm_include.hpp"
 
 #include "global.hpp"
 
@@ -53,7 +54,7 @@ void app_init(SyAppInfo *app_info)
 	app_info->ecs.entity_add_component<SyTransform>(g_state->entity_square);
 	
 	SyDrawInfo *draw_info = app_info->ecs.component<SyDrawInfo>(g_state->entity_square);
-	draw_info->asset_metadata_id = SY_LOAD_MESH_FROM_OBJ(app_info->render_info, &app_info->ecs, "text.obj");
+	draw_info->asset_metadata_id = SY_LOAD_MESH_FROM_OBJ(app_info->render_info, &app_info->ecs, "axis.obj");
 	draw_info->should_draw = true;
 	
 	SyTransform *transform = app_info->ecs.component<SyTransform>(g_state->entity_square);
@@ -74,23 +75,42 @@ void app_run(SyAppInfo *app_info)
 
     app_info->camera_settings.aspect_ratio = (float)app_info->input_info.window_width / app_info->input_info.window_height;
 
-    if (app_info->input_info.p)
-	printf("FPS: %f\n", 1.0f / app_info->delta_time);
-
     SyTransform *player_transform = app_info->ecs.component<SyTransform>(g_state->player); 
+
+    if (app_info->input_info.p)
+	printf("FPS: %f\nx: %f y: %f z: %f\n", 1.0f / app_info->delta_time, player_transform->position[0], player_transform->position[1], player_transform->position[2]);
+
+
+
+    glm::vec3 front;
+    {
+ 	front[0] = glm::sin(glm::radians((float)player_transform->rotation[0])) * glm::cos(glm::radians((float)player_transform->rotation[1]));
+	front[1] = 0.0f;
+	front[2] = -1 * glm::cos(glm::radians((float)player_transform->rotation[0])) * glm::cos(glm::radians((float)player_transform->rotation[1]));
+	front = glm::normalize(front);
+    }
+
+    glm::vec3 right;
+    {
+ 	right[0] = glm::sin(glm::radians((float)player_transform->rotation[0] + 90)) * glm::cos(glm::radians((float)player_transform->rotation[1]));
+	right[1] = 0.0f;
+	right[2] = -1 * glm::cos(glm::radians((float)player_transform->rotation[0] + 90)) * glm::cos(glm::radians((float)player_transform->rotation[1]));
+	right = glm::normalize(right);
+    }
+
 
     const float speed = 5.0f;
     if (app_info->input_info.w)
-	player_transform->position[2] -= speed * app_info->delta_time;
+	player_transform->position += (float)(app_info->delta_time * speed) * front;
 
     if (app_info->input_info.s)
-	player_transform->position[2] += speed * app_info->delta_time;
+	player_transform->position -= (float)(app_info->delta_time * speed) * front;
 
     if (app_info->input_info.d)
-	player_transform->position[0] += speed * app_info->delta_time;
+	player_transform->position += (float)(app_info->delta_time * speed) * right;
 
     if (app_info->input_info.a)
-	player_transform->position[0] -= speed * app_info->delta_time;
+	player_transform->position -= (float)(app_info->delta_time * speed) * right;
 
     if (app_info->input_info.space)
 	player_transform->position[1] += speed * app_info->delta_time;
@@ -98,6 +118,18 @@ void app_run(SyAppInfo *app_info)
     if (app_info->input_info.shift_left)
 	player_transform->position[1] -= speed * app_info->delta_time;
 
+    const float rot_speed = 90.0f;
+    if (app_info->input_info.arrow_up)
+	player_transform->rotation[1] += app_info->delta_time * rot_speed;
+
+    if (app_info->input_info.arrow_down)
+	player_transform->rotation[1] -= app_info->delta_time * rot_speed;
+
+    if (app_info->input_info.arrow_left)
+	player_transform->rotation[0] += app_info->delta_time * rot_speed;
+
+    if (app_info->input_info.arrow_right)
+	player_transform->rotation[0] -= app_info->delta_time * rot_speed;
 }
 
 extern "C"
