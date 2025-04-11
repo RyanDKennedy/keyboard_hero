@@ -38,7 +38,7 @@ struct SyEntityData
 };
 
 #define SY_ECS_REGISTER_TYPE(ecs, type_name)\
-    ecs.register_type<type_name>(#type_name)
+    (ecs).register_type<type_name>(#type_name)
 
 /**
  * @brief The main resource managing class that controls the ecs.

@@ -1,4 +1,6 @@
 #include "sy_drawing.hpp"
+
+#include "render/sy_render_defines.hpp"
 #include "render/sy_render_info.hpp"
 #include "render/sy_resources.hpp"
 #include "render/types/sy_asset_metadata.hpp"
@@ -71,35 +73,37 @@ void record_command_buffer(SyRenderInfo *render_info, VkCommandBuffer command_bu
 
     for (size_t i = 0; i < ecs->m_entity_used.m_filled_length; ++i)
     {
-	if (ecs->is_entity_index_used(i) == true && ecs->entity_has_component<SyDrawInfo>(i) == true)
+	if (ecs->is_entity_index_used(i) != true)
+	    continue;
+
+	if (ecs->entity_has_component<SyDrawInfo>(i) != true)
+	    continue;
+
+	SyDrawInfo *draw_info = ecs->component<SyDrawInfo>(i);
+	if (draw_info->should_draw == false)
+	    continue;
+	
+	SyAssetMetadata *asset_metadata = ecs->component_from_index<SyAssetMetadata>(draw_info->asset_metadata_id);
+	switch(asset_metadata->asset_type)
 	{
-	    SyDrawInfo *draw_info = ecs->component<SyDrawInfo>(i);
-	    if (draw_info->should_draw == false)
-		continue;
-
-	    SyAssetMetadata *asset_metadata = ecs->component_from_index<SyAssetMetadata>(draw_info->asset_metadata_id);
-	    switch(asset_metadata->asset_type)
+	    case SyAssetType::mesh:
 	    {
-		case SyAssetType::mesh:
-		{
-		    SyMesh *mesh = ecs->component_from_index<SyMesh>(asset_metadata->asset_component_index);
-
-		    // Buffers
-		    VkDeviceSize vertex_buffer_offset = 0;
-		    vkCmdBindVertexBuffers(command_buffer, 0, 1, &mesh->vertex_buffer, &vertex_buffer_offset);
-		    vkCmdBindIndexBuffer(command_buffer, mesh->index_buffer, 0, VK_INDEX_TYPE_UINT32);
-		    
-		    // Draw
-		    vkCmdDrawIndexed(command_buffer, mesh->index_amt, 1, 0, 0, 0);		    
-		}
-		break;
-
-		default:
-		    continue;
+		SyMesh *mesh = ecs->component_from_index<SyMesh>(asset_metadata->asset_component_index);
+		
+		// Buffers
+		VkDeviceSize vertex_buffer_offset = 0;
+		vkCmdBindVertexBuffers(command_buffer, 0, 1, &mesh->vertex_buffer, &vertex_buffer_offset);
+		vkCmdBindIndexBuffer(command_buffer, mesh->index_buffer, 0, VK_INDEX_TYPE_UINT32);
+		
+		// Draw
+		vkCmdDrawIndexed(command_buffer, mesh->index_amt, 1, 0, 0, 0);		    
 	    }
-
-
+	    break;
+	    
+	    default:
+		continue;
 	}
+	
     }
 
     vkCmdEndRenderPass(command_buffer);

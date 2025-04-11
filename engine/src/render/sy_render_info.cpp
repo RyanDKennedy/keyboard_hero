@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <vulkan/vulkan_core.h>
 
+#include "render/sy_render_defines.hpp"
 #include "render/sy_physical_device.hpp"
 #include "render/sy_logical_device.hpp"
 #include "render/sy_swapchain.hpp"

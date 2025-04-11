@@ -2,24 +2,65 @@
 
 #include "sy_ecs.hpp"
 #include "sy_app_info.hpp"
+#include "components/sy_transform.hpp"
+#include "render/types/sy_draw_info.hpp"
+#include "render/types/sy_asset_metadata.hpp"
 
 #include "global.hpp"
+
+#ifndef NDEBUG
+#define SY_LOAD_MESH_FROM_OBJ(render_info, ...) app_info->sy_load_mesh_from_obj((void*)render_info, __VA_ARGS__);
+#else
+#include "asset_system/sy_asset_system.hpp"
+#define SY_LOAD_MESH_FROM_OBJ(render_info, ...) sy_load_mesh_from_obj((SyRenderInfo*)render_info, __VA_ARGS__);
+#endif
+
+void register_ecs_components(SyEcs *ecs)
+{
+    SY_ECS_REGISTER_TYPE(*ecs, SyAssetMetadata);
+    SY_ECS_REGISTER_TYPE(*ecs, SyDrawInfo);
+    SY_ECS_REGISTER_TYPE(*ecs, SyTransform);
+}
 
 extern "C"
 void app_init(SyAppInfo *app_info)
 {
-    app_info->global_mem_size = 2048;
-    app_info->global_mem = app_info->persistent_arena.alloc(app_info->global_mem_size);
+    register_ecs_components(&app_info->ecs);
 
-    // Check if global_mem is enough for global struct
-    if (app_info->global_mem_size < sizeof(Global))
-    {
-	SY_OUTPUT_INFO("app_info->global_mem_size < sizeof(Global)");
-	app_info->stop_game = true;
-	return;
+    app_info->global_mem = app_info->persistent_arena.alloc(sizeof(Global));
+    g_state = (Global*)app_info->global_mem;
+
+    { // Player creation
+	g_state->player = app_info->ecs.new_entity();
+	app_info->ecs.entity_add_component<SyTransform>(g_state->player);
+	SyTransform *transform = app_info->ecs.component<SyTransform>(g_state->player);
+	transform->position = glm::vec3(0.0f, 0.0f, 0.0f);
+	transform->rotation = glm::vec3(0.0f, 0.0f, 0.0f);
+	transform->scale = glm::vec3(0.0f, 0.0f, 0.0f);
     }
 
-    g_state = (Global*)app_info->global_mem;
+    { // Camera configuration
+	app_info->camera_settings.active_camera = g_state->player;
+	app_info->camera_settings.fov = 45.0f;
+	app_info->camera_settings.near_plane = 0.1f;
+	app_info->camera_settings.far_plane = 100.0f;
+    }
+
+    { // Entity square configuration
+	g_state->entity_square = app_info->ecs.new_entity();
+	app_info->ecs.entity_add_component<SyDrawInfo>(g_state->entity_square);
+	app_info->ecs.entity_add_component<SyTransform>(g_state->entity_square);
+	
+	SyDrawInfo *draw_info = app_info->ecs.component<SyDrawInfo>(g_state->entity_square);
+	draw_info->asset_metadata_id = SY_LOAD_MESH_FROM_OBJ(app_info->render_info, &app_info->ecs, "cube.obj");
+	draw_info->should_draw = true;
+	
+	SyTransform *transform = app_info->ecs.component<SyTransform>(g_state->entity_square);
+	transform->position = glm::vec3(0.0f, 0.0f, 0.0f);
+	transform->rotation = glm::vec3(0.0f, 0.0f, 0.0f);
+	transform->scale = glm::vec3(0.0f, 0.0f, 0.0f);
+    }
+    
 }
 
 extern "C"
@@ -27,19 +68,24 @@ void app_run(SyAppInfo *app_info)
 {
     g_state = (Global*)app_info->global_mem;
 
+
     if (app_info->input_info.q)
 	app_info->stop_game = true;
 
     if (app_info->input_info.p)
 	printf("FPS: %f\n", 1.0f / app_info->delta_time);
 
+    app_info->ecs.component<SyDrawInfo>(g_state->entity_square)->should_draw = false;
+
+    if (app_info->input_info.s)
+	app_info->ecs.component<SyDrawInfo>(g_state->entity_square)->should_draw = true;
 
 }
 
 extern "C"
 void app_destroy(SyAppInfo *app_info)
 {
-    SY_OUTPUT_INFO("destroying app");
+    g_state = (Global*)app_info->global_mem;
 }
 
 
@@ -48,6 +94,10 @@ void app_destroy(SyAppInfo *app_info)
 extern "C"
 void app_dll_init(SyAppInfo *app_info)
 {
+    g_state = (Global*)app_info->global_mem;
+
+    register_ecs_components(&app_info->ecs);
+
     SY_OUTPUT_DEBUG("new dll init")
 }
 
@@ -55,6 +105,8 @@ void app_dll_init(SyAppInfo *app_info)
 extern "C"
 void app_dll_exit(SyAppInfo *app_info)
 {
+    g_state = (Global*)app_info->global_mem;
+
     SY_OUTPUT_DEBUG("old dll exit")
     
 }

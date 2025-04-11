@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <vulkan/vulkan_core.h>
 
+#include "sy_render_defines.hpp"
 #include "sy_pipeline.hpp"
 #include "sy_macros.hpp"
 

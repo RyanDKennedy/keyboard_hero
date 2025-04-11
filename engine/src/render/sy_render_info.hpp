@@ -2,8 +2,6 @@
 
 #include "render/sy_render_settings.hpp" // this needs to be first because it sets up some #define's
 
-#include "sy_descriptor_set_data.hpp"
-
 #include <vulkan/vulkan.h>
 #include "vk_mem_alloc.h"
 

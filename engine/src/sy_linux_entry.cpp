@@ -23,7 +23,7 @@
 
 #include "render/sy_linux_init.hpp"
 
-#define SY_MICROSECOND 1000000
+#define SY_US_SECOND 1000000
 
 #ifndef NDEBUG
 void load_app_functions(SyPlatformInfo *platform_info, const char *dll_file);
@@ -113,7 +113,7 @@ int main(int argc, char *argv[])
     // RENDER LOOP
 
     // Delta time stuff
-    size_t frame_limit_frame_time = SY_MICROSECOND / 240;
+    size_t frame_limit_frame_time = SY_US_SECOND / 240;
     size_t delta_time_frame_start = get_current_time_us();
     size_t delta_time_frame_end;
 
@@ -214,7 +214,7 @@ size_t get_current_time_us()
 {
     timeval timev;
     gettimeofday(&timev, NULL);
-    return timev.tv_sec * SY_MICROSECOND + timev.tv_usec;
+    return timev.tv_sec * SY_US_SECOND + timev.tv_usec;
 }
 
 int go_to_root_path()
