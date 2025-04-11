@@ -41,6 +41,7 @@ void app_init(SyAppInfo *app_info)
 
     { // Camera configuration
 	app_info->camera_settings.active_camera = g_state->player;
+	app_info->camera_settings.aspect_ratio = (float)app_info->input_info.window_width / app_info->input_info.window_height;
 	app_info->camera_settings.fov = 45.0f;
 	app_info->camera_settings.near_plane = 0.1f;
 	app_info->camera_settings.far_plane = 100.0f;
@@ -75,10 +76,26 @@ void app_run(SyAppInfo *app_info)
     if (app_info->input_info.p)
 	printf("FPS: %f\n", 1.0f / app_info->delta_time);
 
-    app_info->ecs.component<SyDrawInfo>(g_state->entity_square)->should_draw = false;
+    SyTransform *player_transform = app_info->ecs.component<SyTransform>(g_state->player); 
+
+    const float speed = 5.0f;
+    if (app_info->input_info.w)
+	player_transform->position[2] -= speed * app_info->delta_time;
 
     if (app_info->input_info.s)
-	app_info->ecs.component<SyDrawInfo>(g_state->entity_square)->should_draw = true;
+	player_transform->position[2] += speed * app_info->delta_time;
+
+    if (app_info->input_info.d)
+	player_transform->position[0] += speed * app_info->delta_time;
+
+    if (app_info->input_info.a)
+	player_transform->position[0] -= speed * app_info->delta_time;
+
+    if (app_info->input_info.space)
+	player_transform->position[1] += speed * app_info->delta_time;
+
+    if (app_info->input_info.shift_left)
+	player_transform->position[1] -= speed * app_info->delta_time;
 
 }
 

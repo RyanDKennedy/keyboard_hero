@@ -27,11 +27,27 @@ void sy_render_info_init(SyRenderInfo *render_info, int win_width, int win_heigh
     sy_render_create_descriptor_set_layouts(render_info);
     sy_render_create_allocator(render_info);
     sy_render_create_pipelines(render_info);
+
+    render_info->frame_uniform_data = new SyFrameUniformData[SY_RENDER_MAX_FRAMES_IN_FLIGHT];
+    for (int i = 0; i < SY_RENDER_MAX_FRAMES_IN_FLIGHT; ++i)
+    {
+	render_info->frame_uniform_data[i].descriptor_allocator.init_pool(render_info->logical_device, 20, 1);
+    }
 }
 
 void sy_render_info_deinit(SyRenderInfo *render_info)
 {
     vkDeviceWaitIdle(render_info->logical_device);
+
+    for (int i = 0; i < SY_RENDER_MAX_FRAMES_IN_FLIGHT; ++i)
+    {
+	for (SyUniformAllocation &uniform_allocation : render_info->frame_uniform_data[i].allocations)
+	{
+	    vmaDestroyBuffer(render_info->vma_allocator, uniform_allocation.buffer, uniform_allocation.allocation);
+	}
+	render_info->frame_uniform_data[i].descriptor_allocator.destroy_pool(render_info->logical_device);
+    }
+    delete[] render_info->frame_uniform_data;
 
     vkDestroyPipeline(render_info->logical_device, render_info->single_color_pipeline, NULL);
 

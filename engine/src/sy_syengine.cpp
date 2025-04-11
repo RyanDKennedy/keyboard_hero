@@ -37,6 +37,7 @@ void engine_init(SyPlatformInfo *platform_info, SyAppInfo *app_info, SyEngineSta
     app_info->stop_game = false;
     app_info->ecs.initialize();
     app_info->delta_time = 0.0;
+    app_info->input_info = platform_info->input_info;
     SY_ERROR_COND(app_info->persistent_arena.initialize(4096) != 0, "Failed to allocate data for persistent arena.");
     SY_ERROR_COND(app_info->frame_arena.initialize(4096) != 0, "Failed to allocate data for frame arena.");
 
@@ -120,7 +121,7 @@ void engine_run(SyPlatformInfo *platform_info, SyAppInfo *app_info, SyEngineStat
 	platform_info->end_engine = true;
     }
 
-    sy_render_draw(&platform_info->render_info, &platform_info->input_info, &app_info->ecs);
+    sy_render_draw(&platform_info->render_info, &platform_info->input_info, &app_info->ecs, &app_info->camera_settings);
 }
 
 void engine_destroy(SyPlatformInfo *platform_info, SyAppInfo *app_info, SyEngineState *engine_state)

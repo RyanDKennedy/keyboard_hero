@@ -22,7 +22,7 @@ void sy_render_create_allocator(SyRenderInfo *render_info)
 void sy_render_create_pipelines(SyRenderInfo *render_info)
 {
     { // Create Pipeline Layouts
-	VkDescriptorSetLayout layouts[] = {render_info->frame_descriptor_set_layout, render_info->material_descriptor_set_layout};
+	VkDescriptorSetLayout layouts[] = {render_info->frame_descriptor_set_layout};
 	
 	VkPipelineLayoutCreateInfo create_info;
 	create_info.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
