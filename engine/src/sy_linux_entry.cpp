@@ -99,6 +99,8 @@ int main(int argc, char *argv[])
 
 	// Input Init
 	memset(&platform_info->input_info, 0, sizeof(SyInputInfo));
+	platform_info->input_info.window_width = 600;
+	platform_info->input_info.window_height = 600;
 	poll_events(xcb_info, &platform_info->input_info);
 
 	// Init render system

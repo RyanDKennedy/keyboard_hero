@@ -53,7 +53,7 @@ void app_init(SyAppInfo *app_info)
 	app_info->ecs.entity_add_component<SyTransform>(g_state->entity_square);
 	
 	SyDrawInfo *draw_info = app_info->ecs.component<SyDrawInfo>(g_state->entity_square);
-	draw_info->asset_metadata_id = SY_LOAD_MESH_FROM_OBJ(app_info->render_info, &app_info->ecs, "cube.obj");
+	draw_info->asset_metadata_id = SY_LOAD_MESH_FROM_OBJ(app_info->render_info, &app_info->ecs, "text.obj");
 	draw_info->should_draw = true;
 	
 	SyTransform *transform = app_info->ecs.component<SyTransform>(g_state->entity_square);
@@ -69,9 +69,10 @@ void app_run(SyAppInfo *app_info)
 {
     g_state = (Global*)app_info->global_mem;
 
-
-    if (app_info->input_info.q)
+    if (app_info->input_info.escape)
 	app_info->stop_game = true;
+
+    app_info->camera_settings.aspect_ratio = (float)app_info->input_info.window_width / app_info->input_info.window_height;
 
     if (app_info->input_info.p)
 	printf("FPS: %f\n", 1.0f / app_info->delta_time);
