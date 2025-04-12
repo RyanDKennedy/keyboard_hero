@@ -1,4 +1,5 @@
 #include "sy_linux_window.hpp"
+#include <xcb/xproto.h>
 
 void init_window(SyXCBInfo *result, int width, int height, const char *title)
 {
@@ -16,6 +17,8 @@ void init_window(SyXCBInfo *result, int width, int height, const char *title)
 	exit(1);
     }
 
+    // xcb_allow_events_checked(result->conn, XCB_ALLOW_ASYNC_BOTH, XCB_CURRENT_TIME);
+
     // Screen
     result->scr = xcb_setup_roots_iterator(xcb_get_setup(result->conn)).data;
     if(result->scr == NULL)
@@ -28,7 +31,21 @@ void init_window(SyXCBInfo *result, int width, int height, const char *title)
     // Window Creation
     result->win = xcb_generate_id(result->conn);
     uint32_t mask = XCB_CW_BACK_PIXEL | XCB_CW_EVENT_MASK;
-    uint32_t values[] = {result->scr->black_pixel, XCB_EVENT_MASK_EXPOSURE | XCB_EVENT_MASK_KEY_PRESS | XCB_EVENT_MASK_KEY_RELEASE};
+    uint32_t values[] = {result->scr->black_pixel,
+	XCB_EVENT_MASK_EXPOSURE |
+	XCB_EVENT_MASK_KEY_PRESS |
+	XCB_EVENT_MASK_KEY_RELEASE |
+	XCB_EVENT_MASK_BUTTON_PRESS |
+	XCB_EVENT_MASK_BUTTON_RELEASE |
+	XCB_EVENT_MASK_POINTER_MOTION |
+	XCB_EVENT_MASK_POINTER_MOTION_HINT |
+	XCB_EVENT_MASK_BUTTON_1_MOTION |
+	XCB_EVENT_MASK_BUTTON_2_MOTION |
+	XCB_EVENT_MASK_BUTTON_3_MOTION |
+	XCB_EVENT_MASK_BUTTON_4_MOTION |
+	XCB_EVENT_MASK_BUTTON_5_MOTION |
+	XCB_EVENT_MASK_BUTTON_MOTION
+    };
     xcb_create_window(result->conn, XCB_COPY_FROM_PARENT, result->win, result->scr->root, 0, 0, width, height, 0, XCB_WINDOW_CLASS_INPUT_OUTPUT, result->scr->root_visual, mask, values);
 
     // Change Title
@@ -77,6 +94,26 @@ void init_window(SyXCBInfo *result, int width, int height, const char *title)
     // turn off auto repeat
     xcb_xkb_per_client_flags(result->conn, XCB_XKB_ID_USE_CORE_KBD, XCB_XKB_PER_CLIENT_FLAG_DETECTABLE_AUTO_REPEAT, 1, 0, 0, 0);
 
+    // POINTER STUFF
+
+/*
+    xcb_grab_pointer_cookie_t grab_pointer_cookie = xcb_grab_pointer(result->conn, 1, result->win,
+		     XCB_EVENT_MASK_BUTTON_PRESS |
+		     XCB_EVENT_MASK_BUTTON_RELEASE |
+		     XCB_EVENT_MASK_POINTER_MOTION |
+		     XCB_EVENT_MASK_POINTER_MOTION_HINT |
+		     XCB_EVENT_MASK_BUTTON_1_MOTION |
+		     XCB_EVENT_MASK_BUTTON_2_MOTION |
+		     XCB_EVENT_MASK_BUTTON_3_MOTION |
+		     XCB_EVENT_MASK_BUTTON_4_MOTION |
+		     XCB_EVENT_MASK_BUTTON_5_MOTION |
+		     XCB_EVENT_MASK_BUTTON_MOTION, XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC, result->win, XCB_CURSOR_NONE, XCB_CURRENT_TIME);
+    xcb_grab_pointer_reply_t *grab_pointer_reply = xcb_grab_pointer_reply(result->conn, grab_pointer_cookie, NULL);
+    if (grab_pointer_reply->status != XCB_GRAB_STATUS_SUCCESS)
+	SY_ERROR("Failed to grab pointer %d", grab_pointer_reply->status);
+    
+    free(grab_pointer_reply);
+*/
 }
 
 void cleanup_window(SyXCBInfo *xcb_info)

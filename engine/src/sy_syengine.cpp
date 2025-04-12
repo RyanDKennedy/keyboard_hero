@@ -60,8 +60,6 @@ void engine_init(SyPlatformInfo *platform_info, SyAppInfo *app_info, SyEngineSta
     app_init(app_info);
 #endif
 
-
-
     // stop the game signal
     if (app_info->stop_game == true)
     {

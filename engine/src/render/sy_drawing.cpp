@@ -87,20 +87,23 @@ void record_command_buffer(SyRenderInfo *render_info, VkCommandBuffer command_bu
 
 	// Create SyCamera
 	SyTransform *transform = ecs->component<SyTransform>(camera_settings->active_camera);
+	
+	glm::mat4 view;
+	{
+	    glm::vec3 dir(0.0f, 0.0f, 0.0f);
 
-	// SY_OUTPUT_DEBUG("cam aspect ratio %f", camera_settings->aspect_ratio);
+	    dir[0] = glm::sin(glm::radians((float)transform->rotation[1])) * glm::cos(glm::radians((float)transform->rotation[0]));
+	    dir[1] = glm::sin(glm::radians((float)transform->rotation[0]));
+	    dir[2] = glm::cos(glm::radians((float)transform->rotation[1])) * glm::cos(glm::radians((float)transform->rotation[0]));
 
-	glm::mat4 vp_matrix = glm::mat4(1);
-	vp_matrix = glm::rotate(vp_matrix, -glm::radians(transform->rotation[0]), glm::vec3(1, 0, 0));
-	vp_matrix = glm::rotate(vp_matrix, -glm::radians(transform->rotation[1]), glm::vec3(0, 1, 0));
-	vp_matrix = glm::rotate(vp_matrix, -glm::radians(transform->rotation[2]), glm::vec3(0, 0, 2));
-	vp_matrix = glm::translate(vp_matrix, glm::vec3(-transform->position[0], -transform->position[1], -transform->position[2]));
-	glm::mat4 p_matrix = glm::perspective(camera_settings->fov, camera_settings->aspect_ratio, camera_settings->near_plane, camera_settings->far_plane);
-	p_matrix[1][1] *= -1;
-	vp_matrix = p_matrix * vp_matrix;
+	    view = glm::lookAt(transform->position, transform->position + dir, glm::vec3(0.0f, 1.0f, 0.0f));
+	}
+
+	glm::mat4 projection = glm::perspective(camera_settings->fov, camera_settings->aspect_ratio, camera_settings->near_plane, camera_settings->far_plane);
+	projection[1][1] *= -1;
 
 	SyCamera camera;
-	camera.vp_matrix = vp_matrix;
+	camera.vp_matrix = projection * view;
 
 	VkDescriptorSet descriptor_set = render_info->frame_uniform_data[render_info->current_frame].descriptor_allocator.allocate(render_info->logical_device, render_info->frame_descriptor_set_layout);
 	SyUniformAllocation allocation;

@@ -34,9 +34,10 @@ void app_init(SyAppInfo *app_info)
     { // Player creation
 	g_state->player = app_info->ecs.new_entity();
 	app_info->ecs.entity_add_component<SyTransform>(g_state->player);
+
 	SyTransform *transform = app_info->ecs.component<SyTransform>(g_state->player);
 	transform->position = glm::vec3(0.0f, 0.0f, 0.0f);
-	transform->rotation = glm::vec3(0.0f, 0.0f, 0.0f);
+	transform->rotation = glm::vec3(0.0f, 180.0f, 0.0f);
 	transform->scale = glm::vec3(0.0f, 0.0f, 0.0f);
     }
 
@@ -62,7 +63,7 @@ void app_init(SyAppInfo *app_info)
 	transform->rotation = glm::vec3(0.0f, 0.0f, 0.0f);
 	transform->scale = glm::vec3(0.0f, 0.0f, 0.0f);
     }
-    
+
 }
 
 extern "C"
@@ -77,27 +78,16 @@ void app_run(SyAppInfo *app_info)
 
     SyTransform *player_transform = app_info->ecs.component<SyTransform>(g_state->player); 
 
-    if (app_info->input_info.p)
-	printf("FPS: %f\nx: %f y: %f z: %f\n", 1.0f / app_info->delta_time, player_transform->position[0], player_transform->position[1], player_transform->position[2]);
-
-
-
     glm::vec3 front;
     {
- 	front[0] = glm::sin(glm::radians((float)player_transform->rotation[0])) * glm::cos(glm::radians((float)player_transform->rotation[1]));
+ 	front[0] = glm::sin(glm::radians((float)player_transform->rotation[1])) * glm::cos(glm::radians((float)player_transform->rotation[0]));
 	front[1] = 0.0f;
-	front[2] = -1 * glm::cos(glm::radians((float)player_transform->rotation[0])) * glm::cos(glm::radians((float)player_transform->rotation[1]));
+	front[2] = glm::cos(glm::radians((float)player_transform->rotation[1])) * glm::cos(glm::radians((float)player_transform->rotation[0]));
 	front = glm::normalize(front);
     }
+    glm::vec3 up(0.0f, 1.0f, 0.0f);
 
-    glm::vec3 right;
-    {
- 	right[0] = glm::sin(glm::radians((float)player_transform->rotation[0] + 90)) * glm::cos(glm::radians((float)player_transform->rotation[1]));
-	right[1] = 0.0f;
-	right[2] = -1 * glm::cos(glm::radians((float)player_transform->rotation[0] + 90)) * glm::cos(glm::radians((float)player_transform->rotation[1]));
-	right = glm::normalize(right);
-    }
-
+    glm::vec3 right = glm::cross(front, up);
 
     const float speed = 5.0f;
     if (app_info->input_info.w)
@@ -113,23 +103,25 @@ void app_run(SyAppInfo *app_info)
 	player_transform->position -= (float)(app_info->delta_time * speed) * right;
 
     if (app_info->input_info.space)
-	player_transform->position[1] += speed * app_info->delta_time;
+	player_transform->position += (float)(speed * app_info->delta_time) * up;
 
     if (app_info->input_info.shift_left)
-	player_transform->position[1] -= speed * app_info->delta_time;
+	player_transform->position -= (float)(speed * app_info->delta_time) * up;
 
     const float rot_speed = 90.0f;
+
     if (app_info->input_info.arrow_up)
-	player_transform->rotation[1] += app_info->delta_time * rot_speed;
+	player_transform->rotation[0] += app_info->delta_time * rot_speed;
 
     if (app_info->input_info.arrow_down)
+	player_transform->rotation[0] -= app_info->delta_time * rot_speed;
+
+    if (app_info->input_info.arrow_right)
 	player_transform->rotation[1] -= app_info->delta_time * rot_speed;
 
     if (app_info->input_info.arrow_left)
-	player_transform->rotation[0] += app_info->delta_time * rot_speed;
+	player_transform->rotation[1] += app_info->delta_time * rot_speed;
 
-    if (app_info->input_info.arrow_right)
-	player_transform->rotation[0] -= app_info->delta_time * rot_speed;
 }
 
 extern "C"
