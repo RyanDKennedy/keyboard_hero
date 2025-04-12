@@ -108,19 +108,17 @@ void app_run(SyAppInfo *app_info)
     if (app_info->input_info.shift_left)
 	player_transform->position -= (float)(speed * app_info->delta_time) * up;
 
-    const float rot_speed = 90.0f;
+    const float rot_speed = 5.0f;
 
-    if (app_info->input_info.arrow_up)
-	player_transform->rotation[0] += app_info->delta_time * rot_speed;
+    if (app_info->input_info.mouse_dx != 0)
+	player_transform->rotation[1] += app_info->delta_time * rot_speed * -app_info->input_info.mouse_dx;
 
-    if (app_info->input_info.arrow_down)
-	player_transform->rotation[0] -= app_info->delta_time * rot_speed;
+    if (app_info->input_info.mouse_dy != 0)
+	player_transform->rotation[0] += app_info->delta_time * rot_speed * -app_info->input_info.mouse_dy;
 
-    if (app_info->input_info.arrow_right)
-	player_transform->rotation[1] -= app_info->delta_time * rot_speed;
 
-    if (app_info->input_info.arrow_left)
-	player_transform->rotation[1] += app_info->delta_time * rot_speed;
+
+
 
 }
 

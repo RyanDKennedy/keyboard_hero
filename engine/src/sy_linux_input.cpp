@@ -1,8 +1,10 @@
 #include "sy_linux_input.hpp"
 #include "sy_linux_window.hpp"
+#include <xcb/xproto.h>
 #include <xkbcommon/xkbcommon-keysyms.h>
 #include <xkbcommon/xkbcommon.h>
 
+void handle_event_motion_notify(SyXCBInfo *xcb_info, SyInputInfo *input_info, xcb_generic_event_t *event);
 void handle_event_client_message(SyXCBInfo *xcb_info, SyInputInfo *input_info, xcb_generic_event_t *event);
 void handle_event_expose(SyXCBInfo *xcb_info, SyInputInfo *input_info, xcb_generic_event_t *event);
 void handle_event_key_press(SyXCBInfo *xcb_info, SyInputInfo *input_info, xcb_generic_event_t *event);
@@ -14,9 +16,19 @@ void poll_events(SyXCBInfo *xcb_info, SyInputInfo *input_info)
     input_info->window_should_close = false;
     input_info->window_resized = false;
 
+    input_info->mouse_dx = 0;
+    input_info->mouse_dy = 0;
+
     xcb_generic_event_t *event;
     while ( (event = xcb_poll_for_event(xcb_info->conn)) )
     {
+	if (event->response_type == 0)
+	{
+	    SY_ERROR_OUTPUT("XCB Error recieved");
+	    free(event);
+	    continue;
+	}
+
 	switch (event->response_type & ~0x80)
 	{
 	    case XCB_CLIENT_MESSAGE:
@@ -33,11 +45,50 @@ void poll_events(SyXCBInfo *xcb_info, SyInputInfo *input_info)
 		
 	    case XCB_KEY_RELEASE:
 		handle_event_key_release(xcb_info, input_info, event);
+		break;
 
+	    case XCB_MOTION_NOTIFY:
+		handle_event_motion_notify(xcb_info, input_info, event);
+		break;
+
+	    case XCB_BUTTON_PRESS:
+		printf("button press\n");
+		break;
+
+	    case XCB_BUTTON_RELEASE:
+		printf("button released\n");
+		break;
 	}
 
 	free(event);
     }
+
+    if (input_info->mouse_dx != 0 || input_info->mouse_dy != 0)
+    {
+
+	xcb_warp_pointer_checked(xcb_info->conn, XCB_NONE, xcb_info->win, 0, 0, 0, 0, input_info->window_width/2, input_info->window_height/2);
+	xcb_flush(xcb_info->conn);
+
+	printf("mouse moved %d %d\n", input_info->mouse_dx, input_info->mouse_dx);
+    }
+}
+
+void handle_event_motion_notify(SyXCBInfo *xcb_info, SyInputInfo *input_info, xcb_generic_event_t *event)
+{
+    xcb_motion_notify_event_t *message = (xcb_motion_notify_event_t*)event;
+    
+    if (message->event_x == input_info->window_width / 2 && message->event_y == input_info->window_height / 2)
+    {
+	input_info->mouse_x = message->event_x;
+	input_info->mouse_y = message->event_y;
+	return;
+    }
+
+    input_info->mouse_dx += message->event_x - input_info->mouse_x;
+    input_info->mouse_dy += message->event_y - input_info->mouse_y;
+
+    input_info->mouse_x = message->event_x;
+    input_info->mouse_y = message->event_y;
 }
 
 void handle_event_client_message(SyXCBInfo *xcb_info, SyInputInfo *input_info, xcb_generic_event_t *event)

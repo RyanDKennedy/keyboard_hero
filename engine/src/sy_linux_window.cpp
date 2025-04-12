@@ -1,4 +1,6 @@
 #include "sy_linux_window.hpp"
+#include <unistd.h>
+#include <xcb/xcb.h>
 #include <xcb/xproto.h>
 
 void init_window(SyXCBInfo *result, int width, int height, const char *title)
@@ -37,14 +39,7 @@ void init_window(SyXCBInfo *result, int width, int height, const char *title)
 	XCB_EVENT_MASK_KEY_RELEASE |
 	XCB_EVENT_MASK_BUTTON_PRESS |
 	XCB_EVENT_MASK_BUTTON_RELEASE |
-	XCB_EVENT_MASK_POINTER_MOTION |
-	XCB_EVENT_MASK_POINTER_MOTION_HINT |
-	XCB_EVENT_MASK_BUTTON_1_MOTION |
-	XCB_EVENT_MASK_BUTTON_2_MOTION |
-	XCB_EVENT_MASK_BUTTON_3_MOTION |
-	XCB_EVENT_MASK_BUTTON_4_MOTION |
-	XCB_EVENT_MASK_BUTTON_5_MOTION |
-	XCB_EVENT_MASK_BUTTON_MOTION
+	XCB_EVENT_MASK_POINTER_MOTION
     };
     xcb_create_window(result->conn, XCB_COPY_FROM_PARENT, result->win, result->scr->root, 0, 0, width, height, 0, XCB_WINDOW_CLASS_INPUT_OUTPUT, result->scr->root_visual, mask, values);
 
@@ -62,6 +57,8 @@ void init_window(SyXCBInfo *result, int width, int height, const char *title)
     xcb_map_window(result->conn, result->win);
 
     xcb_flush(result->conn);
+    sleep(1);
+
 
     free(wm_protocols_reply);
 
@@ -96,28 +93,19 @@ void init_window(SyXCBInfo *result, int width, int height, const char *title)
 
     // POINTER STUFF
 
-/*
-    xcb_grab_pointer_cookie_t grab_pointer_cookie = xcb_grab_pointer(result->conn, 1, result->win,
-		     XCB_EVENT_MASK_BUTTON_PRESS |
-		     XCB_EVENT_MASK_BUTTON_RELEASE |
-		     XCB_EVENT_MASK_POINTER_MOTION |
-		     XCB_EVENT_MASK_POINTER_MOTION_HINT |
-		     XCB_EVENT_MASK_BUTTON_1_MOTION |
-		     XCB_EVENT_MASK_BUTTON_2_MOTION |
-		     XCB_EVENT_MASK_BUTTON_3_MOTION |
-		     XCB_EVENT_MASK_BUTTON_4_MOTION |
-		     XCB_EVENT_MASK_BUTTON_5_MOTION |
-		     XCB_EVENT_MASK_BUTTON_MOTION, XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC, result->win, XCB_CURSOR_NONE, XCB_CURRENT_TIME);
+    xcb_grab_pointer_cookie_t grab_pointer_cookie = xcb_grab_pointer(result->conn, 0, result->win, XCB_EVENT_MASK_BUTTON_PRESS | XCB_EVENT_MASK_BUTTON_RELEASE | XCB_EVENT_MASK_POINTER_MOTION, XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC, result->win, XCB_CURSOR_NONE, XCB_CURRENT_TIME);
     xcb_grab_pointer_reply_t *grab_pointer_reply = xcb_grab_pointer_reply(result->conn, grab_pointer_cookie, NULL);
     if (grab_pointer_reply->status != XCB_GRAB_STATUS_SUCCESS)
 	SY_ERROR("Failed to grab pointer %d", grab_pointer_reply->status);
     
     free(grab_pointer_reply);
-*/
 }
 
 void cleanup_window(SyXCBInfo *xcb_info)
 {
+    // pointer
+    xcb_ungrab_pointer_checked(xcb_info->conn, XCB_CURRENT_TIME);
+
     // xkb
     xkb_state_unref(xcb_info->xkb_state);
     xkb_keymap_unref(xcb_info->xkb_keymap);
