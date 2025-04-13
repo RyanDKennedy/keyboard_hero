@@ -42,6 +42,7 @@ if(UNIX)
     xcb-xkb
     xkbcommon
     xkbcommon-x11
+    xcb-xinput
   )
 endif(UNIX)
 

@@ -2,10 +2,10 @@
 
 struct SyInputInfo
 {
-    int mouse_x;
-    int mouse_y;
-    int mouse_dx;
-    int mouse_dy;
+    float mouse_x;
+    float mouse_y;
+    float mouse_dx;
+    float mouse_dy;
     int window_width;
     int window_height;
     bool window_should_close;

@@ -1,10 +1,16 @@
 #include "sy_linux_input.hpp"
 #include "sy_linux_window.hpp"
+
+#include <math.h>
+
+#include <xcb/xcb.h>
+#include <xcb/xcb_event.h>
 #include <xcb/xproto.h>
+#include <xcb/xinput.h>
 #include <xkbcommon/xkbcommon-keysyms.h>
 #include <xkbcommon/xkbcommon.h>
 
-void handle_event_motion_notify(SyXCBInfo *xcb_info, SyInputInfo *input_info, xcb_generic_event_t *event);
+void handle_event_input_motion(SyXCBInfo *xcb_info, SyInputInfo *input_info, xcb_generic_event_t *event);
 void handle_event_client_message(SyXCBInfo *xcb_info, SyInputInfo *input_info, xcb_generic_event_t *event);
 void handle_event_expose(SyXCBInfo *xcb_info, SyInputInfo *input_info, xcb_generic_event_t *event);
 void handle_event_key_press(SyXCBInfo *xcb_info, SyInputInfo *input_info, xcb_generic_event_t *event);
@@ -22,6 +28,7 @@ void poll_events(SyXCBInfo *xcb_info, SyInputInfo *input_info)
     xcb_generic_event_t *event;
     while ( (event = xcb_poll_for_event(xcb_info->conn)) )
     {
+	
 	if (event->response_type == 0)
 	{
 	    SY_ERROR_OUTPUT("XCB Error recieved");
@@ -29,7 +36,7 @@ void poll_events(SyXCBInfo *xcb_info, SyInputInfo *input_info)
 	    continue;
 	}
 
-	switch (event->response_type & ~0x80)
+	switch (XCB_EVENT_RESPONSE_TYPE(event))
 	{
 	    case XCB_CLIENT_MESSAGE:
 		handle_event_client_message(xcb_info, input_info, event);
@@ -47,48 +54,71 @@ void poll_events(SyXCBInfo *xcb_info, SyInputInfo *input_info)
 		handle_event_key_release(xcb_info, input_info, event);
 		break;
 
-	    case XCB_MOTION_NOTIFY:
-		handle_event_motion_notify(xcb_info, input_info, event);
-		break;
-
 	    case XCB_BUTTON_PRESS:
-		printf("button press\n");
 		break;
 
 	    case XCB_BUTTON_RELEASE:
-		printf("button released\n");
 		break;
+
+	    case XCB_GE_GENERIC:
+	    {
+		xcb_ge_generic_event_t *ge_event = (xcb_ge_generic_event_t*)event;
+		if (ge_event->extension == xcb_info->xi_opcode)
+		{
+		    switch (ge_event->event_type)
+		    {
+			case XCB_INPUT_MOTION:
+
+			    handle_event_input_motion(xcb_info, input_info, event);
+			    break;
+		    }
+		}
+		break;
+	    }
+
+	    default:
+		SY_OUTPUT_DEBUG("xcb event loop: unknown event %d", XCB_EVENT_RESPONSE_TYPE(event));
+		break;
+
 	}
 
 	free(event);
     }
 
+
     if (input_info->mouse_dx != 0 || input_info->mouse_dy != 0)
     {
-
 	xcb_warp_pointer_checked(xcb_info->conn, XCB_NONE, xcb_info->win, 0, 0, 0, 0, input_info->window_width/2, input_info->window_height/2);
 	xcb_flush(xcb_info->conn);
 
-	printf("mouse moved %d %d\n", input_info->mouse_dx, input_info->mouse_dx);
+	// get the position through here to avoid small bits of drift due to imprecision casting float to int
+	xcb_input_xi_query_pointer_cookie_t cookie = xcb_input_xi_query_pointer(xcb_info->conn, xcb_info->win, xcb_info->master_pointer_id);
+	xcb_generic_error_t *err = NULL;
+	xcb_input_xi_query_pointer_reply_t *reply = xcb_input_xi_query_pointer_reply(xcb_info->conn, cookie, &err);
+
+	SY_ERROR_COND(err != NULL, "Failed to query pointer. error code %d major %d minor %d", err->error_code, err->major_code, err->minor_code);
+
+	input_info->mouse_x = (float)reply->win_x / 65536.0;
+	input_info->mouse_y = (float)reply->win_y / 65536.0;
+
+	free(reply);
+
     }
+
 }
 
-void handle_event_motion_notify(SyXCBInfo *xcb_info, SyInputInfo *input_info, xcb_generic_event_t *event)
+void handle_event_input_motion(SyXCBInfo *xcb_info, SyInputInfo *input_info, xcb_generic_event_t *event)
 {
-    xcb_motion_notify_event_t *message = (xcb_motion_notify_event_t*)event;
+    xcb_input_motion_event_t *message = (xcb_input_motion_event_t*)event;
     
-    if (message->event_x == input_info->window_width / 2 && message->event_y == input_info->window_height / 2)
-    {
-	input_info->mouse_x = message->event_x;
-	input_info->mouse_y = message->event_y;
-	return;
-    }
+    float x_pos = (float)message->event_x / 65536.0;
+    float y_pos = (float)message->event_y / 65536.0;
 
-    input_info->mouse_dx += message->event_x - input_info->mouse_x;
-    input_info->mouse_dy += message->event_y - input_info->mouse_y;
+    input_info->mouse_dx += x_pos - input_info->mouse_x;
+    input_info->mouse_dy += y_pos - input_info->mouse_y;
 
-    input_info->mouse_x = message->event_x;
-    input_info->mouse_y = message->event_y;
+    input_info->mouse_x = x_pos;
+    input_info->mouse_y = y_pos;
 }
 
 void handle_event_client_message(SyXCBInfo *xcb_info, SyInputInfo *input_info, xcb_generic_event_t *event)

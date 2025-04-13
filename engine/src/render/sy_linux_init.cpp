@@ -45,7 +45,8 @@ int sy_render_deinit(SyRenderInfo *render_info)
 void create_instance(SyRenderInfo *render_info)
 {
     // Make sure validation layers are supported if enabled
-    SY_ERROR_COND(sy_g_render_use_validation_layers && check_validation_layer_support(), "RENDERER: Vulkan Validation layers active but not supported.");
+    bool supports_validation_layers = check_validation_layer_support();
+    SY_ERROR_COND(sy_g_render_use_validation_layers == true && supports_validation_layers == false, "RENDERER: Vulkan Validation layers active but not supported.");
 
     // Make sure extensions are supported
     SY_ERROR_COND(check_extension_support(), "RENDERER: Vulkan Extensions not supported");
@@ -95,7 +96,6 @@ void create_instance(SyRenderInfo *render_info)
 
 bool check_validation_layer_support()
 {
-    bool result = true;
     VkResult ok = VK_SUCCESS;
 
     uint32_t layer_count;
@@ -105,6 +105,8 @@ bool check_validation_layer_support()
     VkLayerProperties *available_layers = (VkLayerProperties*)calloc(layer_count, sizeof(VkLayerProperties));
     ok = vkEnumerateInstanceLayerProperties(&layer_count, available_layers);
     SY_ERROR_COND(ok != VK_SUCCESS, "RENDERER: vulkan vkEnumerateInstanceLayerProperties(...) failed.");
+
+    bool result = true;
 
     for (int i = 0; i < sy_g_render_vulkan_layer_amt; ++i)
     {
@@ -116,6 +118,7 @@ bool check_validation_layer_support()
 	    if (strcmp(layer_name, available_layers[available_i].layerName) == 0)
 	    {
 		layer_found = true;
+		break;
 	    }
 	}
 

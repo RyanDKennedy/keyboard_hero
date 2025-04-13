@@ -4,6 +4,7 @@
 #include <string.h>
 
 #include <xcb/xcb.h>
+#include <xcb/xinput.h>
 
 // workaround for xcb-xkb to be c++ compatible
 #define explicit explicit_
@@ -26,9 +27,14 @@ typedef struct
     struct xkb_context *xkb_ctx;
     struct xkb_keymap *xkb_keymap;
     struct xkb_state *xkb_state;
+
+    // xinput stuff
+    uint8_t xi_opcode;
+    xcb_input_device_id_t master_pointer_id;
     
     int win_width;
     int win_height;
+
 } SyXCBInfo;
 
 void init_window(SyXCBInfo *result, int width, int height, const char *title);

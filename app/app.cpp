@@ -55,7 +55,7 @@ void app_init(SyAppInfo *app_info)
 	app_info->ecs.entity_add_component<SyTransform>(g_state->entity_square);
 	
 	SyDrawInfo *draw_info = app_info->ecs.component<SyDrawInfo>(g_state->entity_square);
-	draw_info->asset_metadata_id = SY_LOAD_MESH_FROM_OBJ(app_info->render_info, &app_info->ecs, "axis.obj");
+	draw_info->asset_metadata_id = SY_LOAD_MESH_FROM_OBJ(app_info->render_info, &app_info->ecs, "text.obj");
 	draw_info->should_draw = true;
 	
 	SyTransform *transform = app_info->ecs.component<SyTransform>(g_state->entity_square);
@@ -110,15 +110,18 @@ void app_run(SyAppInfo *app_info)
 
     const float rot_speed = 5.0f;
 
-    if (app_info->input_info.mouse_dx != 0)
+    if (abs(app_info->input_info.mouse_dx) != 0)
 	player_transform->rotation[1] += app_info->delta_time * rot_speed * -app_info->input_info.mouse_dx;
 
-    if (app_info->input_info.mouse_dy != 0)
+    if (abs(app_info->input_info.mouse_dy) != 0)
+    {
 	player_transform->rotation[0] += app_info->delta_time * rot_speed * -app_info->input_info.mouse_dy;
+	if (player_transform->rotation[0] < -85.0)
+	    player_transform->rotation[0] = -85.0;
 
-
-
-
+	if (player_transform->rotation[0] > 85.0)
+	    player_transform->rotation[0] = 85.0;
+    }    
 
 }
 

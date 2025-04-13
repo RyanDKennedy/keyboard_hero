@@ -2,6 +2,7 @@
 #include <unistd.h>
 #include <xcb/xcb.h>
 #include <xcb/xproto.h>
+#include <xcb/xinput.h>
 
 void init_window(SyXCBInfo *result, int width, int height, const char *title)
 {
@@ -38,8 +39,8 @@ void init_window(SyXCBInfo *result, int width, int height, const char *title)
 	XCB_EVENT_MASK_KEY_PRESS |
 	XCB_EVENT_MASK_KEY_RELEASE |
 	XCB_EVENT_MASK_BUTTON_PRESS |
-	XCB_EVENT_MASK_BUTTON_RELEASE |
-	XCB_EVENT_MASK_POINTER_MOTION
+	XCB_EVENT_MASK_BUTTON_RELEASE //|
+	//XCB_EVENT_MASK_POINTER_MOTION
     };
     xcb_create_window(result->conn, XCB_COPY_FROM_PARENT, result->win, result->scr->root, 0, 0, width, height, 0, XCB_WINDOW_CLASS_INPUT_OUTPUT, result->scr->root_visual, mask, values);
 
@@ -57,8 +58,6 @@ void init_window(SyXCBInfo *result, int width, int height, const char *title)
     xcb_map_window(result->conn, result->win);
 
     xcb_flush(result->conn);
-    sleep(1);
-
 
     free(wm_protocols_reply);
 
@@ -93,12 +92,72 @@ void init_window(SyXCBInfo *result, int width, int height, const char *title)
 
     // POINTER STUFF
 
-    xcb_grab_pointer_cookie_t grab_pointer_cookie = xcb_grab_pointer(result->conn, 0, result->win, XCB_EVENT_MASK_BUTTON_PRESS | XCB_EVENT_MASK_BUTTON_RELEASE | XCB_EVENT_MASK_POINTER_MOTION, XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC, result->win, XCB_CURSOR_NONE, XCB_CURRENT_TIME);
-    xcb_grab_pointer_reply_t *grab_pointer_reply = xcb_grab_pointer_reply(result->conn, grab_pointer_cookie, NULL);
-    if (grab_pointer_reply->status != XCB_GRAB_STATUS_SUCCESS)
-	SY_ERROR("Failed to grab pointer %d", grab_pointer_reply->status);
-    
-    free(grab_pointer_reply);
+    {
+	{ // check if xserver supports xinput
+	    const char *xinput_extension_str = "XInputExtension";
+	    xcb_query_extension_cookie_t cookie = xcb_query_extension(result->conn, strlen(xinput_extension_str), xinput_extension_str);
+	    xcb_query_extension_reply_t *reply = xcb_query_extension_reply(result->conn, cookie, NULL);
+	    SY_ERROR_COND(reply->present == 0, "XInput is not supported");
+	    result->xi_opcode = reply->major_opcode;
+	    free(reply);
+	}
+
+	{ // check xinput version
+	    xcb_input_xi_query_version_cookie_t cookie = xcb_input_xi_query_version(result->conn, XCB_INPUT_MAJOR_VERSION, XCB_INPUT_MINOR_VERSION);
+	    xcb_input_xi_query_version_reply_t *reply = xcb_input_xi_query_version_reply(result->conn, cookie, NULL);
+	    SY_ERROR_COND(reply->major_version < XCB_INPUT_MAJOR_VERSION || reply->minor_version < XCB_INPUT_MINOR_VERSION, "XInput versions do not match");
+
+	    free(reply);
+	}
+
+	{ // get master pointer id
+	    
+	    xcb_generic_error_t *err = NULL;
+
+	    xcb_input_xi_query_device_cookie_t cookie = xcb_input_xi_query_device(result->conn, XCB_INPUT_DEVICE_ALL_MASTER);
+	    xcb_input_xi_query_device_reply_t *reply = xcb_input_xi_query_device_reply(result->conn, cookie, &err);
+	    SY_ERROR_COND(err != NULL, "Failed to get master devices");
+
+
+	    int device_infos_amt = xcb_input_xi_query_device_infos_length(reply);
+	    xcb_input_xi_device_info_iterator_t iter = xcb_input_xi_query_device_infos_iterator(reply);
+
+	    for (int i = 0; i < device_infos_amt; ++i)
+	    {
+		if (iter.data->type == XCB_INPUT_DEVICE_TYPE_MASTER_POINTER)
+		{
+		    result->master_pointer_id = iter.data->deviceid;
+		    break;
+		}
+
+		free(iter.data);
+		xcb_input_xi_device_info_next(&iter);
+	    }
+
+	    free(reply);
+	}
+
+	{ // set event mask
+
+	    // Found this online, this is jank. xcb-xinput has no documentation
+	    struct {
+		xcb_input_event_mask_t head;
+		xcb_input_xi_event_mask_t mask;
+	    } mask;
+
+	    mask.head.deviceid = XCB_INPUT_DEVICE_ALL_MASTER;
+	    mask.head.mask_len = sizeof(mask.mask) / sizeof(uint32_t);
+	    mask.mask = XCB_INPUT_XI_EVENT_MASK_MOTION;
+
+	    xcb_generic_error_t *err = NULL;
+	    xcb_void_cookie_t cookie = xcb_input_xi_select_events_checked(result->conn, result->win, 1, &mask.head);
+	    err = xcb_request_check(result->conn, cookie);
+	    SY_ERROR_COND(err != NULL, "Failed to set event mask xinput. code: %d major %d minor %d", err->error_code, err->major_code, err->minor_code);
+	    xcb_flush(result->conn);
+	}
+
+    }
+
 }
 
 void cleanup_window(SyXCBInfo *xcb_info)
