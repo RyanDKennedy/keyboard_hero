@@ -61,9 +61,25 @@ void app_init(SyAppInfo *app_info)
 	SyTransform *transform = app_info->ecs.component<SyTransform>(g_state->entity_square);
 	transform->position = glm::vec3(0.0f, 0.0f, 0.0f);
 	transform->rotation = glm::vec3(0.0f, 0.0f, 0.0f);
-	transform->scale = glm::vec3(0.0f, 0.0f, 0.0f);
+	transform->scale = glm::vec3(1.0f, 1.0f, 1.0f);
     }
 
+    {
+	SyEntityHandle plane = app_info->ecs.new_entity();
+
+	app_info->ecs.entity_add_component<SyDrawInfo>(plane);
+	app_info->ecs.entity_add_component<SyTransform>(plane);
+
+	SyDrawInfo *draw_info = app_info->ecs.component<SyDrawInfo>(plane);
+	draw_info->asset_metadata_id = SY_LOAD_MESH_FROM_OBJ(app_info->render_info, &app_info->ecs, "plane.obj");
+	draw_info->should_draw = true;
+	
+	SyTransform *transform = app_info->ecs.component<SyTransform>(plane);
+	transform->position = glm::vec3(0.0f, 0.0f, 0.0f);
+	transform->rotation = glm::vec3(0.0f, 0.0f, 0.0f);
+	transform->scale = glm::vec3(10.0f, 1.0f, 10.0f);
+
+    }
 }
 
 extern "C"

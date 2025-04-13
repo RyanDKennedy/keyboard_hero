@@ -28,7 +28,7 @@ void sy_render_info_init(SyRenderInfo *render_info, int win_width, int win_heigh
     sy_render_create_allocator(render_info);
     sy_render_create_pipelines(render_info);
 
-    render_info->frame_uniform_data = new SyFrameUniformData[SY_RENDER_MAX_FRAMES_IN_FLIGHT];
+    render_info->frame_uniform_data = new SyFrameUniformDataInfo[SY_RENDER_MAX_FRAMES_IN_FLIGHT];
     for (int i = 0; i < SY_RENDER_MAX_FRAMES_IN_FLIGHT; ++i)
     {
 	render_info->frame_uniform_data[i].descriptor_allocator.init_pool(render_info->logical_device, 20, 1);
@@ -71,7 +71,7 @@ void sy_render_info_deinit(SyRenderInfo *render_info)
     free(render_info->render_finished_semaphores);
     free(render_info->in_flight_fences);
     
-    for (int i = 0; i < render_info->swapchain_framebuffers_amt; ++i)
+    for (uint32_t i = 0; i < render_info->swapchain_framebuffers_amt; ++i)
     {
 	vkDestroyFramebuffer(render_info->logical_device, render_info->swapchain_framebuffers[i], NULL);
     }

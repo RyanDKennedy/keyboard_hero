@@ -48,6 +48,8 @@ endif(UNIX)
 
 if(CMAKE_BUILD_TYPE STREQUAL "Release")
   list(APPEND SY_LINK_LIBRARIES app)
+elseif(CMAKE_BUILD_TYPE STREQUAL "DebugSanitize")
+  list(APPEND SY_LINK_LIBRARIES app)
 endif()
 
 add_executable(${PROJECT_NAME} ${SY_SOURCE_FILES})

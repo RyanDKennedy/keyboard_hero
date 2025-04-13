@@ -113,7 +113,7 @@ bool check_validation_layer_support()
 	const char *layer_name = sy_g_render_validation_layers[i];
 
 	bool layer_found = false;
-	for (int available_i; available_i < layer_count; ++available_i)
+	for (size_t available_i = 0; available_i < layer_count; ++available_i)
 	{
 	    if (strcmp(layer_name, available_layers[available_i].layerName) == 0)
 	    {

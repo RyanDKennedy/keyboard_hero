@@ -225,7 +225,7 @@ int go_to_root_path()
 
     // Get the executable path
     {
-	size_t root_path_len = readlink("/proc/self/exe", path, 256);
+	ssize_t root_path_len = readlink("/proc/self/exe", path, 256);
 	if (root_path_len == -1)
 	{
 	    return -1;

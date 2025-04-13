@@ -1,7 +1,7 @@
 #include "sy_drawing.hpp"
 
 #include "components/sy_transform.hpp"
-#include "render/sy_frame_uniform_data.hpp"
+#include "render/sy_frame_uniform_data_info.hpp"
 #include "render/sy_render_defines.hpp"
 #include "render/sy_render_info.hpp"
 #include "render/sy_resources.hpp"
@@ -12,13 +12,17 @@
 #include "sy_swapchain.hpp"
 #include "types/sy_camera_settings.hpp"
 #include "types/sy_mesh.hpp"
+#include <glm/ext/matrix_transform.hpp>
 #include <stdlib.h>
+#include <vulkan/vulkan_core.h>
+
+
 
 void recreate_swapchain(SyRenderInfo *render_info, SyInputInfo *input_info)
 {
     vkDeviceWaitIdle(render_info->logical_device);
 
-    for (int i = 0; i < render_info->swapchain_framebuffers_amt; ++i)
+    for (int i = 0; i < (int)render_info->swapchain_framebuffers_amt; ++i)
     {
 	vkDestroyFramebuffer(render_info->logical_device, render_info->swapchain_framebuffers[i], NULL);
     }
@@ -27,6 +31,48 @@ void recreate_swapchain(SyRenderInfo *render_info, SyInputInfo *input_info)
 
     sy_render_create_swapchain(render_info, input_info->window_width, input_info->window_height);
     sy_render_create_swapchain_framebuffers(render_info);
+}
+
+VkDescriptorSet create_and_write_to_descriptor_set_and_buffer(SyRenderInfo *render_info, VkDescriptorSetLayout layout, void *data, size_t data_size)
+{
+    VkDescriptorSet descriptor_set = render_info->frame_uniform_data[render_info->current_frame].descriptor_allocator.allocate(render_info->logical_device, layout);
+    SyUniformAllocation allocation;
+    
+    { // create uniform buffer and move data into it
+	VkBufferCreateInfo buffer_info = { VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO };
+	buffer_info.size = data_size;
+	buffer_info.usage = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
+	
+	VmaAllocationCreateInfo alloc_info = {0};
+	alloc_info.usage = VMA_MEMORY_USAGE_AUTO_PREFER_HOST;
+	alloc_info.flags = VMA_ALLOCATION_CREATE_HOST_ACCESS_RANDOM_BIT;
+	
+	vmaCreateBuffer(render_info->vma_allocator, &buffer_info, &alloc_info, &allocation.buffer, &allocation.allocation, nullptr);
+	render_info->frame_uniform_data[render_info->current_frame].allocations.push_back(allocation);
+	
+	vmaCopyMemoryToAllocation(render_info->vma_allocator, data, allocation.allocation, 0, data_size);
+    }
+    
+    VkDescriptorBufferInfo buffer_info;
+    buffer_info.buffer = allocation.buffer;
+    buffer_info.offset = 0;
+    buffer_info.range = data_size;
+    
+    VkWriteDescriptorSet descriptor_write;
+    descriptor_write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+    descriptor_write.pNext = NULL;
+    descriptor_write.dstSet = descriptor_set;
+    descriptor_write.dstBinding = 0;
+    descriptor_write.dstArrayElement = 0;
+    descriptor_write.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+    descriptor_write.descriptorCount = 1;
+    descriptor_write.pBufferInfo = &buffer_info;
+    descriptor_write.pImageInfo = NULL;
+    descriptor_write.pTexelBufferView = NULL;
+    
+    vkUpdateDescriptorSets(render_info->logical_device, 1, &descriptor_write, 0, NULL);
+
+    return descriptor_set;
 }
 
 
@@ -102,46 +148,13 @@ void record_command_buffer(SyRenderInfo *render_info, VkCommandBuffer command_bu
 	glm::mat4 projection = glm::perspective(camera_settings->fov, camera_settings->aspect_ratio, camera_settings->near_plane, camera_settings->far_plane);
 	projection[1][1] *= -1;
 
-	SyCamera camera;
-	camera.vp_matrix = projection * view;
+	struct
+	{
+	    glm::mat4 vp_matrix;
+	} frame_uniform_structure;
+	frame_uniform_structure.vp_matrix = projection * view;
 
-	VkDescriptorSet descriptor_set = render_info->frame_uniform_data[render_info->current_frame].descriptor_allocator.allocate(render_info->logical_device, render_info->frame_descriptor_set_layout);
-	SyUniformAllocation allocation;
-	
-	{ // create uniform buffer and move data into it
-	    VkBufferCreateInfo buffer_info = { VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO };
-	    buffer_info.size = sizeof(SyCamera);
-	    buffer_info.usage = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
-	    
-	    VmaAllocationCreateInfo alloc_info = {0};
-	    alloc_info.usage = VMA_MEMORY_USAGE_AUTO_PREFER_HOST;
-	    alloc_info.flags = VMA_ALLOCATION_CREATE_HOST_ACCESS_RANDOM_BIT;
-	    
-	    vmaCreateBuffer(render_info->vma_allocator, &buffer_info, &alloc_info, &allocation.buffer, &allocation.allocation, nullptr);
-	    render_info->frame_uniform_data[render_info->current_frame].allocations.push_back(allocation);
-	    
-	    vmaCopyMemoryToAllocation(render_info->vma_allocator, &camera, allocation.allocation, 0, sizeof(SyCamera));
-	}
-	
-	VkDescriptorBufferInfo buffer_info;
-	buffer_info.buffer = allocation.buffer;
-	buffer_info.offset = 0;
-	buffer_info.range = sizeof(SyCamera);
-	
-	VkWriteDescriptorSet descriptor_write;
-	descriptor_write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-	descriptor_write.pNext = NULL;
-	descriptor_write.dstSet = descriptor_set;
-	descriptor_write.dstBinding = 0;
-	descriptor_write.dstArrayElement = 0;
-	descriptor_write.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-	descriptor_write.descriptorCount = 1;
-	descriptor_write.pBufferInfo = &buffer_info;
-	descriptor_write.pImageInfo = NULL;
-	descriptor_write.pTexelBufferView = NULL;
-	
-	vkUpdateDescriptorSets(render_info->logical_device, 1, &descriptor_write, 0, NULL);
-
+	VkDescriptorSet descriptor_set = create_and_write_to_descriptor_set_and_buffer(render_info, render_info->frame_descriptor_set_layout, &frame_uniform_structure, sizeof(frame_uniform_structure));
 	vkCmdBindDescriptorSets(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, render_info->single_color_pipeline_layout, 0, 1, &descriptor_set, 0, NULL);
     }
 
@@ -163,6 +176,27 @@ void record_command_buffer(SyRenderInfo *render_info, VkCommandBuffer command_bu
 	    case SyAssetType::mesh:
 	    {
 		SyMesh *mesh = ecs->component_from_index<SyMesh>(asset_metadata->asset_component_index);
+
+		struct
+		{
+		    glm::mat4 model_matrix;
+		} mesh_uniform_struct;
+		mesh_uniform_struct.model_matrix = glm::mat4(1);
+
+		// Get model matrix information
+		if (ecs->entity_has_component<SyTransform>(i) == true)
+		{
+		    SyTransform *transform = ecs->component<SyTransform>(i);
+
+		    mesh_uniform_struct.model_matrix = glm::scale(glm::mat4(1), transform->scale) * mesh_uniform_struct.model_matrix;
+		    mesh_uniform_struct.model_matrix = glm::rotate(glm::mat4(1), glm::radians(transform->rotation[0]), glm::vec3(1.0f, 0.0f, 0.0f)) * mesh_uniform_struct.model_matrix;
+		    mesh_uniform_struct.model_matrix = glm::rotate(glm::mat4(1), glm::radians(transform->rotation[1]), glm::vec3(0.0f, 1.0f, 0.0f)) * mesh_uniform_struct.model_matrix;
+		    mesh_uniform_struct.model_matrix = glm::rotate(glm::mat4(1), glm::radians(transform->rotation[2]), glm::vec3(0.0f, 0.0f, 1.0f)) * mesh_uniform_struct.model_matrix;
+		    mesh_uniform_struct.model_matrix = glm::translate(glm::mat4(1), transform->position) * mesh_uniform_struct.model_matrix;
+		}
+
+		VkDescriptorSet descriptor_set = create_and_write_to_descriptor_set_and_buffer(render_info, render_info->object_descriptor_set_layout, &mesh_uniform_struct, sizeof(mesh_uniform_struct));
+		vkCmdBindDescriptorSets(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, render_info->single_color_pipeline_layout, 2, 1, &descriptor_set, 0, NULL);
 
 		// Buffers
 		VkDeviceSize vertex_buffer_offset = 0;

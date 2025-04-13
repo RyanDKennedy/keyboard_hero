@@ -10,7 +10,7 @@ struct SyUniformAllocation
     VkBuffer buffer;
 };
 
-struct SyFrameUniformData
+struct SyFrameUniformDataInfo
 {
     SyDescriptorAllocator descriptor_allocator;
     std::vector<SyUniformAllocation> allocations;

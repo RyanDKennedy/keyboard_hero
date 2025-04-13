@@ -22,9 +22,10 @@ int classify_line(char *line)
     prefixes[SY_OBJ_LINE_TYPE_TEXTURE] = "vt";
     prefixes[SY_OBJ_LINE_TYPE_FACE] = "f";
     
-    for (int i = 0; i < prefixes_amt; ++i)
+    for (size_t i = 0; i < prefixes_amt; ++i)
     {
-	if (strlen(line) < strlen(prefixes[i]))
+	size_t line_length = strlen(line);
+	if (line_length < strlen(prefixes[i]))
 	    continue;
 
 	if (memcmp(line, prefixes[i], strlen(prefixes[i])) == 0)
@@ -39,7 +40,8 @@ int classify_line(char *line)
 void parse_space_seperated_floats(int amt, char *start, float *out_values)
 {
     int out_index = 0;
-    for (int i = 0; i < strlen(start); ++i)
+    int start_length = strlen(start);
+    for (int i = 0; i < start_length; ++i)
     {
 	if (start[i] == ' ')
 	{
@@ -53,7 +55,8 @@ void parse_space_seperated_floats(int amt, char *start, float *out_values)
 void parse_indices_from_face(int amt, char *start, uint32_t *out_values)
 {
     int out_index = 0;
-    for (int i = 0; i < strlen(start); ++i)
+    int start_length = strlen(start);
+    for (int i = 0; i < start_length; ++i)
     {
 	if (start[i] == ' ')
 	{
@@ -90,7 +93,7 @@ int sy_parse_obj(const char *obj_path, float **out_vertices, size_t *out_vertice
 	{
 	    size_t line_index = 0;
 	    lines[line_index++] = file_contents;
-	    for (size_t i = 0; i < file_contents_size - 1; ++i)
+	    for (size_t i = 0; i < file_contents_size-1; ++i)
 	    {
 		if (file_contents[i] == '\n')
 		{
@@ -108,7 +111,8 @@ int sy_parse_obj(const char *obj_path, float **out_vertices, size_t *out_vertice
     // Count Vertices
     for (size_t line_num = 0; line_num < lines_amt; ++line_num)
     {
-	if (classify_line(lines[line_num]) == SY_OBJ_LINE_TYPE_VERTEX)
+	size_t line_type = classify_line(lines[line_num]);
+	if (line_type == SY_OBJ_LINE_TYPE_VERTEX)
 	    ++vertices_amt;
     }
     vertices_size = vertices_amt * 3;

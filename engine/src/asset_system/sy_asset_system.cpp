@@ -19,10 +19,14 @@ size_t sy_load_mesh_from_obj(SyRenderInfo *render_info, SyEcs *ecs, const char *
 	float *vertex_data = NULL;
 	size_t index_data_size = 0;
 	size_t vertex_data_size = 0;
-	sy_parse_obj(obj_path, &vertex_data, &vertex_data_size, &index_data, &index_data_size);
-	mesh_comp->index_amt = index_data_size;
-	sy_render_create_vertex_buffer(render_info, vertex_data_size, sizeof(float) * 3, vertex_data, &mesh_comp->vertex_buffer, &mesh_comp->vertex_buffer_alloc);
-	sy_render_create_index_buffer(render_info, index_data_size, index_data, &mesh_comp->index_buffer, &mesh_comp->index_buffer_alloc);
+	SY_ERROR_COND(sy_parse_obj(obj_path, &vertex_data, &vertex_data_size, &index_data, &index_data_size) != 0);
+
+	const size_t vertex_size = sizeof(float) * 3;
+	sy_render_create_vertex_buffer(render_info, vertex_data_size / vertex_size, vertex_size, vertex_data, &mesh_comp->vertex_buffer, &mesh_comp->vertex_buffer_alloc);
+
+	mesh_comp->index_amt = index_data_size / sizeof(uint32_t);
+	sy_render_create_index_buffer(render_info, index_data_size / sizeof(uint32_t), index_data, &mesh_comp->index_buffer, &mesh_comp->index_buffer_alloc);
+
 	free(vertex_data);
 	free(index_data);
     }

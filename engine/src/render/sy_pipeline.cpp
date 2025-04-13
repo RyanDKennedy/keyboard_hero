@@ -90,6 +90,7 @@ VkPipeline sy_render_create_pipeline(SyRenderInfo *render_info, SyPipelineCreate
     input_assembly_create_info.primitiveRestartEnable = VK_FALSE; // some random EBO shit
 
     // viewport
+/*
     VkViewport viewport;
     viewport.width = render_info->swapchain_image_extent.width;
     viewport.height = render_info->swapchain_image_extent.height;
@@ -97,6 +98,7 @@ VkPipeline sy_render_create_pipeline(SyRenderInfo *render_info, SyPipelineCreate
     viewport.y = 0.0f;
     viewport.maxDepth = 1.0f;
     viewport.minDepth = 0.0f;
+*/
 
     // scissor
     VkRect2D scissor;

@@ -18,7 +18,7 @@ void sy_render_create_logical_device(SyRenderInfo *render_info)
     uint32_t queue_families[] = {render_info->graphics_queue_family_index, render_info->present_queue_family_index};
     
     float queue_priority[] = {1.0f};
-    for (int i = 0; i < amt_of_unique_queue_families; ++i)
+    for (size_t i = 0; i < amt_of_unique_queue_families; ++i)
     {
 	queue_create_infos[i].sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
 	queue_create_infos[i].flags = 0;

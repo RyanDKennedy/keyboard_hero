@@ -7,7 +7,7 @@
 
 #include "glm_include.hpp"
 
-#include "sy_frame_uniform_data.hpp"
+#include "sy_frame_uniform_data_info.hpp"
 
 struct SyRenderInfo
 {
@@ -58,14 +58,11 @@ struct SyRenderInfo
     VkPipeline single_color_pipeline;
 
     // Uniforms
-    SyFrameUniformData *frame_uniform_data; // array of size SY_RENDER_MAX_FRAMES_IN_FLIGHT
+    SyFrameUniformDataInfo *frame_uniform_data; // array of size SY_RENDER_MAX_FRAMES_IN_FLIGHT
 
 };
 
 void sy_render_info_init(SyRenderInfo *render_info, int win_width, int win_height);
 void sy_render_info_deinit(SyRenderInfo *render_info);
 
-struct SyCamera
-{
-    glm::mat4 vp_matrix;
-};
+

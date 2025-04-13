@@ -22,7 +22,7 @@ void sy_render_create_allocator(SyRenderInfo *render_info)
 void sy_render_create_pipelines(SyRenderInfo *render_info)
 {
     { // Create Pipeline Layouts
-	VkDescriptorSetLayout layouts[] = {render_info->frame_descriptor_set_layout};
+	VkDescriptorSetLayout layouts[] = {render_info->frame_descriptor_set_layout, render_info->material_descriptor_set_layout, render_info->object_descriptor_set_layout};
 	
 	VkPipelineLayoutCreateInfo create_info;
 	create_info.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
@@ -286,7 +286,7 @@ void sy_render_create_swapchain_framebuffers(SyRenderInfo *render_info)
     render_info->swapchain_framebuffers = (VkFramebuffer*)calloc(render_info->swapchain_framebuffers_amt, sizeof(VkFramebuffer));
 
     // Create a framebuffer for each image view
-    for (int i = 0; i < render_info->swapchain_framebuffers_amt; ++i)
+    for (uint32_t i = 0; i < render_info->swapchain_framebuffers_amt; ++i)
     {
 	VkImageView attachments[] = { render_info->swapchain_image_views[i] };
 

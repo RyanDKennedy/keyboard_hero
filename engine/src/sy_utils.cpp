@@ -20,14 +20,14 @@ char* sy_read_resource_file(const char *filepath, size_t *out_size)
     size_t size = ftell(fd);
     rewind(fd);
 
-    *out_size = size;
+
     
     // allocate and read into buffer
-    char *result = (char*) malloc(sizeof(char) * size);
+    char *result = (char*) malloc(sizeof(char) * (size + 1));
     size_t data_read = 0;
     while (data_read < size)
     {
-	data_read += fread(result, sizeof(char), size, fd);
+	data_read += fread(result+data_read, sizeof(char), size-data_read, fd);
 
 	// check for errors
 	if (ferror(fd) != 0)
@@ -40,5 +40,8 @@ char* sy_read_resource_file(const char *filepath, size_t *out_size)
 
     fclose(fd);
 
+    result[data_read] = '\0';
+    
+    *out_size = data_read;    
     return result;
 }

@@ -54,7 +54,7 @@ void sy_render_create_swapchain(SyRenderInfo *render_info, int window_width, int
 	
 	// Assigning a value from the formats we just got
 	surface_format = formats[0]; // Default value
-	for (int i = 0; i < format_amt; ++i)
+	for (uint32_t i = 0; i < format_amt; ++i)
 	{
 	    // Ideal value
 	    if (formats[i].format == VK_FORMAT_B8G8R8A8_SRGB &&
@@ -87,7 +87,7 @@ void sy_render_create_swapchain(SyRenderInfo *render_info, int window_width, int
 
 	// Assigning a value from the present modes we just got
 	present_mode = VK_PRESENT_MODE_FIFO_KHR; // default value
-	for (int i = 0; i < present_mode_amt;  ++i)
+	for (uint32_t i = 0; i < present_mode_amt;  ++i)
 	{
 	    // Ideal value
 	    if (present_modes[i] == VK_PRESENT_MODE_MAILBOX_KHR)
@@ -160,7 +160,7 @@ void sy_render_create_swapchain(SyRenderInfo *render_info, int window_width, int
     render_info->swapchain_image_views_amt = render_info->swapchain_images_amt;
     render_info->swapchain_image_views = (VkImageView*)calloc(render_info->swapchain_image_views_amt, sizeof(VkImageView));
 
-    for (int i = 0; i < render_info->swapchain_image_views_amt; ++i)
+    for (uint32_t i = 0; i < render_info->swapchain_image_views_amt; ++i)
     {
 	VkImageViewCreateInfo create_info;
 	create_info.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;

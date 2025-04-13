@@ -139,11 +139,16 @@ void engine_destroy(SyPlatformInfo *platform_info, SyAppInfo *app_info, SyEngine
     {
 	if (app_info->ecs.is_component_index_used<SyMesh>(i) == true)
 	{
+	    SY_OUTPUT_DEBUG("Starting destroying mesh index %lu", i);
 	    sy_destroy_mesh_from_index(&platform_info->render_info, &app_info->ecs, i);
+	    SY_OUTPUT_DEBUG("Finished destroying mesh index %lu", i);
 	}
     }
 
+    SY_OUTPUT_DEBUG("starting destroying ecs");
     app_info->ecs.destroy();
+
+    SY_OUTPUT_DEBUG("Destroyed ECS");
 
     sy_render_info_deinit(&platform_info->render_info);
 

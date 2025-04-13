@@ -4,26 +4,19 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <string.h>
+#include <errno.h>
+#include "sy_macros.hpp"
 
 /**
  * @brief A vector class which chooses to not store the contained type as part of it's type, and instead relies on you to know the type when you are accessing the vector.
  */
 struct SyAmbiguousVector
 {
-    size_t m_element_size;
-
     void *m_memory = nullptr;
+    size_t m_element_size;
     size_t m_alloc_length;
     size_t m_filled_length;
 
-    /**
-     * @brief Useless constructor.
-     */
-    SyAmbiguousVector()
-    {
-	m_memory = nullptr;
-    }
-    
     /**
      * @brief Initializes the vector and requires you to state what type this vector is going to actually contain.
      */
@@ -33,10 +26,9 @@ struct SyAmbiguousVector
 	m_element_size = sizeof(T);
 	m_filled_length = 0;
 	
-	m_memory = NULL;
-	m_alloc_length = 0;
-	reallocate(2);
-
+	m_memory = calloc(2, m_element_size);
+	SY_ERROR_COND(m_memory == NULL, "errno %s", strerror(errno));
+	m_alloc_length = 2;
     };
 
     /**
@@ -54,10 +46,12 @@ struct SyAmbiguousVector
     void reallocate(size_t size)
     {
 	size_t old_alloc_length =  m_alloc_length;
-	m_memory = realloc(m_memory, size * m_element_size);
+	SY_ASSERT(m_memory != NULL);
+	m_memory = reallocarray(m_memory, size, m_element_size);
 	m_alloc_length = size;
 
-	memset((uint8_t*)m_memory + (old_alloc_length * m_element_size), 0, (m_alloc_length - old_alloc_length) * m_element_size);
+	void *addr = (void*)((uint8_t*)m_memory + (old_alloc_length * m_element_size));
+	memset(addr, 0, ((int)size - (int)old_alloc_length) * m_element_size);
     }
 
     /**
@@ -71,10 +65,10 @@ struct SyAmbiguousVector
 	++m_filled_length;
 	if (m_filled_length > m_alloc_length)
 	{
-	    this->reallocate(m_alloc_length * 2);
+	    reallocate(m_alloc_length * 2);
 	}
 	
-	const size_t fill_index = m_filled_length - 1;
+	const size_t fill_index = size() - 1;
 	
 	memcpy((uint8_t*)m_memory + (fill_index * m_element_size), &element, m_element_size);
     }

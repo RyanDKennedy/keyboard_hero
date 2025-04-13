@@ -23,7 +23,7 @@ void sy_render_create_physical_device(SyRenderInfo *render_info)
     uint32_t present_family_index = -1;
     uint32_t graphics_family_index = -1;
 
-    for (int i = 0; i < device_count; ++i)
+    for (uint32_t i = 0; i < device_count; ++i)
     {
 	VkPhysicalDeviceProperties props;
 	vkGetPhysicalDeviceProperties(devices[i], &props);
@@ -72,7 +72,7 @@ bool is_device_suitable(VkSurfaceKHR surface, VkPhysicalDevice device, uint32_t 
 	VkQueueFamilyProperties *queue_family_properties = (VkQueueFamilyProperties*)calloc(queue_family_count, sizeof(VkQueueFamilyProperties));
 	vkGetPhysicalDeviceQueueFamilyProperties(device, &queue_family_count, queue_family_properties);
 
-	for (int i = 0; i < queue_family_count; ++i)
+	for (uint32_t i = 0; i < queue_family_count; ++i)
 	{
 	    VkBool32 present_support = false;
 	    ok = vkGetPhysicalDeviceSurfaceSupportKHR(device, i, surface, &present_support);
@@ -116,7 +116,7 @@ bool is_device_suitable(VkSurfaceKHR surface, VkPhysicalDevice device, uint32_t 
 	{ // For each required extension go through the entire list of available extensions
 	    bool this_extension_supported = false;
 
-	    for (int j = 0; j < extension_count; ++j)
+	    for (uint32_t j = 0; j < extension_count; ++j)
 	    { // Go until match or none left
 		if (strcmp(sy_g_render_vulkan_device_extensions[i], extension_properties[j].extensionName) == 0)
 		{
