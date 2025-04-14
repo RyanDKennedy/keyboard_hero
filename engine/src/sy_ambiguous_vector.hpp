@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstdlib>
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
@@ -17,6 +18,10 @@ struct SyAmbiguousVector
     size_t m_alloc_length;
     size_t m_filled_length;
 
+#ifndef NDEBUG
+    void *(*m_reallocarray_func)(void*, size_t, size_t) noexcept(true);
+#endif
+
     /**
      * @brief Initializes the vector and requires you to state what type this vector is going to actually contain.
      */
@@ -29,6 +34,11 @@ struct SyAmbiguousVector
 	m_memory = calloc(2, m_element_size);
 	SY_ERROR_COND(m_memory == NULL, "errno %s", strerror(errno));
 	m_alloc_length = 2;
+
+#ifndef NDEBUG
+	m_reallocarray_func = reallocarray;
+#endif
+
     };
 
     /**
@@ -47,7 +57,11 @@ struct SyAmbiguousVector
     {
 	size_t old_alloc_length =  m_alloc_length;
 	SY_ASSERT(m_memory != NULL);
+#ifndef NDEBUG
+	m_memory = m_reallocarray_func(m_memory, size, m_element_size);
+#else
 	m_memory = reallocarray(m_memory, size, m_element_size);
+#endif
 	m_alloc_length = size;
 
 	void *addr = (void*)((uint8_t*)m_memory + (old_alloc_length * m_element_size));

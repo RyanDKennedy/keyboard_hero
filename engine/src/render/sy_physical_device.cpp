@@ -31,7 +31,7 @@ void sy_render_create_physical_device(SyRenderInfo *render_info)
     }
 
     // Choose device
-    for (int i = 0; i < device_count; ++i)
+    for (uint32_t i = 0; i < device_count; ++i)
     {
 	if (is_device_suitable(render_info->surface, devices[i], &graphics_family_index, &present_family_index))
 	{

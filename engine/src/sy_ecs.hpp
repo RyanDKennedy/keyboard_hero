@@ -89,16 +89,12 @@ struct SyEcs
     {
 	for (size_t i = 0; i < m_current_type_id; ++i)
 	{
-	    SY_OUTPUT_DEBUG("Currently trying to free component %s", m_registered_type_names[i]);
 	    m_component_used_arr[i].destroy();
 	    m_component_data_arr[i].destroy();
-	    SY_OUTPUT_DEBUG("Finished freeing component %s", m_registered_type_names[i]);
 	}
 	
-	SY_OUTPUT_DEBUG("Starting Destroying entity arrays, should be %lu %lu", sizeof(bool), sizeof(SyEntityData));
 	m_entity_used.destroy();
 	m_entity_data.destroy();
-	SY_OUTPUT_DEBUG("Finished Destroying entity arrays");
     }
     
     // Type methods
@@ -272,7 +268,6 @@ struct SyEcs
      */
     SyEntityHandle new_entity()
     {
-	SY_OUTPUT_DEBUG("Allocating new entity");
 	// Find the lowest unused entity handle
 	SyEntityHandle i = 0;
 	for (;; ++i)
@@ -285,8 +280,7 @@ struct SyEcs
 	m_entity_used.get<bool>(i) = true;
 	
 	// Set the entity to 0.
-	 memset(&m_entity_data.get<SyEntityData>(i), 0, sizeof(SyEntityData));
-	 SY_OUTPUT_DEBUG("Allocated new entity %lu", i);
+	memset(&m_entity_data.get<SyEntityData>(i), 0, sizeof(SyEntityData));
 	
 	return i;
     }
