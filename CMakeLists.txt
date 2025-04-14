@@ -26,7 +26,7 @@ elseif(CMAKE_BUILD_TYPE STREQUAL "Release")
   file(MAKE_DIRECTORY ${CMAKE_SOURCE_DIR}/bin/release)
   set(EXECUTABLE_OUTPUT_PATH ${CMAKE_SOURCE_DIR}/bin/release)
   set(LIBRARY_OUTPUT_PATH ${CMAKE_SOURCE_DIR}/bin/release)
-  set(CMAKE_CXX_FLAGS "-o2")
+  set(CMAKE_CXX_FLAGS "-o2 -DNDEBUG")
 endif()
 
 add_subdirectory(engine)

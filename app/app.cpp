@@ -60,8 +60,8 @@ void app_init(SyAppInfo *app_info)
 	
 	SyTransform *transform = app_info->ecs.component<SyTransform>(g_state->entity_square);
 	transform->position = glm::vec3(0.0f, 0.0f, 0.0f);
-	transform->rotation = glm::vec3(0.0f, 0.0f, 0.0f);
-	transform->scale = glm::vec3(1.0f, 1.0f, 1.0f);
+	transform->rotation = glm::vec3(0.0f, 40.0f, 0.0f);
+	transform->scale = glm::vec3(1.0f, 5.0f, 1.0f);
     }
 
     {
@@ -77,9 +77,9 @@ void app_init(SyAppInfo *app_info)
 	SyTransform *transform = app_info->ecs.component<SyTransform>(plane);
 	transform->position = glm::vec3(0.0f, 0.0f, 0.0f);
 	transform->rotation = glm::vec3(0.0f, 0.0f, 0.0f);
-	transform->scale = glm::vec3(10.0f, 1.0f, 10.0f);
-
+	transform->scale = glm::vec3(3.0f, 1.0f, 3.0f);
     }
+
 }
 
 extern "C"

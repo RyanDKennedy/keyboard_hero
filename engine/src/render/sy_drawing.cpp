@@ -177,26 +177,39 @@ void record_command_buffer(SyRenderInfo *render_info, VkCommandBuffer command_bu
 	    {
 		SyMesh *mesh = ecs->component_from_index<SyMesh>(asset_metadata->asset_component_index);
 
-		struct
 		{
-		    glm::mat4 model_matrix;
-		} mesh_uniform_struct;
-		mesh_uniform_struct.model_matrix = glm::mat4(1);
+		    struct
+		    {
+			glm::vec3 diffuse;
+		    } material_uniform_struct;
+		    material_uniform_struct.diffuse = glm::vec3(1.0f, 0.0f, 0.0f);
 
-		// Get model matrix information
-		if (ecs->entity_has_component<SyTransform>(i) == true)
-		{
-		    SyTransform *transform = ecs->component<SyTransform>(i);
-
-		    mesh_uniform_struct.model_matrix = glm::scale(glm::mat4(1), transform->scale) * mesh_uniform_struct.model_matrix;
-		    mesh_uniform_struct.model_matrix = glm::rotate(glm::mat4(1), glm::radians(transform->rotation[0]), glm::vec3(1.0f, 0.0f, 0.0f)) * mesh_uniform_struct.model_matrix;
-		    mesh_uniform_struct.model_matrix = glm::rotate(glm::mat4(1), glm::radians(transform->rotation[1]), glm::vec3(0.0f, 1.0f, 0.0f)) * mesh_uniform_struct.model_matrix;
-		    mesh_uniform_struct.model_matrix = glm::rotate(glm::mat4(1), glm::radians(transform->rotation[2]), glm::vec3(0.0f, 0.0f, 1.0f)) * mesh_uniform_struct.model_matrix;
-		    mesh_uniform_struct.model_matrix = glm::translate(glm::mat4(1), transform->position) * mesh_uniform_struct.model_matrix;
+		    VkDescriptorSet descriptor_set = create_and_write_to_descriptor_set_and_buffer(render_info, render_info->material_descriptor_set_layout, &material_uniform_struct, sizeof(material_uniform_struct));
+		    vkCmdBindDescriptorSets(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, render_info->single_color_pipeline_layout, 1, 1, &descriptor_set, 0, NULL);
 		}
-
-		VkDescriptorSet descriptor_set = create_and_write_to_descriptor_set_and_buffer(render_info, render_info->object_descriptor_set_layout, &mesh_uniform_struct, sizeof(mesh_uniform_struct));
-		vkCmdBindDescriptorSets(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, render_info->single_color_pipeline_layout, 2, 1, &descriptor_set, 0, NULL);
+		{
+		    struct
+		    {
+			glm::mat4 model_matrix;
+		    } mesh_uniform_struct;
+		    mesh_uniform_struct.model_matrix = glm::mat4(1);
+		    
+		    // Get model matrix information
+		    if (ecs->entity_has_component<SyTransform>(i) == true)
+		    {
+			SyTransform *transform = ecs->component<SyTransform>(i);
+			
+			mesh_uniform_struct.model_matrix = glm::scale(glm::mat4(1), transform->scale) * mesh_uniform_struct.model_matrix;
+			mesh_uniform_struct.model_matrix = glm::rotate(glm::mat4(1), glm::radians(transform->rotation[0]), glm::vec3(1.0f, 0.0f, 0.0f)) * mesh_uniform_struct.model_matrix;
+			mesh_uniform_struct.model_matrix = glm::rotate(glm::mat4(1), glm::radians(transform->rotation[1]), glm::vec3(0.0f, 1.0f, 0.0f)) * mesh_uniform_struct.model_matrix;
+			mesh_uniform_struct.model_matrix = glm::rotate(glm::mat4(1), glm::radians(transform->rotation[2]), glm::vec3(0.0f, 0.0f, 1.0f)) * mesh_uniform_struct.model_matrix;
+			mesh_uniform_struct.model_matrix = glm::translate(glm::mat4(1), transform->position) * mesh_uniform_struct.model_matrix;
+		    }
+		    
+		    VkDescriptorSet descriptor_set = create_and_write_to_descriptor_set_and_buffer(render_info, render_info->object_descriptor_set_layout, &mesh_uniform_struct, sizeof(mesh_uniform_struct));
+		    vkCmdBindDescriptorSets(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, render_info->single_color_pipeline_layout, 2, 1, &descriptor_set, 0, NULL);
+		    
+		}
 
 		// Buffers
 		VkDeviceSize vertex_buffer_offset = 0;
