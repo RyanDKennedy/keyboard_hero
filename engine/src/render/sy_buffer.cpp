@@ -7,12 +7,12 @@
 
 uint32_t find_memory_type(VkPhysicalDevice physical_device, uint32_t type_filter, VkMemoryPropertyFlags properties);
 
-void sy_render_create_vertex_buffer(SyRenderInfo *render_info, size_t vertex_amt, size_t vertex_size, void *vertices, VkBuffer *out_buffer, VmaAllocation *out_buffer_alloc)
+void sy_render_create_vertex_buffer(SyRenderInfo *render_info, size_t vertices_size, uint8_t *vertices, VkBuffer *out_buffer, VmaAllocation *out_buffer_alloc)
 {
     VkBuffer result;
     VmaAllocation result_alloc;
 
-    VkDeviceSize buffer_size = vertex_amt * vertex_size;
+    VkDeviceSize buffer_size = vertices_size;
 
     // Create Staging Buffer
     VkBuffer staging_buffer;
