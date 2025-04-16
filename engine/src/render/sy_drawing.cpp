@@ -7,6 +7,7 @@
 #include "render/sy_resources.hpp"
 #include "render/types/sy_asset_metadata.hpp"
 #include "render/types/sy_draw_info.hpp"
+#include "render/types/sy_material.hpp"
 #include "sy_ecs.hpp"
 #include "sy_macros.hpp"
 #include "sy_swapchain.hpp"
@@ -158,7 +159,7 @@ void record_command_buffer(SyRenderInfo *render_info, VkCommandBuffer command_bu
 	vkCmdBindDescriptorSets(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, render_info->single_color_pipeline_layout, 0, 1, &descriptor_set, 0, NULL);
     }
 
-    for (size_t i = 0; i < ecs->m_entity_used.m_filled_length; ++i)
+    for (size_t i = 0; i < ecs->m_entity_used.size(); ++i)
     {
 	if (ecs->is_entity_index_used(i) != true)
 	    continue;
@@ -182,7 +183,12 @@ void record_command_buffer(SyRenderInfo *render_info, VkCommandBuffer command_bu
 		    {
 			glm::vec3 diffuse;
 		    } material_uniform_struct;
-		    material_uniform_struct.diffuse = glm::vec3(1.0f, 0.0f, 0.0f);
+		    material_uniform_struct.diffuse = glm::vec3(1.0f, 0.0f, 1.0f);
+		    if (ecs->entity_has_component<SyMaterial>(i) == true)
+		    {
+			SyMaterial *material = ecs->component<SyMaterial>(i);			
+			material_uniform_struct.diffuse = material->diffuse;
+		    }
 
 		    VkDescriptorSet descriptor_set = create_and_write_to_descriptor_set_and_buffer(render_info, render_info->material_descriptor_set_layout, &material_uniform_struct, sizeof(material_uniform_struct));
 		    vkCmdBindDescriptorSets(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, render_info->single_color_pipeline_layout, 1, 1, &descriptor_set, 0, NULL);

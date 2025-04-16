@@ -5,6 +5,7 @@
 #include <vulkan/vulkan_core.h>
 
 #include "components/sy_transform.hpp"
+#include "render/types/sy_material.hpp"
 #include "sy_ecs.hpp"
 #include "sy_macros.hpp"
 
@@ -46,6 +47,7 @@ void engine_init(SyPlatformInfo *platform_info, SyAppInfo *app_info, SyEngineSta
     SY_ECS_REGISTER_TYPE(app_info->ecs, SyAssetMetadata);
     SY_ECS_REGISTER_TYPE(app_info->ecs, SyDrawInfo);
     SY_ECS_REGISTER_TYPE(app_info->ecs, SyTransform);
+    SY_ECS_REGISTER_TYPE(app_info->ecs, SyMaterial);
 
     // Init renderer
     sy_render_info_init(&platform_info->render_info, platform_info->input_info.window_width, platform_info->input_info.window_height);
@@ -135,7 +137,7 @@ void engine_destroy(SyPlatformInfo *platform_info, SyAppInfo *app_info, SyEngine
 
     // Cleanup meshes
     size_t mesh_component_index = app_info->ecs.get_type_id<SyMesh>();
-    for (size_t i = 0; i < app_info->ecs.m_component_used_arr[mesh_component_index].m_filled_length; ++i)
+    for (size_t i = 0; i < app_info->ecs.m_component_used_arr[mesh_component_index].size(); ++i)
     {
 	if (app_info->ecs.is_component_index_used<SyMesh>(i) == true)
 	{

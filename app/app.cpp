@@ -3,6 +3,7 @@
 #include "sy_ecs.hpp"
 #include "sy_app_info.hpp"
 #include "components/sy_transform.hpp"
+#include "render/types/sy_material.hpp"
 #include "render/types/sy_draw_info.hpp"
 #include "render/types/sy_asset_metadata.hpp"
 #include "glm_include.hpp"
@@ -21,6 +22,12 @@ void register_ecs_components(SyEcs *ecs)
     SY_ECS_REGISTER_TYPE(*ecs, SyAssetMetadata);
     SY_ECS_REGISTER_TYPE(*ecs, SyDrawInfo);
     SY_ECS_REGISTER_TYPE(*ecs, SyTransform);
+    SY_ECS_REGISTER_TYPE(*ecs, SyMaterial);
+}
+
+glm::vec3 make_rgb_from_255(float r, float g, float b)
+{
+    return glm::vec3(r / 255.0f, g / 255.0f, b / 255.0f);
 }
 
 extern "C"
@@ -53,6 +60,7 @@ void app_init(SyAppInfo *app_info)
 	g_state->entity_square = app_info->ecs.new_entity();
 	app_info->ecs.entity_add_component<SyDrawInfo>(g_state->entity_square);
 	app_info->ecs.entity_add_component<SyTransform>(g_state->entity_square);
+	app_info->ecs.entity_add_component<SyMaterial>(g_state->entity_square);
 	
 	SyDrawInfo *draw_info = app_info->ecs.component<SyDrawInfo>(g_state->entity_square);
 	draw_info->asset_metadata_id = SY_LOAD_MESH_FROM_OBJ(app_info->render_info, &app_info->ecs, "text.obj");
@@ -62,6 +70,9 @@ void app_init(SyAppInfo *app_info)
 	transform->position = glm::vec3(0.0f, 0.0f, 0.0f);
 	transform->rotation = glm::vec3(0.0f, 40.0f, 0.0f);
 	transform->scale = glm::vec3(1.0f, 5.0f, 1.0f);
+
+	SyMaterial *material = app_info->ecs.component<SyMaterial>(g_state->entity_square);
+	material->diffuse = glm::vec3(0.0f, 0.0f, 1.0f);
     }
 
     {
@@ -69,15 +80,19 @@ void app_init(SyAppInfo *app_info)
 
 	app_info->ecs.entity_add_component<SyDrawInfo>(plane);
 	app_info->ecs.entity_add_component<SyTransform>(plane);
+	app_info->ecs.entity_add_component<SyMaterial>(plane);
 
 	SyDrawInfo *draw_info = app_info->ecs.component<SyDrawInfo>(plane);
-	draw_info->asset_metadata_id = SY_LOAD_MESH_FROM_OBJ(app_info->render_info, &app_info->ecs, "plane.obj");
+	draw_info->asset_metadata_id = SY_LOAD_MESH_FROM_OBJ(app_info->render_info, &app_info->ecs, "donut.obj");
 	draw_info->should_draw = true;
 	
 	SyTransform *transform = app_info->ecs.component<SyTransform>(plane);
-	transform->position = glm::vec3(0.0f, 0.0f, 0.0f);
+	transform->position = glm::vec3(0.0f, -5.0f, 0.0f);
 	transform->rotation = glm::vec3(0.0f, 0.0f, 0.0f);
-	transform->scale = glm::vec3(3.0f, 1.0f, 3.0f);
+	transform->scale = glm::vec3(1.0f, 1.0f, 1.0f);
+
+	SyMaterial *material = app_info->ecs.component<SyMaterial>(plane);
+	material->diffuse = make_rgb_from_255(20, 138, 4);
     }
 
 }
@@ -89,6 +104,11 @@ void app_run(SyAppInfo *app_info)
 
     if (app_info->input_info.escape)
 	app_info->stop_game = true;
+
+    if (app_info->input_info.p)
+    {
+	printf("FPS: %f\n", 1.0f / app_info->delta_time);
+    }
 
     app_info->camera_settings.aspect_ratio = (float)app_info->input_info.window_width / app_info->input_info.window_height;
 
