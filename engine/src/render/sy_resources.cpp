@@ -7,6 +7,80 @@
 #include "sy_pipeline.hpp"
 #include "sy_macros.hpp"
 
+void sy_render_create_depth_resources(SyRenderInfo *render_info)
+{
+    render_info->depth_images = (VkImage*)calloc(render_info->swapchain_images_amt, sizeof(VkImage));
+    render_info->depth_image_allocations = (VmaAllocation*)calloc(render_info->swapchain_images_amt, sizeof(VmaAllocation));
+    render_info->depth_image_views = (VkImageView*)calloc(render_info->swapchain_images_amt, sizeof(VkImageView));
+
+    VkFormat format;
+    { // Find supported image format
+	VkFormat candidates[] = {VK_FORMAT_D32_SFLOAT};
+
+	bool found_format = false;;
+
+	for (int i = 0; i < SY_ARRLEN(candidates); ++i)
+	{
+	    VkFormat current_format = candidates[i];
+	    VkFormatProperties props;
+	    vkGetPhysicalDeviceFormatProperties(render_info->physical_device, current_format, &props);
+	    
+	    if (props.optimalTilingFeatures & VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT)
+	    {
+		format = current_format;
+		found_format = true;
+		break;
+	    }
+	}
+	SY_ERROR_COND(found_format == false, "RENDER: Failed to find an available format for the depth buffer images.");
+    }
+
+
+    for (size_t i = 0; i < render_info->swapchain_images_amt; ++i)
+    {
+	VkImageCreateInfo image_create_info = {};
+	image_create_info.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+	image_create_info.pNext = NULL;
+	image_create_info.imageType = VK_IMAGE_TYPE_2D;
+	image_create_info.format = format;
+	image_create_info.extent = VkExtent3D{.width = render_info->swapchain_image_extent.width, .height = render_info->swapchain_image_extent.height, .depth = 1};
+	image_create_info.mipLevels = 1;
+	image_create_info.arrayLayers = 1;
+	image_create_info.samples = VK_SAMPLE_COUNT_1_BIT;
+	image_create_info.tiling = VK_IMAGE_TILING_OPTIMAL;
+	image_create_info.usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
+
+	VmaAllocationCreateInfo alloc_create_info = {};
+	alloc_create_info.usage = VMA_MEMORY_USAGE_GPU_ONLY;
+	alloc_create_info.requiredFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+
+	vmaCreateImage(render_info->vma_allocator, &image_create_info, &alloc_create_info, &render_info->depth_images[i], &render_info->depth_image_allocations[i], NULL);
+
+	VkImageViewCreateInfo image_view_create_info = {};
+	image_view_create_info.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+	image_view_create_info.pNext = NULL;
+	image_view_create_info.flags = 0;
+	image_view_create_info.image = render_info->depth_images[i];
+	image_view_create_info.format = format;
+	image_view_create_info.viewType = VK_IMAGE_VIEW_TYPE_2D;
+	image_view_create_info.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
+	image_view_create_info.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
+	image_view_create_info.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
+	image_view_create_info.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
+	image_view_create_info.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
+	image_view_create_info.subresourceRange.baseMipLevel = 0;
+	image_view_create_info.subresourceRange.levelCount = 1;
+	image_view_create_info.subresourceRange.baseArrayLayer = 0;
+	image_view_create_info.subresourceRange.layerCount = 1;
+
+	SY_ERROR_COND(vkCreateImageView(render_info->logical_device, &image_view_create_info, NULL, &render_info->depth_image_views[i]) != VK_SUCCESS, "Failed to create depth image view %lu.", i);
+    }
+
+    
+    render_info->depth_format = format;
+    
+}
+
 void sy_render_create_allocator(SyRenderInfo *render_info)
 {
     VmaAllocatorCreateInfo vma_allocator_create_info = {};
@@ -230,9 +304,24 @@ VkRenderPass sy_render_create_simple_render_pass(SyRenderInfo *render_info)
     color_attachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR; // what layout to output image as after render pass
     color_attachment.flags = 0;
     
+    VkAttachmentDescription depth_attachment;
+    depth_attachment.format = render_info->depth_format;
+    depth_attachment.samples = VK_SAMPLE_COUNT_1_BIT;
+    depth_attachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR; // what to do when the image first gets loaded and ready to draw
+    depth_attachment.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE; // what to do when finished writing to image 
+    depth_attachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE; // same as loadOp but we don't care about stencil
+    depth_attachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE; // same as storeOp but we don't care about stencil
+    depth_attachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED; // what layout is image before render pass
+    depth_attachment.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL; // what layout to output image as after render pass
+    depth_attachment.flags = 0;
+
     VkAttachmentReference color_attachment_reference;
     color_attachment_reference.attachment = 0; // what index our referenced color attachment is stored at
     color_attachment_reference.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL; // what layout we want it stored at during the subpass
+
+    VkAttachmentReference depth_attachment_reference;
+    depth_attachment_reference.attachment = 1; // what index our referenced depth attachment is stored at
+    depth_attachment_reference.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL; // what layout we want it stored at during the subpass
 
     VkSubpassDescription subpass;
     subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS; // specify it is graphics subpass because future may support compute subpass
@@ -243,7 +332,7 @@ VkRenderPass sy_render_create_simple_render_pass(SyRenderInfo *render_info)
     subpass.preserveAttachmentCount = 0;
     subpass.pPreserveAttachments = NULL;
     subpass.pResolveAttachments = NULL;
-    subpass.pDepthStencilAttachment = NULL;
+    subpass.pDepthStencilAttachment = &depth_attachment_reference;
     subpass.flags = 0;
 
     // Create subpass dependency so that the implicit subpass where the image format gets converted waits until we have an image
@@ -254,13 +343,15 @@ VkRenderPass sy_render_create_simple_render_pass(SyRenderInfo *render_info)
     subpass_dependency.dstSubpass = 0;
 
     // wait on the output of the image conversion
-    subpass_dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+    subpass_dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
     subpass_dependency.srcAccessMask = 0;
 
-    subpass_dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-    subpass_dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+    subpass_dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
+    subpass_dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
 
     subpass_dependency.dependencyFlags = 0;
+
+    VkAttachmentDescription attachments[] = {color_attachment, depth_attachment};
 
     VkRenderPassCreateInfo render_pass_create_info;
     render_pass_create_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
@@ -268,8 +359,8 @@ VkRenderPass sy_render_create_simple_render_pass(SyRenderInfo *render_info)
     render_pass_create_info.flags = 0;
     render_pass_create_info.subpassCount = 1;
     render_pass_create_info.pSubpasses = &subpass;
-    render_pass_create_info.attachmentCount = 1;
-    render_pass_create_info.pAttachments = &color_attachment; // NOTE: subpass contains references to attachments, this contains actual attachments
+    render_pass_create_info.attachmentCount = SY_ARRLEN(attachments);
+    render_pass_create_info.pAttachments = attachments; // NOTE: subpass contains references to attachments, this contains actual attachments
     render_pass_create_info.dependencyCount = 1;
     render_pass_create_info.pDependencies = &subpass_dependency;
 
@@ -280,7 +371,7 @@ VkRenderPass sy_render_create_simple_render_pass(SyRenderInfo *render_info)
     return result;
 }
 
-void sy_render_create_swapchain_framebuffers(SyRenderInfo *render_info)
+void sy_render_create_framebuffers(SyRenderInfo *render_info)
 {
     render_info->swapchain_framebuffers_amt = render_info->swapchain_image_views_amt;
     render_info->swapchain_framebuffers = (VkFramebuffer*)calloc(render_info->swapchain_framebuffers_amt, sizeof(VkFramebuffer));
@@ -288,7 +379,7 @@ void sy_render_create_swapchain_framebuffers(SyRenderInfo *render_info)
     // Create a framebuffer for each image view
     for (uint32_t i = 0; i < render_info->swapchain_framebuffers_amt; ++i)
     {
-	VkImageView attachments[] = { render_info->swapchain_image_views[i] };
+	VkImageView attachments[] = { render_info->swapchain_image_views[i], render_info->depth_image_views[i] };
 
 	VkFramebufferCreateInfo framebuffer_create_info;
 	framebuffer_create_info.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;

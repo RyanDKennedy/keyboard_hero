@@ -60,6 +60,12 @@ struct SyRenderInfo
     // Uniforms
     SyFrameUniformDataInfo *frame_uniform_data; // array of size SY_RENDER_MAX_FRAMES_IN_FLIGHT
 
+    // Depth
+    // depth images amt is same as swapchain_images_amt;
+    VkImage *depth_images;
+    VmaAllocation *depth_image_allocations;
+    VkImageView *depth_image_views;
+    VkFormat depth_format;
 };
 
 void sy_render_info_init(SyRenderInfo *render_info, int win_width, int win_height);

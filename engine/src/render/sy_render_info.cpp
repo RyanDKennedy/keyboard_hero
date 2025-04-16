@@ -18,14 +18,14 @@ void sy_render_info_init(SyRenderInfo *render_info, int win_width, int win_heigh
     render_info->current_frame = 0;
     sy_render_create_physical_device(render_info);
     sy_render_create_logical_device(render_info);
+    sy_render_create_allocator(render_info);
     sy_render_create_swapchain(render_info, win_width, win_height);
     sy_render_create_command_pool(render_info);
     render_info->render_pass = sy_render_create_simple_render_pass(render_info);
-    sy_render_create_swapchain_framebuffers(render_info);
+    sy_render_create_framebuffers(render_info);
     sy_render_create_command_buffers(render_info);
     sy_render_create_sync_objects(render_info);
     sy_render_create_descriptor_set_layouts(render_info);
-    sy_render_create_allocator(render_info);
     sy_render_create_pipelines(render_info);
 
     render_info->frame_uniform_data = new SyFrameUniformDataInfo[SY_RENDER_MAX_FRAMES_IN_FLIGHT];
@@ -52,8 +52,6 @@ void sy_render_info_deinit(SyRenderInfo *render_info)
     vkDestroyPipeline(render_info->logical_device, render_info->single_color_pipeline, NULL);
 
     vkDestroyPipelineLayout(render_info->logical_device, render_info->single_color_pipeline_layout, NULL);
-
-    vmaDestroyAllocator(render_info->vma_allocator);
 
     vkDestroyDescriptorSetLayout(render_info->logical_device, render_info->frame_descriptor_set_layout, NULL);
     vkDestroyDescriptorSetLayout(render_info->logical_device, render_info->material_descriptor_set_layout, NULL);
@@ -82,5 +80,8 @@ void sy_render_info_deinit(SyRenderInfo *render_info)
     vkDestroyCommandPool(render_info->logical_device, render_info->command_pool, NULL); // command buffers are freed when command pool is freed
 
     sy_render_destroy_swapchain(render_info);
+
+    vmaDestroyAllocator(render_info->vma_allocator);
+
     vkDestroyDevice(render_info->logical_device, NULL);
 }

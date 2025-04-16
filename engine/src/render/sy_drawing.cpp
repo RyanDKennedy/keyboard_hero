@@ -31,7 +31,7 @@ void recreate_swapchain(SyRenderInfo *render_info, SyInputInfo *input_info)
     sy_render_destroy_swapchain(render_info);
 
     sy_render_create_swapchain(render_info, input_info->window_width, input_info->window_height);
-    sy_render_create_swapchain_framebuffers(render_info);
+    sy_render_create_framebuffers(render_info);
 }
 
 VkDescriptorSet create_and_write_to_descriptor_set_and_buffer(SyRenderInfo *render_info, VkDescriptorSetLayout layout, void *data, size_t data_size)
@@ -95,9 +95,12 @@ void record_command_buffer(SyRenderInfo *render_info, VkCommandBuffer command_bu
     render_pass_begin_info.renderArea.offset.x = 0;
     render_pass_begin_info.renderArea.offset.y = 0;
     render_pass_begin_info.renderArea.extent = render_info->swapchain_image_extent;
-    VkClearValue clear_color = {{{0.0f, 0.0f, 0.0f, 1.0f}}};
-    render_pass_begin_info.clearValueCount = 1;
-    render_pass_begin_info.pClearValues = &clear_color;
+
+    VkClearValue clear_values[2];
+    clear_values[0].color = {0.0f, 0.0f, 0.0f, 1.0f};
+    clear_values[1].depthStencil = {1.0f, 0};
+    render_pass_begin_info.clearValueCount = SY_ARRLEN(clear_values);
+    render_pass_begin_info.pClearValues = clear_values;
     
     vkCmdBeginRenderPass(command_buffer, &render_pass_begin_info, VK_SUBPASS_CONTENTS_INLINE);
 

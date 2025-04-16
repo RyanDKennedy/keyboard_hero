@@ -148,12 +148,20 @@ VkPipeline sy_render_create_pipeline(SyRenderInfo *render_info, SyPipelineCreate
     multisample_create_info.alphaToCoverageEnable = VK_FALSE;
     multisample_create_info.alphaToOneEnable = VK_FALSE;
 
-    // The tutorial doesn't use a depth and stencil buffer so we will pass NULL later on
     // depth and stencil testing
-    // VkPipelineDepthStencilStateCreateInfo depth_stencil_create_info;
-    // depth_stencil_create_info.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
-    // depth_stencil_create_info.pNext = NULL;
-    // depth_stencil_create_info.flags = 0;
+    VkPipelineDepthStencilStateCreateInfo depth_stencil_create_info = {};
+    depth_stencil_create_info.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
+    depth_stencil_create_info.pNext = NULL;
+    depth_stencil_create_info.flags = 0;
+    depth_stencil_create_info.depthTestEnable = VK_TRUE;
+    depth_stencil_create_info.depthWriteEnable = VK_TRUE;
+    depth_stencil_create_info.depthCompareOp = VK_COMPARE_OP_LESS;
+    depth_stencil_create_info.depthBoundsTestEnable = VK_FALSE;
+    depth_stencil_create_info.minDepthBounds = 0.0f;
+    depth_stencil_create_info.maxDepthBounds = 1.0f;
+    depth_stencil_create_info.stencilTestEnable = VK_FALSE;
+    depth_stencil_create_info.front = {};
+    depth_stencil_create_info.back = {};
 
     // color blending
     // NOTE:
@@ -195,7 +203,7 @@ VkPipeline sy_render_create_pipeline(SyRenderInfo *render_info, SyPipelineCreate
     vulkan_pipeline_create_info.pViewportState = &viewport_state_create_info;
     vulkan_pipeline_create_info.pRasterizationState = &rasterizer_create_info;
     vulkan_pipeline_create_info.pMultisampleState = &multisample_create_info;
-    vulkan_pipeline_create_info.pDepthStencilState = NULL;
+    vulkan_pipeline_create_info.pDepthStencilState = &depth_stencil_create_info;
     vulkan_pipeline_create_info.pColorBlendState = &color_blend_create_info;
     vulkan_pipeline_create_info.pDynamicState = &dynamic_state_create_info;
     vulkan_pipeline_create_info.layout = pipeline_create_info->pipeline_layout;

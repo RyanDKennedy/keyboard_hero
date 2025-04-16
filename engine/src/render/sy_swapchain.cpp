@@ -1,4 +1,5 @@
 #include "sy_swapchain.hpp"
+#include "render/sy_resources.hpp"
 
 #include <stdlib.h>
 
@@ -182,6 +183,7 @@ void sy_render_create_swapchain(SyRenderInfo *render_info, int window_width, int
 	SY_ERROR_COND(vkCreateImageView(render_info->logical_device, &create_info, NULL, &render_info->swapchain_image_views[i]) != VK_SUCCESS, "RENDER: Failed to create image view.");
     }
 
+    sy_render_create_depth_resources(render_info);
 }
 
 void sy_render_destroy_swapchain(SyRenderInfo *render_info)
@@ -190,10 +192,17 @@ void sy_render_destroy_swapchain(SyRenderInfo *render_info)
     for (size_t i = 0; i < render_info->swapchain_image_views_amt; ++i)
     {
 	vkDestroyImageView(render_info->logical_device, render_info->swapchain_image_views[i], NULL);
+
+	vmaDestroyImage(render_info->vma_allocator, render_info->depth_images[i], render_info->depth_image_allocations[i]);
+	vkDestroyImageView(render_info->logical_device, render_info->depth_image_views[i], NULL);
     }
 
     free(render_info->swapchain_image_views);
     free(render_info->swapchain_images);
+
+    free(render_info->depth_images);
+    free(render_info->depth_image_views);
+    free(render_info->depth_image_allocations);
 
     vkDestroySwapchainKHR(render_info->logical_device, render_info->swapchain, NULL);
 }
