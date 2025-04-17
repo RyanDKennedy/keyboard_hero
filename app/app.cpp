@@ -9,6 +9,7 @@
 #include "glm_include.hpp"
 
 #include "global.hpp"
+#include "types/sy_camera_settings.hpp"
 
 #ifndef NDEBUG
 #define SY_LOAD_MESH_FROM_OBJ(render_info, ...) app_info->sy_load_mesh_from_obj((void*)render_info, __VA_ARGS__);
@@ -50,10 +51,21 @@ void app_init(SyAppInfo *app_info)
 
     { // Camera configuration
 	app_info->camera_settings.active_camera = g_state->player;
-	app_info->camera_settings.aspect_ratio = (float)app_info->input_info.window_width / app_info->input_info.window_height;
-	app_info->camera_settings.fov = 45.0f;
-	app_info->camera_settings.near_plane = 0.1f;
-	app_info->camera_settings.far_plane = 100.0f;
+
+	app_info->camera_settings.projection_type = SyCameraProjectionType::perspective;
+	app_info->camera_settings.perspective_settings.aspect_ratio = (float)app_info->input_info.window_width / app_info->input_info.window_height;
+	app_info->camera_settings.perspective_settings.fov = 75.0f;
+	app_info->camera_settings.perspective_settings.near_plane = 0.01f;
+	app_info->camera_settings.perspective_settings.far_plane = 100.0f;
+
+/*
+	app_info->camera_settings.projection_type = SyCameraProjectionType::orthographic;
+	app_info->camera_settings.orthographic_settings.top = 50.0f;
+	app_info->camera_settings.orthographic_settings.bottom = -50.0f;
+	app_info->camera_settings.orthographic_settings.near = -50.0f;
+	app_info->camera_settings.orthographic_settings.far = 50.0f;
+*/
+
     }
 
     { // Entity square configuration
@@ -110,7 +122,7 @@ void app_run(SyAppInfo *app_info)
 	printf("FPS: %f\n", 1.0f / app_info->delta_time);
     }
 
-    app_info->camera_settings.aspect_ratio = (float)app_info->input_info.window_width / app_info->input_info.window_height;
+
 
     SyTransform *player_transform = app_info->ecs.component<SyTransform>(g_state->player); 
 
@@ -125,40 +137,63 @@ void app_run(SyAppInfo *app_info)
 
     glm::vec3 right = glm::cross(front, up);
 
-    const float speed = 5.0f;
-    if (app_info->input_info.w)
-	player_transform->position += (float)(app_info->delta_time * speed) * front;
-
-    if (app_info->input_info.s)
-	player_transform->position -= (float)(app_info->delta_time * speed) * front;
-
-    if (app_info->input_info.d)
-	player_transform->position += (float)(app_info->delta_time * speed) * right;
-
-    if (app_info->input_info.a)
-	player_transform->position -= (float)(app_info->delta_time * speed) * right;
-
-    if (app_info->input_info.space)
-	player_transform->position += (float)(speed * app_info->delta_time) * up;
-
-    if (app_info->input_info.shift_left)
-	player_transform->position -= (float)(speed * app_info->delta_time) * up;
-
     const float rot_speed = 5.0f;
-
     if (abs(app_info->input_info.mouse_dx) != 0)
 	player_transform->rotation[1] += app_info->delta_time * rot_speed * -app_info->input_info.mouse_dx;
-
+    
     if (abs(app_info->input_info.mouse_dy) != 0)
     {
 	player_transform->rotation[0] += app_info->delta_time * rot_speed * -app_info->input_info.mouse_dy;
 	if (player_transform->rotation[0] < -85.0)
 	    player_transform->rotation[0] = -85.0;
-
+	
 	if (player_transform->rotation[0] > 85.0)
 	    player_transform->rotation[0] = 85.0;
     }    
+    
+    if (app_info->camera_settings.projection_type == SyCameraProjectionType::perspective)
+    {
+	app_info->camera_settings.perspective_settings.aspect_ratio = (float)app_info->input_info.window_width / app_info->input_info.window_height;
 
+	const float speed = 5.0f;
+	if (app_info->input_info.w)
+	    player_transform->position += (float)(app_info->delta_time * speed) * front;
+	
+	if (app_info->input_info.s)
+	    player_transform->position -= (float)(app_info->delta_time * speed) * front;
+	
+	if (app_info->input_info.d)
+	    player_transform->position += (float)(app_info->delta_time * speed) * right;
+	
+	if (app_info->input_info.a)
+	    player_transform->position -= (float)(app_info->delta_time * speed) * right;
+	
+	if (app_info->input_info.space)
+	    player_transform->position += (float)(speed * app_info->delta_time) * up;
+	
+	if (app_info->input_info.shift_left)
+	    player_transform->position -= (float)(speed * app_info->delta_time) * up;
+    }
+    else
+    {
+	float zoom_speed = 5.0f;
+	if (app_info->input_info.arrow_down)
+	{
+	    app_info->camera_settings.orthographic_settings.bottom -= zoom_speed * app_info->delta_time;
+	    app_info->camera_settings.orthographic_settings.top += zoom_speed * app_info->delta_time;
+	}
+
+	if (app_info->input_info.arrow_up)
+	{
+	    app_info->camera_settings.orthographic_settings.bottom += zoom_speed * app_info->delta_time;
+	    app_info->camera_settings.orthographic_settings.top -= zoom_speed * app_info->delta_time;
+	}
+
+	float aspect_ratio = (float)app_info->input_info.window_width / app_info->input_info.window_height;
+	app_info->camera_settings.orthographic_settings.left = app_info->camera_settings.orthographic_settings.bottom * aspect_ratio;
+	app_info->camera_settings.orthographic_settings.right = app_info->camera_settings.orthographic_settings.top * aspect_ratio;
+
+    }
 }
 
 extern "C"

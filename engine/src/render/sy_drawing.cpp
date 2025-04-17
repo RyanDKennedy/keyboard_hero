@@ -149,7 +149,15 @@ void record_command_buffer(SyRenderInfo *render_info, VkCommandBuffer command_bu
 	    view = glm::lookAt(transform->position, transform->position + dir, glm::vec3(0.0f, 1.0f, 0.0f));
 	}
 
-	glm::mat4 projection = glm::perspective(camera_settings->fov, camera_settings->aspect_ratio, camera_settings->near_plane, camera_settings->far_plane);
+	glm::mat4 projection;
+	if (camera_settings->projection_type == SyCameraProjectionType::perspective)
+	{
+	    projection = glm::perspective(glm::radians(camera_settings->perspective_settings.fov), camera_settings->perspective_settings.aspect_ratio, camera_settings->perspective_settings.near_plane, camera_settings->perspective_settings.far_plane);
+	}
+	else
+	{
+	    projection = glm::ortho(camera_settings->orthographic_settings.left, camera_settings->orthographic_settings.right, camera_settings->orthographic_settings.bottom, camera_settings->orthographic_settings.top, camera_settings->orthographic_settings.near, camera_settings->orthographic_settings.far);
+	}
 	projection[1][1] *= -1;
 
 	struct
