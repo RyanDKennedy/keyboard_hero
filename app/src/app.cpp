@@ -47,11 +47,19 @@ void app_init(SyAppInfo *app_info)
 
     { // Camera configuration
 	app_info->camera_settings.active_camera = g_state->player;
+/*
 	app_info->camera_settings.projection_type = SyCameraProjectionType::orthographic;
 	app_info->camera_settings.orthographic_settings.top = 10.0f;
 	app_info->camera_settings.orthographic_settings.bottom = -10.0f;
 	app_info->camera_settings.orthographic_settings.near = -50.0f;
 	app_info->camera_settings.orthographic_settings.far = 50.0f;
+*/
+	app_info->camera_settings.projection_type = SyCameraProjectionType::perspective;
+	app_info->camera_settings.perspective_settings.aspect_ratio = (float)app_info->input_info.window_width / app_info->input_info.window_height;
+	app_info->camera_settings.perspective_settings.far_plane = 100.f;
+	app_info->camera_settings.perspective_settings.near_plane = 0.1f;
+	app_info->camera_settings.perspective_settings.fov = 75.f;
+
     }
 
     { // Entity square configuration
@@ -61,7 +69,7 @@ void app_init(SyAppInfo *app_info)
 	app_info->ecs.entity_add_component<SyMaterial>(g_state->entity_square);
 	
 	SyDrawInfo *draw_info = app_info->ecs.component<SyDrawInfo>(g_state->entity_square);
-	draw_info->asset_metadata_id = SY_LOAD_MESH_FROM_OBJ(app_info->render_info, &app_info->ecs, "text.obj");
+	draw_info->asset_metadata_id = SY_LOAD_MESH_FROM_OBJ(app_info->render_info, &app_info->ecs, "monkey.obj");
 	draw_info->should_draw = true;
 	
 	SyTransform *transform = app_info->ecs.component<SyTransform>(g_state->entity_square);
@@ -93,6 +101,12 @@ void app_init(SyAppInfo *app_info)
 	material->diffuse = make_rgb_from_255(20, 138, 4);
     }
 
+    PositionAnimation *animation = &g_state->animation;
+    animation->start = glm::vec3(-2.0f, 0.0f, 0.0f);
+    animation->destination = glm::vec3(2.0f, 0.0f, 0.0f);
+    animation->duration = 2.0f;
+    animation->transform_index = app_info->ecs.entity_get_component_index<SyTransform>(g_state->entity_square);
+    animation->running = false;
 }
 
 extern "C"
@@ -106,8 +120,31 @@ void app_run(SyAppInfo *app_info)
     if (app_info->input_info.p)
 	printf("FPS: %f\n", 1.0f / app_info->delta_time);
     
-    orthographic_movement(app_info, 5.0f, 5.0f, 5.0f);
-    
+    //orthographic_movement(app_info, 5.0f, 5.0f, 5.0f);
+    perspective_movement(app_info, 5, 5);
+
+    PositionAnimation *ani = &g_state->animation;
+
+    if (app_info->input_info.g)
+    {
+	ani->time_done = 0;
+	ani->running = true;
+    }
+
+    if (ani->running)
+    {
+	ani->time_done += app_info->delta_time;
+	if (ani->time_done > ani->duration)
+	{
+	    ani->time_done = ani->duration;
+	    ani->running = false;
+	}
+
+	SyTransform *transform = app_info->ecs.component_from_index<SyTransform>(ani->transform_index);
+	float percent = ani->time_done / ani->duration;
+	glm::vec3 delta = ani->destination - ani->start;
+	transform->position = ani->start + (percent * delta);
+    }
 }
 
 extern "C"

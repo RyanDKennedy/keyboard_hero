@@ -30,7 +30,7 @@ elseif(CMAKE_BUILD_TYPE STREQUAL "Release")
   file(MAKE_DIRECTORY ${CMAKE_SOURCE_DIR}/bin/release)
   set(EXECUTABLE_OUTPUT_PATH ${CMAKE_SOURCE_DIR}/bin/release)
   set(LIBRARY_OUTPUT_PATH ${CMAKE_SOURCE_DIR}/bin/release)
-  set(CMAKE_CXX_FLAGS "-o2 -DNDEBUG")
+  set(CMAKE_CXX_FLAGS "-O2 -DNDEBUG")
   set(SY_EXTRA_APP_LIBRARIES Vulkan::Vulkan)
 endif()
 
