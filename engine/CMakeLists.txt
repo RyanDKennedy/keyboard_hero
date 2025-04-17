@@ -2,8 +2,6 @@ cmake_minimum_required(VERSION 3.22.1)
 
 project(syengine)
 
-find_package(Vulkan REQUIRED)
-
 # PLATFORM UNSPECIFIC FILES
 set(SY_SOURCE_FILES
     ${CMAKE_CURRENT_SOURCE_DIR}/src/sy_syengine.cpp
