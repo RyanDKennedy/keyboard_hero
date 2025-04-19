@@ -47,6 +47,13 @@ void app_init(SyAppInfo *app_info)
 
     { // Camera configuration
 	app_info->camera_settings.active_camera = g_state->player;
+
+	app_info->camera_settings.projection_type = SyCameraProjectionType::perspective;
+	app_info->camera_settings.perspective_settings.aspect_ratio = (float)app_info->input_info.window_width / app_info->input_info.window_height;
+	app_info->camera_settings.perspective_settings.far_plane = 100.f;
+	app_info->camera_settings.perspective_settings.near_plane = 0.1f;
+	app_info->camera_settings.perspective_settings.fov = 65.f;
+
 /*
 	app_info->camera_settings.projection_type = SyCameraProjectionType::orthographic;
 	app_info->camera_settings.orthographic_settings.top = 10.0f;
@@ -54,59 +61,34 @@ void app_init(SyAppInfo *app_info)
 	app_info->camera_settings.orthographic_settings.near = -50.0f;
 	app_info->camera_settings.orthographic_settings.far = 50.0f;
 */
-	app_info->camera_settings.projection_type = SyCameraProjectionType::perspective;
-	app_info->camera_settings.perspective_settings.aspect_ratio = (float)app_info->input_info.window_width / app_info->input_info.window_height;
-	app_info->camera_settings.perspective_settings.far_plane = 100.f;
-	app_info->camera_settings.perspective_settings.near_plane = 0.1f;
-	app_info->camera_settings.perspective_settings.fov = 75.f;
-
     }
 
+    size_t play_metadata_id = SY_LOAD_MESH_FROM_OBJ(app_info->render_info, &app_info->ecs, "play.obj");
+    size_t edit_metadata_id = SY_LOAD_MESH_FROM_OBJ(app_info->render_info, &app_info->ecs, "edit.obj");
+    size_t create_metadata_id = SY_LOAD_MESH_FROM_OBJ(app_info->render_info, &app_info->ecs, "create.obj");
+    for (size_t i = 0; i < g_state->buttons_amt; ++i)
     { // Entity square configuration
-	g_state->entity_square = app_info->ecs.new_entity();
-	app_info->ecs.entity_add_component<SyDrawInfo>(g_state->entity_square);
-	app_info->ecs.entity_add_component<SyTransform>(g_state->entity_square);
-	app_info->ecs.entity_add_component<SyMaterial>(g_state->entity_square);
+	g_state->buttons[i] = app_info->ecs.new_entity();
+	app_info->ecs.entity_add_component<SyDrawInfo>(g_state->buttons[i]);
+	app_info->ecs.entity_add_component<SyTransform>(g_state->buttons[i]);
+	app_info->ecs.entity_add_component<SyMaterial>(g_state->buttons[i]);
 	
-	SyDrawInfo *draw_info = app_info->ecs.component<SyDrawInfo>(g_state->entity_square);
-	draw_info->asset_metadata_id = SY_LOAD_MESH_FROM_OBJ(app_info->render_info, &app_info->ecs, "monkey.obj");
+	SyDrawInfo *draw_info = app_info->ecs.component<SyDrawInfo>(g_state->buttons[i]);
 	draw_info->should_draw = true;
 	
-	SyTransform *transform = app_info->ecs.component<SyTransform>(g_state->entity_square);
-	transform->position = glm::vec3(0.0f, 0.0f, 0.0f);
+	SyTransform *transform = app_info->ecs.component<SyTransform>(g_state->buttons[i]);
+	transform->position = glm::vec3(0.0f, ((float)g_state->buttons_amt / 2) - (1.0f * i), 0.0f);
 	transform->rotation = glm::vec3(0.0f, 0.0f, 0.0f);
 	transform->scale = glm::vec3(1.0f, 1.0f, 1.0f);
 
-	SyMaterial *material = app_info->ecs.component<SyMaterial>(g_state->entity_square);
-	material->diffuse = glm::vec3(0.0f, 0.0f, 1.0f);
+	SyMaterial *material = app_info->ecs.component<SyMaterial>(g_state->buttons[i]);
+	material->diffuse = glm::vec3(1.0f, 1.0f, 1.0f);
     }
-
-    {
-	SyEntityHandle plane = app_info->ecs.new_entity();
-
-	app_info->ecs.entity_add_component<SyDrawInfo>(plane);
-	app_info->ecs.entity_add_component<SyTransform>(plane);
-	app_info->ecs.entity_add_component<SyMaterial>(plane);
-
-	SyDrawInfo *draw_info = app_info->ecs.component<SyDrawInfo>(plane);
-	draw_info->asset_metadata_id = SY_LOAD_MESH_FROM_OBJ(app_info->render_info, &app_info->ecs, "plane.obj");
-	draw_info->should_draw = true;
-	
-	SyTransform *transform = app_info->ecs.component<SyTransform>(plane);
-	transform->position = glm::vec3(0.0f, -1.0f, 0.0f);
-	transform->rotation = glm::vec3(0.0f, 0.0f, 0.0f);
-	transform->scale = glm::vec3(10.0f, 1.0f, 10.0f);
-
-	SyMaterial *material = app_info->ecs.component<SyMaterial>(plane);
-	material->diffuse = make_rgb_from_255(20, 138, 4);
-    }
-
-    PositionAnimation *animation = &g_state->animation;
-    animation->start = glm::vec3(-2.0f, 0.0f, 0.0f);
-    animation->destination = glm::vec3(2.0f, 0.0f, 0.0f);
-    animation->duration = 2.0f;
-    animation->transform_index = app_info->ecs.entity_get_component_index<SyTransform>(g_state->entity_square);
-    animation->running = false;
+    app_info->ecs.component<SyDrawInfo>(g_state->buttons[0])->asset_metadata_id = play_metadata_id;
+    app_info->ecs.component<SyDrawInfo>(g_state->buttons[1])->asset_metadata_id = edit_metadata_id;
+    app_info->ecs.component<SyDrawInfo>(g_state->buttons[2])->asset_metadata_id = create_metadata_id;
+    g_state->selected_btn = 0;
+    
 }
 
 extern "C"
@@ -114,37 +96,42 @@ void app_run(SyAppInfo *app_info)
 {
     g_state = (Global*)app_info->global_mem;
 
-    if (app_info->input_info.escape)
+    if (app_info->input_info.escape == SyKeyState::released)
 	app_info->stop_game = true;
 
-    if (app_info->input_info.p)
+    if (app_info->input_info.p == SyKeyState::pressed)
 	printf("FPS: %f\n", 1.0f / app_info->delta_time);
-    
+
+    if (app_info->input_info.r == SyKeyState::pressed)
+    {
+	SyTransform *transform = app_info->ecs.component<SyTransform>(g_state->player);
+	print_transform("", transform);
+    }
+
     //orthographic_movement(app_info, 5.0f, 5.0f, 5.0f);
-    perspective_movement(app_info, 5, 5);
+    perspective_movement(app_info, 5.0f, 5.0f);
 
-    PositionAnimation *ani = &g_state->animation;
-
-    if (app_info->input_info.g)
+    if (app_info->input_info.arrow_up == SyKeyState::released)
     {
-	ani->time_done = 0;
-	ani->running = true;
+	if (g_state->selected_btn > 0)
+	    g_state->selected_btn -= 1;
+	else
+	    g_state->selected_btn = g_state->buttons_amt - 1;
+    }
+    if (app_info->input_info.arrow_down == SyKeyState::released)
+    {
+	g_state->selected_btn += 1;
+	g_state->selected_btn %= g_state->buttons_amt;
     }
 
-    if (ani->running)
+    // Buttons color
+    for (size_t i = 0; i < g_state->buttons_amt; ++i)
     {
-	ani->time_done += app_info->delta_time;
-	if (ani->time_done > ani->duration)
-	{
-	    ani->time_done = ani->duration;
-	    ani->running = false;
-	}
-
-	SyTransform *transform = app_info->ecs.component_from_index<SyTransform>(ani->transform_index);
-	float percent = ani->time_done / ani->duration;
-	glm::vec3 delta = ani->destination - ani->start;
-	transform->position = ani->start + (percent * delta);
+	SyMaterial *material = app_info->ecs.component<SyMaterial>(g_state->buttons[i]);
+	material->diffuse = glm::vec3(1.0f, 1.0f, 1.0f);
     }
+    app_info->ecs.component<SyMaterial>(g_state->buttons[g_state->selected_btn])->diffuse = glm::vec3(1.0f, 1.0f, 0.0f);
+
 }
 
 extern "C"

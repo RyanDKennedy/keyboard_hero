@@ -3,25 +3,16 @@
 #include "sy_ecs.hpp"
 #include "glm_include.hpp"
 
-struct PositionAnimation
-{
-    glm::vec3 start;
-    glm::vec3 destination;
-    float duration;
-    float time_done;
-    size_t transform_index;
-    bool running;
-};
-
 struct Global
 {
     SyEntityHandle player;
-    SyEntityHandle entity_square;
+
+    static const size_t buttons_amt = 3;
+    SyEntityHandle buttons[buttons_amt];
+    size_t selected_btn;
 
     float yaw;
     float pitch;
-
-    PositionAnimation animation;
 };
 
 inline Global *g_state;

@@ -88,7 +88,7 @@ void engine_run(SyPlatformInfo *platform_info, SyAppInfo *app_info, SyEngineStat
     // THIS IS DLL HOT RELOAD STUFF, SO DON'T INCLUDE IN RELEASE VERSION
     
     // reload dlls for app
-    if (input.f1)
+    if (input.f1 == SyKeyState::released)
     {
 	platform_info->reload_dll = true;
     }
