@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <vulkan/vulkan_core.h>
 
+#include "render/sy_render_info.hpp"
 #include "sy_render_defines.hpp"
 #include "sy_pipeline.hpp"
 #include "sy_macros.hpp"
@@ -81,6 +82,243 @@ void sy_render_create_depth_resources(SyRenderInfo *render_info)
     
 }
 
+SyRenderImage sy_render_create_texture_image(SyRenderInfo *render_info, void *data, VkExtent2D extent, VkFormat format, VkImageUsageFlags usage)
+{
+    size_t buffer_size = extent.width * extent.height * 4;
+
+    // Create Staging Buffer
+    VkBuffer staging_buffer;
+    VmaAllocation staging_buffer_alloc;
+    {
+	VkBufferCreateInfo buffer_info = { VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO };
+	buffer_info.size = buffer_size;
+	buffer_info.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
+	
+	VmaAllocationCreateInfo alloc_info = {0};
+	alloc_info.usage = VMA_MEMORY_USAGE_CPU_TO_GPU;
+	alloc_info.flags = VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT;
+	
+	vmaCreateBuffer(render_info->vma_allocator, &buffer_info, &alloc_info, &staging_buffer, &staging_buffer_alloc, nullptr);
+    }
+
+    // Copy the vertices into the staging buffer
+    vmaCopyMemoryToAllocation(render_info->vma_allocator, data, staging_buffer_alloc, 0, buffer_size);
+
+    SyRenderImage image = sy_render_create_image(render_info, extent.width, extent.height, format, usage | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT);
+
+    sy_render_transition_image(render_info, &image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+
+    VkCommandBuffer command_buffer;
+    {
+	VkCommandBufferAllocateInfo command_buffer_allocate_info;
+	command_buffer_allocate_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+	command_buffer_allocate_info.pNext = NULL;
+	command_buffer_allocate_info.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+	command_buffer_allocate_info.commandBufferCount = 1;
+	command_buffer_allocate_info.commandPool = render_info->command_pool;
+	
+	SY_ERROR_COND(vkAllocateCommandBuffers(render_info->logical_device, &command_buffer_allocate_info, &command_buffer) != VK_SUCCESS, "RENDER: Failed to allocate command buffer.");
+	
+	// Record Command Buffer
+	VkCommandBufferBeginInfo begin_info;
+	begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+	begin_info.pNext = NULL;
+	begin_info.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+	begin_info.pInheritanceInfo = NULL;
+	
+	SY_ERROR_COND(vkBeginCommandBuffer(command_buffer, &begin_info) != VK_SUCCESS, "RENDER: Failed to start command buffer.");
+    }
+
+    VkBufferImageCopy copy_region = {};
+    copy_region.bufferOffset = 0;
+    copy_region.bufferRowLength = 0;
+    copy_region.bufferImageHeight = 0;
+    copy_region.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    copy_region.imageSubresource.mipLevel = 0;
+    copy_region.imageSubresource.baseArrayLayer = 0;
+    copy_region.imageSubresource.layerCount = 1;
+    copy_region.imageExtent = VkExtent3D{.width = extent.width, .height = extent.height, .depth = 1};
+
+    vkCmdCopyBufferToImage(command_buffer, staging_buffer, image.image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &copy_region);
+
+    {
+	SY_ERROR_COND(vkEndCommandBuffer(command_buffer) != VK_SUCCESS, "RENDER: Failed to end command buffer.");
+	
+	// Submit Buffer
+	VkSubmitInfo submit_info;
+	submit_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+	submit_info.pNext = NULL;
+	submit_info.commandBufferCount = 1;
+	submit_info.pCommandBuffers = &command_buffer;
+	submit_info.waitSemaphoreCount = 0;
+	submit_info.pWaitSemaphores = NULL;
+	submit_info.pWaitDstStageMask = NULL;
+	submit_info.signalSemaphoreCount = 0;
+	submit_info.pSignalSemaphores = NULL;
+	
+	SY_ERROR_COND(vkQueueSubmit(render_info->graphics_queue, 1, &submit_info, NULL) != VK_SUCCESS, "RENDER: Failed to submit command buffer.");
+	
+	vkQueueWaitIdle(render_info->graphics_queue);
+	
+	// Cleanup
+	vkFreeCommandBuffers(render_info->logical_device, render_info->command_pool, 1, &command_buffer);
+    }
+
+    sy_render_transition_image(render_info, &image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+
+    vmaDestroyBuffer(render_info->vma_allocator, staging_buffer, staging_buffer_alloc);
+
+    return image;
+}
+
+SyRenderImage sy_render_create_image(SyRenderInfo *render_info, uint32_t width, uint32_t height, VkFormat format, VkImageUsageFlags image_usage)
+{
+    VkImageCreateInfo image_create_info = {};
+    image_create_info.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+    image_create_info.pNext = NULL;
+    image_create_info.flags = 0;
+    image_create_info.imageType = VK_IMAGE_TYPE_2D;
+    image_create_info.format = format;
+    image_create_info.extent.width = width;
+    image_create_info.extent.height = height;
+    image_create_info.extent.depth = 1;
+    image_create_info.mipLevels = 1;
+    image_create_info.arrayLayers = 1;
+    image_create_info.samples = VK_SAMPLE_COUNT_1_BIT;
+    image_create_info.tiling = VK_IMAGE_TILING_OPTIMAL;
+    image_create_info.usage = image_usage;
+    image_create_info.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+    image_create_info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+    
+    VmaAllocationCreateInfo alloc_create_info = {};
+    alloc_create_info.usage = VMA_MEMORY_USAGE_GPU_ONLY;
+    alloc_create_info.requiredFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+    
+    VkImage image;
+    VmaAllocation alloc;
+    vmaCreateImage(render_info->vma_allocator, &image_create_info, &alloc_create_info, &image, &alloc, NULL);
+    
+    VkImageViewCreateInfo image_view_create_info = {};
+    image_view_create_info.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+    image_view_create_info.pNext = NULL;
+    image_view_create_info.flags = 0;
+    image_view_create_info.image = image;
+    image_view_create_info.format = format;
+    image_view_create_info.viewType = VK_IMAGE_VIEW_TYPE_2D;
+    image_view_create_info.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
+    image_view_create_info.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
+    image_view_create_info.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
+    image_view_create_info.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
+    image_view_create_info.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    image_view_create_info.subresourceRange.baseMipLevel = 0;
+    image_view_create_info.subresourceRange.levelCount = 1;
+    image_view_create_info.subresourceRange.baseArrayLayer = 0;
+    image_view_create_info.subresourceRange.layerCount = 1;
+
+    VkImageView image_view;
+
+    SY_ERROR_COND(vkCreateImageView(render_info->logical_device, &image_view_create_info, NULL, &image_view) != VK_SUCCESS, "Failed to create image view.");
+
+    SyRenderImage result;
+    result.image = image;
+    result.alloc = alloc;
+    result.image_view = image_view;
+
+    return result;
+}
+
+void sy_render_transition_image(SyRenderInfo *render_info, SyRenderImage *image, VkImageLayout old_layout, VkImageLayout new_layout)
+{
+    VkCommandBuffer command_buffer;
+    {
+	// Create Command Buffer
+	VkCommandBufferAllocateInfo command_buffer_allocate_info;
+	command_buffer_allocate_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+	command_buffer_allocate_info.pNext = NULL;
+	command_buffer_allocate_info.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+	command_buffer_allocate_info.commandBufferCount = 1;
+	command_buffer_allocate_info.commandPool = render_info->command_pool;
+	
+	
+	SY_ERROR_COND(vkAllocateCommandBuffers(render_info->logical_device, &command_buffer_allocate_info, &command_buffer) != VK_SUCCESS, "RENDER: Failed to allocate command buffer for image transition.");
+	
+	// Record Command Buffer
+	VkCommandBufferBeginInfo begin_info;
+	begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+	begin_info.pNext = NULL;
+	begin_info.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+	begin_info.pInheritanceInfo = NULL;
+	
+	SY_ERROR_COND(vkBeginCommandBuffer(command_buffer, &begin_info) != VK_SUCCESS, "RENDER: Failed to start command buffer for image transition.");
+    }
+
+    VkImageMemoryBarrier image_barrier = {};
+    image_barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+    image_barrier.pNext = NULL;
+
+    image_barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+    image_barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+
+    image_barrier.oldLayout = old_layout;
+    image_barrier.newLayout = new_layout;
+
+    VkImageSubresourceRange subresource_range = {};
+    subresource_range.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    subresource_range.baseMipLevel = 0;
+    subresource_range.levelCount = VK_REMAINING_MIP_LEVELS;
+    subresource_range.baseArrayLayer = 0;
+    subresource_range.layerCount = VK_REMAINING_ARRAY_LAYERS;
+
+    image_barrier.subresourceRange = subresource_range;
+    image_barrier.image = image->image;
+
+    VkPipelineStageFlags src_stage;
+    VkPipelineStageFlags dst_stage;
+    if (old_layout == VK_IMAGE_LAYOUT_UNDEFINED && new_layout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL)
+    {
+	image_barrier.srcAccessMask = 0;
+	image_barrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+	src_stage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+	dst_stage = VK_PIPELINE_STAGE_TRANSFER_BIT;
+    }
+    else if (old_layout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL && new_layout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
+    {
+	image_barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+	image_barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+	src_stage = VK_PIPELINE_STAGE_TRANSFER_BIT;
+	dst_stage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+    }
+    else
+    {
+	SY_ERROR("transition image - not valid new layout and old layout.");
+    }
+    
+    vkCmdPipelineBarrier(command_buffer, src_stage, dst_stage, 0, 0, NULL, 0, NULL, 1, &image_barrier);
+
+    {
+	SY_ERROR_COND(vkEndCommandBuffer(command_buffer) != VK_SUCCESS, "RENDER: Failed to end command buffer for image transition.");
+	
+	// Submit Buffer
+	VkSubmitInfo submit_info;
+	submit_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+	submit_info.pNext = NULL;
+	submit_info.commandBufferCount = 1;
+	submit_info.pCommandBuffers = &command_buffer;
+	submit_info.waitSemaphoreCount = 0;
+	submit_info.pWaitSemaphores = NULL;
+	submit_info.pWaitDstStageMask = NULL;
+	submit_info.signalSemaphoreCount = 0;
+	submit_info.pSignalSemaphores = NULL;
+	
+	SY_ERROR_COND(vkQueueSubmit(render_info->graphics_queue, 1, &submit_info, NULL) != VK_SUCCESS, "RENDER: Failed to submit command buffer for image transition.");
+	
+	vkQueueWaitIdle(render_info->graphics_queue);
+	
+	// Cleanup
+	vkFreeCommandBuffers(render_info->logical_device, render_info->command_pool, 1, &command_buffer);
+    }
+}
+
 void sy_render_create_allocator(SyRenderInfo *render_info)
 {
     VmaAllocatorCreateInfo vma_allocator_create_info = {};
@@ -95,7 +333,8 @@ void sy_render_create_allocator(SyRenderInfo *render_info)
 
 void sy_render_create_pipelines(SyRenderInfo *render_info)
 {
-    { // Create Pipeline Layouts
+    // Create Pipeline Layouts
+    {
 	VkDescriptorSetLayout layouts[] = {render_info->frame_descriptor_set_layout, render_info->material_descriptor_set_layout, render_info->object_descriptor_set_layout};
 	
 	VkPipelineLayoutCreateInfo create_info;
@@ -108,6 +347,21 @@ void sy_render_create_pipelines(SyRenderInfo *render_info)
 	create_info.pSetLayouts = layouts;
 	
 	vkCreatePipelineLayout(render_info->logical_device, &create_info, NULL, &render_info->single_color_pipeline_layout);
+    }
+
+    {
+	VkDescriptorSetLayout layouts[] = {render_info->character_map_descriptor_set_layout, render_info->character_information_descriptor_set_layout};
+	
+	VkPipelineLayoutCreateInfo create_info;
+	create_info.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+	create_info.pNext = NULL;
+	create_info.flags = 0;
+	create_info.pushConstantRangeCount = 0;
+	create_info.pPushConstantRanges = NULL;
+	create_info.setLayoutCount = SY_ARRLEN(layouts);
+	create_info.pSetLayouts = layouts;
+	
+	vkCreatePipelineLayout(render_info->logical_device, &create_info, NULL, &render_info->text_pipeline_layout);
     }
 
     { // Create single color pipeline
@@ -127,12 +381,48 @@ void sy_render_create_pipelines(SyRenderInfo *render_info)
 	create_info.fragment_shader_path = "single_color/fragment.spv";
 	create_info.vertex_input_binding_description = binding_description;
 	create_info.vertex_input_attribute_descriptions = attr;
-	create_info.vertex_input_attribute_descriptions_amt = 1;
+	create_info.vertex_input_attribute_descriptions_amt = SY_ARRLEN(attr);
 	create_info.render_type = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
 	create_info.subpass_number = 0;
 	create_info.pipeline_layout = render_info->single_color_pipeline_layout;
 
 	render_info->single_color_pipeline = sy_render_create_pipeline(render_info, &create_info);
+    }
+
+    { // Create text pipeline
+	// Vertex Buffer Format
+	// float vertex x position
+	// float vertex y position
+	// float tex x coord
+	// float tex y coord
+
+	VkVertexInputBindingDescription binding_description;
+	binding_description.binding = 0;
+	binding_description.stride = sizeof(float) * 4;
+	binding_description.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;    
+
+	VkVertexInputAttributeDescription attr[2];
+	attr[0].binding = 0;
+	attr[0].location = 0;
+	attr[0].format = VK_FORMAT_R32G32_SFLOAT;
+	attr[0].offset = 0;
+
+	attr[1].binding = 0;
+	attr[1].location = 1;
+	attr[1].format = VK_FORMAT_R32G32_SFLOAT;
+	attr[1].offset = 2 * 4;
+
+	SyPipelineCreateInfo create_info;
+	create_info.vertex_shader_path = "text/vertex.spv";
+	create_info.fragment_shader_path = "text/fragment.spv";
+	create_info.vertex_input_binding_description = binding_description;
+	create_info.vertex_input_attribute_descriptions = attr;
+	create_info.vertex_input_attribute_descriptions_amt = SY_ARRLEN(attr);
+	create_info.render_type = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+	create_info.subpass_number = 0;
+	create_info.pipeline_layout = render_info->text_pipeline_layout;
+
+	render_info->text_pipeline = sy_render_create_pipeline(render_info, &create_info);
     }
 
 }
@@ -238,8 +528,6 @@ void sy_render_create_descriptor_set_layouts(SyRenderInfo *render_info)
 	layout_create_info.bindingCount = bindings_amt;
 	layout_create_info.pBindings = bindings;
 	
-	VkDescriptorSetLayout result;
-	
 	SY_ERROR_COND(vkCreateDescriptorSetLayout(render_info->logical_device, &layout_create_info, NULL, &render_info->frame_descriptor_set_layout) != VK_SUCCESS, "RENDER: Failed to create descriptor set layout - frame data layout.");
     }
 
@@ -260,8 +548,6 @@ void sy_render_create_descriptor_set_layouts(SyRenderInfo *render_info)
 	layout_create_info.flags = 0;
 	layout_create_info.bindingCount = bindings_amt;
 	layout_create_info.pBindings = bindings;
-	
-	VkDescriptorSetLayout result;
 	
 	SY_ERROR_COND(vkCreateDescriptorSetLayout(render_info->logical_device, &layout_create_info, NULL, &render_info->material_descriptor_set_layout) != VK_SUCCESS, "RENDER: Failed to create descriptor set layout - material layout.");
     }
@@ -284,9 +570,49 @@ void sy_render_create_descriptor_set_layouts(SyRenderInfo *render_info)
 	layout_create_info.bindingCount = bindings_amt;
 	layout_create_info.pBindings = bindings;
 	
-	VkDescriptorSetLayout result;
-	
 	SY_ERROR_COND(vkCreateDescriptorSetLayout(render_info->logical_device, &layout_create_info, NULL, &render_info->object_descriptor_set_layout) != VK_SUCCESS, "RENDER: Failed to create descriptor set layout - object layout.");
+    }
+
+    { // character_map layout
+	VkDescriptorSetLayoutBinding ubo_layout_binding;
+	ubo_layout_binding.binding = 0; // the binding of the uniform inside of the shader
+	ubo_layout_binding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+	ubo_layout_binding.descriptorCount = 1;
+	ubo_layout_binding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+	ubo_layout_binding.pImmutableSamplers = NULL; // for image sampling
+
+	VkDescriptorSetLayoutBinding bindings[] = {ubo_layout_binding};
+	uint32_t bindings_amt = SY_ARRLEN(bindings);
+
+	VkDescriptorSetLayoutCreateInfo layout_create_info;
+	layout_create_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+	layout_create_info.pNext = NULL;
+	layout_create_info.flags = 0;
+	layout_create_info.bindingCount = bindings_amt;
+	layout_create_info.pBindings = bindings;
+	
+	SY_ERROR_COND(vkCreateDescriptorSetLayout(render_info->logical_device, &layout_create_info, NULL, &render_info->character_map_descriptor_set_layout) != VK_SUCCESS, "RENDER: Failed to create descriptor set layout - object layout.");
+    }
+
+    { // character_information layout
+	VkDescriptorSetLayoutBinding ubo_layout_binding;
+	ubo_layout_binding.binding = 0; // the binding of the uniform inside of the shader
+	ubo_layout_binding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+	ubo_layout_binding.descriptorCount = 1;
+	ubo_layout_binding.stageFlags = VK_SHADER_STAGE_ALL_GRAPHICS;
+	ubo_layout_binding.pImmutableSamplers = NULL; // for image sampling
+
+	VkDescriptorSetLayoutBinding bindings[] = {ubo_layout_binding};
+	uint32_t bindings_amt = SY_ARRLEN(bindings);
+
+	VkDescriptorSetLayoutCreateInfo layout_create_info;
+	layout_create_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+	layout_create_info.pNext = NULL;
+	layout_create_info.flags = 0;
+	layout_create_info.bindingCount = bindings_amt;
+	layout_create_info.pBindings = bindings;
+	
+	SY_ERROR_COND(vkCreateDescriptorSetLayout(render_info->logical_device, &layout_create_info, NULL, &render_info->character_information_descriptor_set_layout) != VK_SUCCESS, "RENDER: Failed to create descriptor set layout - object layout.");
     }
 
 }

@@ -23,7 +23,7 @@ void sy_render_create_vertex_buffer(SyRenderInfo *render_info, size_t vertices_s
 	buffer_info.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
 	
 	VmaAllocationCreateInfo alloc_info = {0};
-	alloc_info.usage = VMA_MEMORY_USAGE_AUTO;
+	alloc_info.usage = VMA_MEMORY_USAGE_CPU_TO_GPU;
 	alloc_info.flags = VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT;
 	
 	vmaCreateBuffer(render_info->vma_allocator, &buffer_info, &alloc_info, &staging_buffer, &staging_buffer_alloc, nullptr);
@@ -67,7 +67,7 @@ void sy_render_create_index_buffer(SyRenderInfo *render_info, size_t index_amt, 
 	buffer_info.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
 	
 	VmaAllocationCreateInfo alloc_info = {0};
-	alloc_info.usage = VMA_MEMORY_USAGE_AUTO;
+	alloc_info.usage = VMA_MEMORY_USAGE_CPU_TO_GPU;
 	alloc_info.flags = VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT;
 	
 	vmaCreateBuffer(render_info->vma_allocator, &buffer_info, &alloc_info, &staging_buffer, &staging_buffer_alloc, nullptr);

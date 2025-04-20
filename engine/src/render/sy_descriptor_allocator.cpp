@@ -7,16 +7,18 @@
 
 void SyDescriptorAllocator::init_pool(VkDevice logical_device, uint32_t max_sets, uint32_t descriptors_per_set)
 {
-    VkDescriptorPoolSize pool_size;
-    pool_size.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-    pool_size.descriptorCount = max_sets * descriptors_per_set;
+    VkDescriptorPoolSize pool_sizes[2];
+    pool_sizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+    pool_sizes[0].descriptorCount = max_sets * descriptors_per_set;
+    pool_sizes[1].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+    pool_sizes[1].descriptorCount = max_sets * descriptors_per_set;
     
     VkDescriptorPoolCreateInfo pool_create_info;
     pool_create_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
     pool_create_info.pNext = NULL;
     pool_create_info.flags = 0;
-    pool_create_info.poolSizeCount = 1;
-    pool_create_info.pPoolSizes = &pool_size;
+    pool_create_info.poolSizeCount = SY_ARRLEN(pool_sizes);
+    pool_create_info.pPoolSizes = pool_sizes;
     pool_create_info.maxSets = max_sets;
     
     SY_ERROR_COND(vkCreateDescriptorPool(logical_device, &pool_create_info, NULL, &m_descriptor_pool) != VK_SUCCESS, "RENDER: Failed to create descriptor pool.");

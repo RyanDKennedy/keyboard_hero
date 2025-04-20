@@ -9,6 +9,7 @@
 #include "render/sy_physical_device.hpp"
 #include "render/sy_logical_device.hpp"
 #include "render/sy_swapchain.hpp"
+#include "render/sy_buffer.hpp"
 
 #include "sy_pipeline.hpp"
 #include "sy_macros.hpp"
@@ -33,6 +34,52 @@ void sy_render_info_init(SyRenderInfo *render_info, int win_width, int win_heigh
     {
 	render_info->frame_uniform_data[i].descriptor_allocator.init_pool(render_info->logical_device, 20, 1);
     }
+
+    // Test
+
+
+    //checkerboard image
+    uint32_t magenta = glm::packUnorm4x8(glm::vec4(1, 0, 1, 1));
+    uint32_t black = glm::packUnorm4x8(glm::vec4(0, 0, 0, 0));
+    uint32_t pixels[16*16]; //for 16x16 checkerboard texture
+    for (int x = 0; x < 16; x++) {
+	for (int y = 0; y < 16; y++) {
+	    pixels[y*16 + x] = ((x % 2) ^ (y % 2)) ? magenta : black;
+	}
+    }
+
+    render_info->error_image = sy_render_create_texture_image(render_info, (void*)pixels, VkExtent2D{.width=16, .height=16}, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_USAGE_SAMPLED_BIT);
+
+    VkSamplerCreateInfo sampler_create_info = {};
+    sampler_create_info.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
+    sampler_create_info.pNext = NULL;
+    sampler_create_info.flags = 0;
+    sampler_create_info.magFilter = VK_FILTER_NEAREST;
+    sampler_create_info.minFilter = VK_FILTER_NEAREST;
+
+    SY_ERROR_COND(vkCreateSampler(render_info->logical_device, &sampler_create_info, NULL, &render_info->nearest_sampler) != VK_SUCCESS, "RENDER - Failed to create nearest sampler.");
+
+    float vertex_data[] =
+	{
+	    -1.0f, -1.0f, 0.0f, 0.0f, // top left
+	    -1.0f, 1.0f, 0.0f, 1.0f, // bottom left
+	    1.0f, -1.0f, 1.0f, 0.0f, // top right
+	    1.0f, 1.0f,	1.0f, 1.0f, // bottom right
+	};
+    size_t vertex_data_size = SY_ARRLEN(vertex_data);
+
+    uint32_t index_data[] =
+	{
+	    0, 2, 1,
+	    1, 2, 3
+	};
+    size_t index_data_size = SY_ARRLEN(index_data);
+
+    sy_render_create_vertex_buffer(render_info, vertex_data_size * sizeof(vertex_data[0]), (uint8_t*)vertex_data, &render_info->error_image_mesh.vertex_buffer, &render_info->error_image_mesh.vertex_buffer_alloc);
+
+    render_info->error_image_mesh.index_amt = index_data_size;
+    sy_render_create_index_buffer(render_info, index_data_size, index_data, &render_info->error_image_mesh.index_buffer, &render_info->error_image_mesh.index_buffer_alloc);
+
 }
 
 void sy_render_info_deinit(SyRenderInfo *render_info)

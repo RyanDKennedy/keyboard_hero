@@ -1,7 +1,7 @@
 #pragma once
 
-#include "render/sy_render_settings.hpp"
-#include "render/sy_render_info.hpp"
+#include <vulkan/vulkan.h>
+#include "vk_mem_alloc.h"
 
 struct SyMesh
 {

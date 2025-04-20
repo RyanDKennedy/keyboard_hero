@@ -2,6 +2,9 @@
 
 #include "sy_render_info.hpp"
 
+SyRenderImage sy_render_create_texture_image(SyRenderInfo *render_info, void *data, VkExtent2D extent, VkFormat format, VkImageUsageFlags usage);
+void sy_render_transition_image(SyRenderInfo *render_info, SyRenderImage *image, VkImageLayout old_layout, VkImageLayout new_layout);
+SyRenderImage sy_render_create_image(SyRenderInfo *render_info, uint32_t width, uint32_t height, VkFormat format, VkImageUsageFlags image_usage);
 void sy_render_create_depth_resources(SyRenderInfo *render_info);
 void sy_render_create_descriptor_set_layouts(SyRenderInfo *render_info);
 VkRenderPass sy_render_create_simple_render_pass(SyRenderInfo *render_info);

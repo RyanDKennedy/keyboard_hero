@@ -1,6 +1,7 @@
 #include "sy_drawing.hpp"
 
 #include "components/sy_transform.hpp"
+#include "render/sy_buffer.hpp"
 #include "render/sy_frame_uniform_data_info.hpp"
 #include "render/sy_render_defines.hpp"
 #include "render/sy_render_info.hpp"
@@ -76,9 +77,44 @@ VkDescriptorSet create_and_write_to_descriptor_set_and_buffer(SyRenderInfo *rend
     return descriptor_set;
 }
 
+VkDescriptorSet create_descriptor_set_and_image(SyRenderInfo *render_info, VkDescriptorSetLayout layout, VkImageView image_view)
+{
+    VkDescriptorSet descriptor_set = render_info->frame_uniform_data[render_info->current_frame].descriptor_allocator.allocate(render_info->logical_device, layout);
+    SyUniformAllocation allocation;
+    
+    VkDescriptorImageInfo image_info = {};
+    image_info.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+    image_info.sampler = render_info->nearest_sampler;
+    image_info.imageView = image_view;
+    
+    VkWriteDescriptorSet descriptor_write;
+    descriptor_write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+    descriptor_write.pNext = NULL;
+    descriptor_write.dstSet = descriptor_set;
+    descriptor_write.dstBinding = 0;
+    descriptor_write.dstArrayElement = 0;
+    descriptor_write.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+    descriptor_write.descriptorCount = 1;
+    descriptor_write.pBufferInfo = NULL;
+    descriptor_write.pImageInfo = &image_info;
+    descriptor_write.pTexelBufferView = NULL;
+    
+    vkUpdateDescriptorSets(render_info->logical_device, 1, &descriptor_write, 0, NULL);
+
+    return descriptor_set;
+}
 
 void record_command_buffer(SyRenderInfo *render_info, VkCommandBuffer command_buffer, uint32_t image_index, SyEcs *ecs, SyCameraSettings *camera_settings)
 {
+    { // Reset descriptor bullshit
+	render_info->frame_uniform_data[render_info->current_frame].descriptor_allocator.clear_descriptors(render_info->logical_device);
+	for (SyUniformAllocation &uniform_allocation : render_info->frame_uniform_data[render_info->current_frame].allocations)
+	{
+	    vmaDestroyBuffer(render_info->vma_allocator, uniform_allocation.buffer, uniform_allocation.allocation);
+	}
+	render_info->frame_uniform_data[render_info->current_frame].allocations.clear();
+    }
+
     VkCommandBufferBeginInfo command_buffer_begin_info;
     command_buffer_begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
     command_buffer_begin_info.pNext = NULL;
@@ -104,10 +140,53 @@ void record_command_buffer(SyRenderInfo *render_info, VkCommandBuffer command_bu
     
     vkCmdBeginRenderPass(command_buffer, &render_pass_begin_info, VK_SUBPASS_CONTENTS_INLINE);
 
+    // FIXME:
+    { // draw error texture
+	vkCmdBindPipeline(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, render_info->text_pipeline);
+	// set the dynamic things in the pipeline (viewport and scissor)
+	VkViewport viewport;
+	viewport.x = 0;
+	viewport.y = 0;
+	viewport.width = render_info->swapchain_image_extent.width;
+	viewport.height = render_info->swapchain_image_extent.height;
+	viewport.minDepth = 0.0f;
+	viewport.maxDepth = 1.0f;
+	vkCmdSetViewport(command_buffer, 0, 1, &viewport);
+	
+	VkRect2D scissor;
+	scissor.extent.width = render_info->swapchain_image_extent.width;
+	scissor.extent.height = render_info->swapchain_image_extent.height;
+	scissor.offset.x = 0;
+	scissor.offset.y = 0;
+	vkCmdSetScissor(command_buffer, 0, 1, &scissor);
+
+	// Bind/Create uniforms
+	VkDescriptorSet character_map_descriptor_set = create_descriptor_set_and_image(render_info, render_info->character_map_descriptor_set_layout, render_info->error_image.image_view);
+
+	struct
+	{
+	    glm::vec3 color;
+	} character_information_data;
+	character_information_data.color = glm::vec3(0.0f, 1.0f, 0.0f);
+
+	VkDescriptorSet character_information_descriptor_set = create_and_write_to_descriptor_set_and_buffer(render_info, render_info->character_information_descriptor_set_layout, &character_information_data, sizeof(character_information_data));
+
+	VkDescriptorSet sets[] = {character_map_descriptor_set, character_information_descriptor_set};
+	
+	vkCmdBindDescriptorSets(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, render_info->text_pipeline_layout, 0, 2, sets, 0, NULL);
+
+	// Buffers
+	VkDeviceSize vertex_buffer_offset = 0;
+	vkCmdBindVertexBuffers(command_buffer, 0, 1, &render_info->error_image_mesh.vertex_buffer, &vertex_buffer_offset);
+	vkCmdBindIndexBuffer(command_buffer, render_info->error_image_mesh.index_buffer, 0, VK_INDEX_TYPE_UINT32);
+	
+	// Draw
+	vkCmdDrawIndexed(command_buffer, render_info->error_image_mesh.index_amt, 1, 0, 0, 0);
+    }
+
     vkCmdBindPipeline(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, render_info->single_color_pipeline);
 
     // set the dynamic things in the pipeline (viewport and scissor)
-
     VkViewport viewport;
     viewport.x = 0;
     viewport.y = 0;
@@ -123,15 +202,6 @@ void record_command_buffer(SyRenderInfo *render_info, VkCommandBuffer command_bu
     scissor.offset.x = 0;
     scissor.offset.y = 0;
     vkCmdSetScissor(command_buffer, 0, 1, &scissor);
-
-    { // Reset descriptor bullshit
-	render_info->frame_uniform_data[render_info->current_frame].descriptor_allocator.clear_descriptors(render_info->logical_device);
-	for (SyUniformAllocation &uniform_allocation : render_info->frame_uniform_data[render_info->current_frame].allocations)
-	{
-	    vmaDestroyBuffer(render_info->vma_allocator, uniform_allocation.buffer, uniform_allocation.allocation);
-	}
-	render_info->frame_uniform_data[render_info->current_frame].allocations.clear();
-    }
     
     { // Create frame data uniform
 
@@ -170,6 +240,9 @@ void record_command_buffer(SyRenderInfo *render_info, VkCommandBuffer command_bu
 	vkCmdBindDescriptorSets(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, render_info->single_color_pipeline_layout, 0, 1, &descriptor_set, 0, NULL);
     }
 
+
+
+    // Draw entities
     for (size_t i = 0; i < ecs->m_entity_used.size(); ++i)
     {
 	if (ecs->is_entity_index_used(i) != true)
@@ -234,7 +307,7 @@ void record_command_buffer(SyRenderInfo *render_info, VkCommandBuffer command_bu
 		vkCmdBindIndexBuffer(command_buffer, mesh->index_buffer, 0, VK_INDEX_TYPE_UINT32);
 		
 		// Draw
-		vkCmdDrawIndexed(command_buffer, mesh->index_amt, 1, 0, 0, 0);		    
+		vkCmdDrawIndexed(command_buffer, mesh->index_amt, 1, 0, 0, 0);
 	    }
 	    break;
 	    

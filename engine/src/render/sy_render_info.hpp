@@ -3,11 +3,19 @@
 #include "render/sy_render_settings.hpp" // this needs to be first because it sets up some #define's
 
 #include <vulkan/vulkan.h>
+#include "render/types/sy_mesh.hpp"
 #include "vk_mem_alloc.h"
 
 #include "glm_include.hpp"
 
 #include "sy_frame_uniform_data_info.hpp"
+
+struct SyRenderImage
+{
+    VmaAllocation alloc;
+    VkImage image;
+    VkImageView image_view;
+};
 
 struct SyRenderInfo
 {
@@ -50,13 +58,6 @@ struct SyRenderInfo
 
     uint32_t current_frame; // 0 - SY_RENDER_MAX_FRAMES_IN_FLIGHT
 
-    VkDescriptorSetLayout frame_descriptor_set_layout;
-    VkDescriptorSetLayout material_descriptor_set_layout;
-    VkDescriptorSetLayout object_descriptor_set_layout;
-
-    VkPipelineLayout single_color_pipeline_layout;
-    VkPipeline single_color_pipeline;
-
     // Uniforms
     SyFrameUniformDataInfo *frame_uniform_data; // array of size SY_RENDER_MAX_FRAMES_IN_FLIGHT
 
@@ -66,6 +67,22 @@ struct SyRenderInfo
     VmaAllocation *depth_image_allocations;
     VkImageView *depth_image_views;
     VkFormat depth_format;
+
+    VkDescriptorSetLayout frame_descriptor_set_layout;
+    VkDescriptorSetLayout material_descriptor_set_layout;
+    VkDescriptorSetLayout object_descriptor_set_layout;
+    VkPipelineLayout single_color_pipeline_layout;
+    VkPipeline single_color_pipeline;
+
+    VkDescriptorSetLayout character_map_descriptor_set_layout;
+    VkDescriptorSetLayout character_information_descriptor_set_layout;
+    VkPipelineLayout text_pipeline_layout;
+    VkPipeline text_pipeline;
+
+    // FIXME:
+    SyRenderImage error_image;
+    VkSampler nearest_sampler;
+    SyMesh error_image_mesh;
 };
 
 void sy_render_info_init(SyRenderInfo *render_info, int win_width, int win_height);
