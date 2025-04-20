@@ -7,11 +7,13 @@
 
 void SyDescriptorAllocator::init_pool(VkDevice logical_device, uint32_t max_sets, uint32_t descriptors_per_set)
 {
-    VkDescriptorPoolSize pool_sizes[2];
+    VkDescriptorPoolSize pool_sizes[3];
     pool_sizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
     pool_sizes[0].descriptorCount = max_sets * descriptors_per_set;
     pool_sizes[1].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
     pool_sizes[1].descriptorCount = max_sets * descriptors_per_set;
+    pool_sizes[2].type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+    pool_sizes[2].descriptorCount = max_sets * descriptors_per_set;
     
     VkDescriptorPoolCreateInfo pool_create_info;
     pool_create_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;

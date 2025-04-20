@@ -349,8 +349,8 @@ void sy_render_create_pipelines(SyRenderInfo *render_info)
 	vkCreatePipelineLayout(render_info->logical_device, &create_info, NULL, &render_info->single_color_pipeline_layout);
     }
 
-    {
-	VkDescriptorSetLayout layouts[] = {render_info->character_map_descriptor_set_layout, render_info->character_information_descriptor_set_layout};
+    { // text pipeline layout
+	VkDescriptorSetLayout layouts[] = {render_info->character_map_descriptor_set_layout, render_info->character_information_descriptor_set_layout, render_info->text_buffer_descriptor_set_layout};
 	
 	VkPipelineLayoutCreateInfo create_info;
 	create_info.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
@@ -393,24 +393,17 @@ void sy_render_create_pipelines(SyRenderInfo *render_info)
 	// Vertex Buffer Format
 	// float vertex x position
 	// float vertex y position
-	// float tex x coord
-	// float tex y coord
 
 	VkVertexInputBindingDescription binding_description;
 	binding_description.binding = 0;
-	binding_description.stride = sizeof(float) * 4;
+	binding_description.stride = sizeof(float) * 2;
 	binding_description.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;    
 
-	VkVertexInputAttributeDescription attr[2];
+	VkVertexInputAttributeDescription attr[1];
 	attr[0].binding = 0;
 	attr[0].location = 0;
 	attr[0].format = VK_FORMAT_R32G32_SFLOAT;
 	attr[0].offset = 0;
-
-	attr[1].binding = 0;
-	attr[1].location = 1;
-	attr[1].format = VK_FORMAT_R32G32_SFLOAT;
-	attr[1].offset = 2 * 4;
 
 	SyPipelineCreateInfo create_info;
 	create_info.vertex_shader_path = "text/vertex.spv";
@@ -418,7 +411,7 @@ void sy_render_create_pipelines(SyRenderInfo *render_info)
 	create_info.vertex_input_binding_description = binding_description;
 	create_info.vertex_input_attribute_descriptions = attr;
 	create_info.vertex_input_attribute_descriptions_amt = SY_ARRLEN(attr);
-	create_info.render_type = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+	create_info.render_type = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP;
 	create_info.subpass_number = 0;
 	create_info.pipeline_layout = render_info->text_pipeline_layout;
 
@@ -591,7 +584,7 @@ void sy_render_create_descriptor_set_layouts(SyRenderInfo *render_info)
 	layout_create_info.bindingCount = bindings_amt;
 	layout_create_info.pBindings = bindings;
 	
-	SY_ERROR_COND(vkCreateDescriptorSetLayout(render_info->logical_device, &layout_create_info, NULL, &render_info->character_map_descriptor_set_layout) != VK_SUCCESS, "RENDER: Failed to create descriptor set layout - object layout.");
+	SY_ERROR_COND(vkCreateDescriptorSetLayout(render_info->logical_device, &layout_create_info, NULL, &render_info->character_map_descriptor_set_layout) != VK_SUCCESS, "RENDER: Failed to create descriptor set layout.");
     }
 
     { // character_information layout
@@ -612,7 +605,28 @@ void sy_render_create_descriptor_set_layouts(SyRenderInfo *render_info)
 	layout_create_info.bindingCount = bindings_amt;
 	layout_create_info.pBindings = bindings;
 	
-	SY_ERROR_COND(vkCreateDescriptorSetLayout(render_info->logical_device, &layout_create_info, NULL, &render_info->character_information_descriptor_set_layout) != VK_SUCCESS, "RENDER: Failed to create descriptor set layout - object layout.");
+	SY_ERROR_COND(vkCreateDescriptorSetLayout(render_info->logical_device, &layout_create_info, NULL, &render_info->character_information_descriptor_set_layout) != VK_SUCCESS, "RENDER: Failed to create descriptor set layout.");
+    }
+
+    { // text buffer layout
+	VkDescriptorSetLayoutBinding ssbo_layout_binding;
+	ssbo_layout_binding.binding = 0; // the binding of the uniform inside of the shader
+	ssbo_layout_binding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+	ssbo_layout_binding.descriptorCount = 1;
+	ssbo_layout_binding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+	ssbo_layout_binding.pImmutableSamplers = NULL; // for image sampling
+
+	VkDescriptorSetLayoutBinding bindings[] = {ssbo_layout_binding};
+	uint32_t bindings_amt = SY_ARRLEN(bindings);
+
+	VkDescriptorSetLayoutCreateInfo layout_create_info;
+	layout_create_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+	layout_create_info.pNext = NULL;
+	layout_create_info.flags = 0;
+	layout_create_info.bindingCount = bindings_amt;
+	layout_create_info.pBindings = bindings;
+	
+	SY_ERROR_COND(vkCreateDescriptorSetLayout(render_info->logical_device, &layout_create_info, NULL, &render_info->text_buffer_descriptor_set_layout) != VK_SUCCESS, "RENDER: Failed to create descriptor set layout.");
     }
 
 }

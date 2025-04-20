@@ -102,6 +102,53 @@ void sy_render_create_index_buffer(SyRenderInfo *render_info, size_t index_amt, 
     *out_buffer_alloc = result_alloc;
 }
 
+void sy_render_create_storage_buffer(SyRenderInfo *render_info, void *data, size_t data_size, VkBuffer *out_buffer, VmaAllocation *out_buffer_alloc)
+{
+    VkBuffer result;
+    VmaAllocation result_alloc;
+
+    VkDeviceSize buffer_size = data_size;
+
+    // Create Staging Buffer
+    VkBuffer staging_buffer;
+    VmaAllocation staging_buffer_alloc;
+    {
+	VkBufferCreateInfo buffer_info = { VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO };
+	buffer_info.size = buffer_size;
+	buffer_info.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
+	
+	VmaAllocationCreateInfo alloc_info = {0};
+	alloc_info.usage = VMA_MEMORY_USAGE_CPU_TO_GPU;
+	alloc_info.flags = VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT;
+	
+	vmaCreateBuffer(render_info->vma_allocator, &buffer_info, &alloc_info, &staging_buffer, &staging_buffer_alloc, nullptr);
+    }
+
+    // Copy the vertices into the staging buffer
+    vmaCopyMemoryToAllocation(render_info->vma_allocator, data, staging_buffer_alloc, 0, buffer_size);
+
+    // Create Vertex Buffer
+    {
+	VkBufferCreateInfo buffer_info = { VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO };
+	buffer_info.size = buffer_size;
+	buffer_info.usage = VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
+	
+	VmaAllocationCreateInfo alloc_info = {0};
+	alloc_info.usage = VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE;
+	
+	vmaCreateBuffer(render_info->vma_allocator, &buffer_info, &alloc_info, &result, &result_alloc, nullptr);
+    }
+
+    // Copy Staging Buffer to Vertex Buffer
+    sy_render_copy_buffer(render_info, staging_buffer, result, buffer_size);
+
+    // Destroy Staging Buffer
+    vmaDestroyBuffer(render_info->vma_allocator, staging_buffer, staging_buffer_alloc);
+
+    *out_buffer = result;
+    *out_buffer_alloc = result_alloc;
+}
+
 void sy_render_copy_buffer(SyRenderInfo *render_info, VkBuffer src_buffer, VkBuffer dst_buffer, VkDeviceSize size)
 {
     // Create Command Buffer

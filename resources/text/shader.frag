@@ -13,7 +13,7 @@ layout (set = 1, binding = 0) uniform CharacterInformation
 
 void main()
 {
-    vec4 texture_color = texture(u_character_map, v_tex_coord);
+    vec4 texture_color = textureLod(u_character_map, v_tex_coord, 0);
 
     if (texture_color.r < 0.5f)
 	discard;

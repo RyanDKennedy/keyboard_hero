@@ -1,5 +1,6 @@
 #pragma once
 
+#include "render/sy_render_defines.hpp"
 #include "render/sy_render_settings.hpp" // this needs to be first because it sets up some #define's
 
 #include <vulkan/vulkan.h>
@@ -76,6 +77,7 @@ struct SyRenderInfo
 
     VkDescriptorSetLayout character_map_descriptor_set_layout;
     VkDescriptorSetLayout character_information_descriptor_set_layout;
+    VkDescriptorSetLayout text_buffer_descriptor_set_layout;
     VkPipelineLayout text_pipeline_layout;
     VkPipeline text_pipeline;
 
@@ -83,6 +85,11 @@ struct SyRenderInfo
     SyRenderImage error_image;
     VkSampler nearest_sampler;
     SyMesh error_image_mesh;
+    VkBuffer storage_buffer[SY_RENDER_MAX_FRAMES_IN_FLIGHT];
+    VmaAllocation storage_buffer_allocation[SY_RENDER_MAX_FRAMES_IN_FLIGHT];
+    uint32_t character_amt;
+    size_t storage_buffer_size;
+    
 };
 
 void sy_render_info_init(SyRenderInfo *render_info, int win_width, int win_height);

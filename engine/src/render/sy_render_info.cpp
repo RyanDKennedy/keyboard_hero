@@ -56,29 +56,46 @@ void sy_render_info_init(SyRenderInfo *render_info, int win_width, int win_heigh
     sampler_create_info.flags = 0;
     sampler_create_info.magFilter = VK_FILTER_NEAREST;
     sampler_create_info.minFilter = VK_FILTER_NEAREST;
+    sampler_create_info.unnormalizedCoordinates = VK_TRUE;
+    sampler_create_info.anisotropyEnable = VK_FALSE;
+    sampler_create_info.addressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+    sampler_create_info.addressModeV = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+
 
     SY_ERROR_COND(vkCreateSampler(render_info->logical_device, &sampler_create_info, NULL, &render_info->nearest_sampler) != VK_SUCCESS, "RENDER - Failed to create nearest sampler.");
 
     float vertex_data[] =
 	{
-	    -1.0f, -1.0f, 0.0f, 0.0f, // top left
-	    -1.0f, 1.0f, 0.0f, 1.0f, // bottom left
-	    1.0f, -1.0f, 1.0f, 0.0f, // top right
-	    1.0f, 1.0f,	1.0f, 1.0f, // bottom right
+	    -1.0f, -1.0f,
+	    -1.0f, 1.0f,
+	    1.0f, -1.0f,
+	    1.0f, 1.0f,
 	};
     size_t vertex_data_size = SY_ARRLEN(vertex_data);
 
-    uint32_t index_data[] =
-	{
-	    0, 2, 1,
-	    1, 2, 3
-	};
-    size_t index_data_size = SY_ARRLEN(index_data);
-
     sy_render_create_vertex_buffer(render_info, vertex_data_size * sizeof(vertex_data[0]), (uint8_t*)vertex_data, &render_info->error_image_mesh.vertex_buffer, &render_info->error_image_mesh.vertex_buffer_alloc);
 
-    render_info->error_image_mesh.index_amt = index_data_size;
-    sy_render_create_index_buffer(render_info, index_data_size, index_data, &render_info->error_image_mesh.index_buffer, &render_info->error_image_mesh.index_buffer_alloc);
+    struct TextBufferData
+    {
+	glm::vec2 pos_offset;
+	glm::uvec2 tex_bottom_left;
+	glm::uvec2 tex_top_right;
+    } *text_buffer_data;
+    render_info->character_amt = 2;
+    render_info->storage_buffer_size = render_info->character_amt * sizeof(TextBufferData);
+    text_buffer_data = (TextBufferData*)calloc(sizeof(TextBufferData), render_info->character_amt);
+    
+    text_buffer_data[0].pos_offset = glm::vec2(0.0f, 0.0f);
+    text_buffer_data[0].tex_bottom_left = glm::uvec2(0, 0);
+    text_buffer_data[0].tex_top_right = glm::uvec2(16, 16);
+    text_buffer_data[1].pos_offset = glm::vec2(0.0f, 0.0f);
+    text_buffer_data[1].tex_bottom_left = glm::uvec2(0, 0);
+    text_buffer_data[1].tex_top_right = glm::uvec2(12, 12);
+    
+    for (int i = 0; i < SY_RENDER_MAX_FRAMES_IN_FLIGHT; ++i)
+    {
+	sy_render_create_storage_buffer(render_info, text_buffer_data, sizeof(TextBufferData) * render_info->character_amt, &render_info->storage_buffer[i], &render_info->storage_buffer_allocation[i]);
+    }
 
 }
 

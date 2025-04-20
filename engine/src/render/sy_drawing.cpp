@@ -15,6 +15,7 @@
 #include "types/sy_camera_settings.hpp"
 #include "types/sy_mesh.hpp"
 #include <glm/ext/matrix_transform.hpp>
+#include <glm/fwd.hpp>
 #include <stdlib.h>
 #include <vulkan/vulkan_core.h>
 
@@ -115,6 +116,8 @@ void record_command_buffer(SyRenderInfo *render_info, VkCommandBuffer command_bu
 	render_info->frame_uniform_data[render_info->current_frame].allocations.clear();
     }
 
+
+
     VkCommandBufferBeginInfo command_buffer_begin_info;
     command_buffer_begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
     command_buffer_begin_info.pNext = NULL;
@@ -175,13 +178,38 @@ void record_command_buffer(SyRenderInfo *render_info, VkCommandBuffer command_bu
 	
 	vkCmdBindDescriptorSets(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, render_info->text_pipeline_layout, 0, 2, sets, 0, NULL);
 
+
+	VkDescriptorSet text_buffer_descriptor_set = render_info->frame_uniform_data[render_info->current_frame].descriptor_allocator.allocate(render_info->logical_device, render_info->text_buffer_descriptor_set_layout);
+
+	{
+	    VkDescriptorBufferInfo buffer_info;
+	    buffer_info.buffer = render_info->storage_buffer[render_info->current_frame];
+	    buffer_info.offset = 0;
+	    buffer_info.range = render_info->storage_buffer_size;
+	    
+	    VkWriteDescriptorSet descriptor_write;
+	    descriptor_write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+	    descriptor_write.pNext = NULL;
+	    descriptor_write.dstSet = text_buffer_descriptor_set;
+	    descriptor_write.dstBinding = 0;
+	    descriptor_write.dstArrayElement = 0;
+	    descriptor_write.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+	    descriptor_write.descriptorCount = 1;
+	    descriptor_write.pBufferInfo = &buffer_info;
+	    descriptor_write.pImageInfo = NULL;
+	    descriptor_write.pTexelBufferView = NULL;
+	    
+	    vkUpdateDescriptorSets(render_info->logical_device, 1, &descriptor_write, 0, NULL);
+	}
+	
+	vkCmdBindDescriptorSets(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, render_info->text_pipeline_layout, 2, 1, &text_buffer_descriptor_set, 0, NULL);
+
 	// Buffers
 	VkDeviceSize vertex_buffer_offset = 0;
 	vkCmdBindVertexBuffers(command_buffer, 0, 1, &render_info->error_image_mesh.vertex_buffer, &vertex_buffer_offset);
-	vkCmdBindIndexBuffer(command_buffer, render_info->error_image_mesh.index_buffer, 0, VK_INDEX_TYPE_UINT32);
 	
 	// Draw
-	vkCmdDrawIndexed(command_buffer, render_info->error_image_mesh.index_amt, 1, 0, 0, 0);
+	vkCmdDraw(command_buffer, 4, render_info->character_amt, 0, 0);
     }
 
     vkCmdBindPipeline(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, render_info->single_color_pipeline);
