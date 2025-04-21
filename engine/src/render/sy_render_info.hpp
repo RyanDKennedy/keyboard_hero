@@ -83,7 +83,7 @@ struct SyRenderInfo
 
     // FIXME:
     SyRenderImage error_image;
-    VkSampler nearest_sampler;
+    VkSampler font_sampler;
     SyMesh error_image_mesh;
     VkBuffer storage_buffer[SY_RENDER_MAX_FRAMES_IN_FLIGHT];
     VmaAllocation storage_buffer_allocation[SY_RENDER_MAX_FRAMES_IN_FLIGHT];

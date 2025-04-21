@@ -39,6 +39,7 @@ void sy_render_info_init(SyRenderInfo *render_info, int win_width, int win_heigh
 
 
     //checkerboard image
+/*
     uint32_t magenta = glm::packUnorm4x8(glm::vec4(1, 0, 1, 1));
     uint32_t black = glm::packUnorm4x8(glm::vec4(0, 0, 0, 0));
     uint32_t pixels[16*16]; //for 16x16 checkerboard texture
@@ -49,6 +50,17 @@ void sy_render_info_init(SyRenderInfo *render_info, int win_width, int win_heigh
     }
 
     render_info->error_image = sy_render_create_texture_image(render_info, (void*)pixels, VkExtent2D{.width=16, .height=16}, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_USAGE_SAMPLED_BIT);
+*/
+    uint8_t white = 255;
+    uint8_t black = 0;
+    uint8_t pixels[16*16]; //for 16x16 checkerboard texture
+    for (int x = 0; x < 16; x++) {
+	for (int y = 0; y < 16; y++) {
+	    pixels[y*16 + x] = ((x % 2) ^ (y % 2)) ? white : black;
+	}
+    }
+
+    render_info->error_image = sy_render_create_texture_image(render_info, (void*)pixels, VkExtent2D{.width=16, .height=16}, VK_FORMAT_R8_UNORM, VK_IMAGE_USAGE_SAMPLED_BIT);
 
     VkSamplerCreateInfo sampler_create_info = {};
     sampler_create_info.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
@@ -62,7 +74,7 @@ void sy_render_info_init(SyRenderInfo *render_info, int win_width, int win_heigh
     sampler_create_info.addressModeV = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
 
 
-    SY_ERROR_COND(vkCreateSampler(render_info->logical_device, &sampler_create_info, NULL, &render_info->nearest_sampler) != VK_SUCCESS, "RENDER - Failed to create nearest sampler.");
+    SY_ERROR_COND(vkCreateSampler(render_info->logical_device, &sampler_create_info, NULL, &render_info->font_sampler) != VK_SUCCESS, "RENDER - Failed to create nearest sampler.");
 
     float vertex_data[] =
 	{
@@ -81,17 +93,20 @@ void sy_render_info_init(SyRenderInfo *render_info, int win_width, int win_heigh
 	glm::uvec2 tex_bottom_left;
 	glm::uvec2 tex_top_right;
     } *text_buffer_data;
-    render_info->character_amt = 2;
+    render_info->character_amt = 1;
     render_info->storage_buffer_size = render_info->character_amt * sizeof(TextBufferData);
     text_buffer_data = (TextBufferData*)calloc(sizeof(TextBufferData), render_info->character_amt);
     
+
     text_buffer_data[0].pos_offset = glm::vec2(0.0f, 0.0f);
     text_buffer_data[0].tex_bottom_left = glm::uvec2(0, 0);
     text_buffer_data[0].tex_top_right = glm::uvec2(16, 16);
+/*
     text_buffer_data[1].pos_offset = glm::vec2(0.0f, 0.0f);
     text_buffer_data[1].tex_bottom_left = glm::uvec2(0, 0);
     text_buffer_data[1].tex_top_right = glm::uvec2(12, 12);
-    
+*/    
+
     for (int i = 0; i < SY_RENDER_MAX_FRAMES_IN_FLIGHT; ++i)
     {
 	sy_render_create_storage_buffer(render_info, text_buffer_data, sizeof(TextBufferData) * render_info->character_amt, &render_info->storage_buffer[i], &render_info->storage_buffer_allocation[i]);

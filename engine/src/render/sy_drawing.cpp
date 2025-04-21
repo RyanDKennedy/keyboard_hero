@@ -78,14 +78,14 @@ VkDescriptorSet create_and_write_to_descriptor_set_and_buffer(SyRenderInfo *rend
     return descriptor_set;
 }
 
-VkDescriptorSet create_descriptor_set_and_image(SyRenderInfo *render_info, VkDescriptorSetLayout layout, VkImageView image_view)
+VkDescriptorSet create_descriptor_set_and_image(SyRenderInfo *render_info, VkDescriptorSetLayout layout, VkImageView image_view, VkSampler sampler)
 {
     VkDescriptorSet descriptor_set = render_info->frame_uniform_data[render_info->current_frame].descriptor_allocator.allocate(render_info->logical_device, layout);
     SyUniformAllocation allocation;
     
     VkDescriptorImageInfo image_info = {};
     image_info.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-    image_info.sampler = render_info->nearest_sampler;
+    image_info.sampler = sampler;
     image_info.imageView = image_view;
     
     VkWriteDescriptorSet descriptor_write;
@@ -164,7 +164,7 @@ void record_command_buffer(SyRenderInfo *render_info, VkCommandBuffer command_bu
 	vkCmdSetScissor(command_buffer, 0, 1, &scissor);
 
 	// Bind/Create uniforms
-	VkDescriptorSet character_map_descriptor_set = create_descriptor_set_and_image(render_info, render_info->character_map_descriptor_set_layout, render_info->error_image.image_view);
+	VkDescriptorSet character_map_descriptor_set = create_descriptor_set_and_image(render_info, render_info->character_map_descriptor_set_layout, render_info->error_image.image_view, render_info->font_sampler);
 
 	struct
 	{

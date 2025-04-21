@@ -19,6 +19,8 @@ set(SY_SOURCE_FILES
     ${CMAKE_CURRENT_SOURCE_DIR}/src/asset_system/sy_obj_parser.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/asset_system/sy_asset_system.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/external/vma.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/external/stb_truetype.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/external/stb_rect_pack.cpp
 )
 
 # PLATFORM UNSPECIFIC FILES
