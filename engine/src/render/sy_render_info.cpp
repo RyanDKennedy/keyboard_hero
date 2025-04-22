@@ -71,7 +71,7 @@ void sy_render_info_init(SyRenderInfo *render_info, int win_width, int win_heigh
     
     SY_ERROR_COND(vkCreateSampler(render_info->logical_device, &sampler_create_info, NULL, &render_info->font_sampler) != VK_SUCCESS, "RENDER - Failed to create nearest sampler.");
 
-    SyFont font = sy_render_create_font(render_info, "/usr/share/fonts/TTF/UbuntuMonoNerdFont-Regular.ttf", 1024, 1024, 64, "AbCD$#");
+    SyFont font = sy_render_create_font(render_info, "/usr/share/fonts/TTF/UbuntuMonoNerdFont-Regular.ttf", 128, 128, 64, "AbCD$#");
     SyFontCharacter x_char = font.character_map['X'];
     printf("(%d, %d) (%d, %d)\n", x_char.tex_bottom_left[0], x_char.tex_bottom_left[1], x_char.tex_top_right[0], x_char.tex_top_right[1]);
 
@@ -106,7 +106,7 @@ void sy_render_info_init(SyRenderInfo *render_info, int win_width, int win_heigh
     text_buffer_data[0].tex_top_right = glm::uvec2(b_char.tex_top_right[0], b_char.tex_top_right[1]);
 */
     text_buffer_data[0].tex_bottom_left = glm::uvec2(0, 0);
-    text_buffer_data[0].tex_top_right = glm::uvec2(1024, 1024);
+    text_buffer_data[0].tex_top_right = glm::uvec2(128, 128);
 /*
     text_buffer_data[1].pos_offset = glm::vec2(0.0f, 0.0f);
     text_buffer_data[1].tex_bottom_left = glm::uvec2(0, 0);

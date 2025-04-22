@@ -46,16 +46,14 @@ SyFont sy_render_create_font(SyRenderInfo *render_info, const char *font_path, u
 	current_box->right = current_x + face->glyph->bitmap.width;
 	current_box->top = 0;
 	current_box->bottom = current_box->top + face->glyph->bitmap.rows;
-/*
-	if (current_x + character_width > texture_width)
+
+	if (current_x + face->glyph->bitmap.width > texture_width)
 	{
 	    current_x = 0;
 	}
 
 	current_box->left = current_x;
-	current_box->right = current_x + character_width;
 	current_box->top = 0;
-	current_box->bottom = current_box->top + face->glyph->bitmap.rows;
 
 	// Resolve collisions with other boxes
 	for (size_t j = 0; j < i; ++j)
@@ -63,18 +61,39 @@ SyFont sy_render_create_font(SyRenderInfo *render_info, const char *font_path, u
 	    // check for collisions
 	    Box *col_box = &boxes[j];
 
-	    if (current_box->left != col_box->left)
+	    // See if x values align
+	    bool x_values_align = false;
+	    current_box->bottom = current_box->top + face->glyph->bitmap.rows;
+	    current_box->right = current_box->left + face->glyph->bitmap.width;
+	    if (current_box->left < col_box->right && current_box->left > col_box->left)
+	    {
+		x_values_align = true;
+	    }
+
+	    if (current_box->right < col_box->right && current_box->right > col_box->left)
+	    {
+		x_values_align = true;
+	    }
+
+	    if (current_box->left < col_box->left && current_box->right > col_box->right)
+	    {
+		x_values_align = true;
+	    }
+
+	    if (x_values_align == false)
 		continue;
 
-	    if (current_box->top > col_box->bottom)
+	    // Check / Offset based on y values
+	    if (current_box->top < col_box->bottom)
 	    {
 		current_box->top = col_box->bottom;
 	    }
+
 	}
 	current_box->bottom = current_box->top + face->glyph->bitmap.rows;
+	current_box->right = current_box->left + face->glyph->bitmap.width;
 
 	SY_ERROR_COND(current_box->bottom > texture_height, "Not enough space in texture for font atlas.");
-*/
 
 	// Write to texture at box position
 	{
@@ -91,13 +110,13 @@ SyFont sy_render_create_font(SyRenderInfo *render_info, const char *font_path, u
 		for (size_t x = 0; x < face->glyph->bitmap.width; ++x)
 		{
 		    pixels[(y + current_box->top)*texture_width + (x + current_box->left)] = face->glyph->bitmap.buffer[y * face->glyph->bitmap.width + x];
-		    printf("%c", face->glyph->bitmap.buffer[y * face->glyph->bitmap.width + x]? 'X' : ' ');
+//		    printf("%c", face->glyph->bitmap.buffer[y * face->glyph->bitmap.width + x]? 'X' : ' ');
 
 		}
-		printf("\n");
+//		printf("\n");
 	    }
 	}
-	printf("(%d, %d)\n===================================================\n\n", face->glyph->bitmap.width, face->glyph->bitmap.rows);
+//	printf("(%d, %d)\n===================================================\n\n", face->glyph->bitmap.width, face->glyph->bitmap.rows);
 	
 	current_x += face->glyph->bitmap.width;
     }
