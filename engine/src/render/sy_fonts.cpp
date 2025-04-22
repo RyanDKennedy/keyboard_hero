@@ -4,7 +4,7 @@
 
 #include "freetype_include.hpp"
 
-SyFont sy_render_create_font(SyRenderInfo *render_info, const char *font_path, uint32_t texture_width, uint32_t texture_height, uint32_t character_width, const char *characters)
+SyFont sy_render_create_font(SyRenderInfo *render_info, const char *font_path, uint32_t texture_width, uint32_t texture_height, uint32_t character_width, const char *characters, size_t side_padding)
 {
     SyFont result;
     
@@ -52,6 +52,8 @@ SyFont sy_render_create_font(SyRenderInfo *render_info, const char *font_path, u
 	    current_x = 0;
 	}
 
+      RECALCULATE_POSITION:
+
 	current_box->left = current_x;
 	current_box->top = 0;
 
@@ -86,14 +88,20 @@ SyFont sy_render_create_font(SyRenderInfo *render_info, const char *font_path, u
 	    // Check / Offset based on y values
 	    if (current_box->top < col_box->bottom)
 	    {
-		current_box->top = col_box->bottom;
+		current_box->top = col_box->bottom + side_padding;
 	    }
 
 	}
 	current_box->bottom = current_box->top + face->glyph->bitmap.rows;
 	current_box->right = current_box->left + face->glyph->bitmap.width;
 
-	SY_ERROR_COND(current_box->bottom > texture_height, "Not enough space in texture for font atlas.");
+	if (current_box->bottom > texture_height && current_box->right <= texture_width)
+	{
+	    current_x += 5;
+	    goto RECALCULATE_POSITION;
+	}
+
+	SY_ERROR_COND(current_box->bottom > texture_height && current_box->right > texture_width, "Not enough space in texture for font atlas.");
 
 	// Write to texture at box position
 	{
@@ -110,15 +118,10 @@ SyFont sy_render_create_font(SyRenderInfo *render_info, const char *font_path, u
 		for (size_t x = 0; x < face->glyph->bitmap.width; ++x)
 		{
 		    pixels[(y + current_box->top)*texture_width + (x + current_box->left)] = face->glyph->bitmap.buffer[y * face->glyph->bitmap.width + x];
-//		    printf("%c", face->glyph->bitmap.buffer[y * face->glyph->bitmap.width + x]? 'X' : ' ');
-
 		}
-//		printf("\n");
 	    }
 	}
-//	printf("(%d, %d)\n===================================================\n\n", face->glyph->bitmap.width, face->glyph->bitmap.rows);
-	
-	current_x += face->glyph->bitmap.width;
+	current_x += face->glyph->bitmap.width + side_padding;
     }
 
     SyRenderImage atlas = sy_render_create_texture_image(render_info, (void*)pixels, VkExtent2D{.width=texture_width, .height=texture_height}, VK_FORMAT_R8_UNORM, VK_IMAGE_USAGE_SAMPLED_BIT);
