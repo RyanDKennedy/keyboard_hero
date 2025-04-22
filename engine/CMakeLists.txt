@@ -16,17 +16,22 @@ set(SY_SOURCE_FILES
     ${CMAKE_CURRENT_SOURCE_DIR}/src/render/sy_buffer.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/render/sy_drawing.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/render/sy_descriptor_allocator.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/render/sy_fonts.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/asset_system/sy_obj_parser.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/asset_system/sy_asset_system.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/external/vma.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/external/stb_truetype.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/external/stb_rect_pack.cpp
 )
 
 # PLATFORM UNSPECIFIC FILES
 set(SY_LINK_LIBRARIES
   Vulkan::Vulkan
+  freetype
 )
+
+set(SY_INCLUDE_DIRECTORIES
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/
+  ${CMAKE_CURRENT_SOURCE_DIR}/external/
+  )
 
 if(UNIX)
   list(APPEND SY_SOURCE_FILES 
@@ -44,6 +49,10 @@ if(UNIX)
     xkbcommon-x11
     xcb-xinput
   )
+
+  list(APPEND SY_INCLUDE_DIRECTORIES
+    /usr/include/freetype2/  
+  )
 endif(UNIX)
 
 if(CMAKE_BUILD_TYPE STREQUAL "Release")
@@ -56,8 +65,7 @@ add_executable(${PROJECT_NAME} ${SY_SOURCE_FILES})
 
 target_include_directories(${PROJECT_NAME}
   PUBLIC
-  ${CMAKE_CURRENT_SOURCE_DIR}/src/
-  ${CMAKE_CURRENT_SOURCE_DIR}/external/
+  ${SY_INCLUDE_DIRECTORIES}
 )
 
 target_link_libraries(${PROJECT_NAME}

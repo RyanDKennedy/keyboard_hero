@@ -8,6 +8,8 @@
 #include "sy_pipeline.hpp"
 #include "sy_macros.hpp"
 
+
+
 void sy_render_create_depth_resources(SyRenderInfo *render_info)
 {
     render_info->depth_images = (VkImage*)calloc(render_info->swapchain_images_amt, sizeof(VkImage));
@@ -84,13 +86,23 @@ void sy_render_create_depth_resources(SyRenderInfo *render_info)
 
 SyRenderImage sy_render_create_texture_image(SyRenderInfo *render_info, void *data, VkExtent2D extent, VkFormat format, VkImageUsageFlags usage)
 {
-    size_t buffer_size = extent.width * extent.height * 4;
+    size_t pixel_size;
+    if (format == VK_FORMAT_R8G8B8A8_UNORM)
+	pixel_size = 4;
+    else if (format == VK_FORMAT_R8_UNORM)
+	pixel_size = 1;
+    else
+    {
+	SY_ERROR("format not supported by function");
+    }
+
+    size_t buffer_size = extent.width * extent.height * pixel_size;
 
     // Create Staging Buffer
     VkBuffer staging_buffer;
     VmaAllocation staging_buffer_alloc;
     {
-	VkBufferCreateInfo buffer_info = { VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO };
+	VkBufferCreateInfo buffer_info = { .sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO, .pNext = NULL, .flags = 0};
 	buffer_info.size = buffer_size;
 	buffer_info.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
 	
@@ -98,7 +110,7 @@ SyRenderImage sy_render_create_texture_image(SyRenderInfo *render_info, void *da
 	alloc_info.usage = VMA_MEMORY_USAGE_CPU_TO_GPU;
 	alloc_info.flags = VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT;
 	
-	vmaCreateBuffer(render_info->vma_allocator, &buffer_info, &alloc_info, &staging_buffer, &staging_buffer_alloc, nullptr);
+	SY_ERROR_COND(vmaCreateBuffer(render_info->vma_allocator, &buffer_info, &alloc_info, &staging_buffer, &staging_buffer_alloc, nullptr) != VK_SUCCESS, "Failed to create staging buffer");
     }
 
     // Copy the vertices into the staging buffer

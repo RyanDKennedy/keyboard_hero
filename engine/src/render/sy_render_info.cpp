@@ -10,6 +10,7 @@
 #include "render/sy_logical_device.hpp"
 #include "render/sy_swapchain.hpp"
 #include "render/sy_buffer.hpp"
+#include "render/sy_fonts.hpp"
 
 #include "sy_pipeline.hpp"
 #include "sy_macros.hpp"
@@ -38,8 +39,12 @@ void sy_render_info_init(SyRenderInfo *render_info, int win_width, int win_heigh
     // Test
 
 
-    //checkerboard image
 /*
+    //checkerboard image
+
+    uint32_t width = 16;
+    uint32_t height = 16;
+
     uint32_t magenta = glm::packUnorm4x8(glm::vec4(1, 0, 1, 1));
     uint32_t black = glm::packUnorm4x8(glm::vec4(0, 0, 0, 0));
     uint32_t pixels[16*16]; //for 16x16 checkerboard texture
@@ -51,17 +56,8 @@ void sy_render_info_init(SyRenderInfo *render_info, int win_width, int win_heigh
 
     render_info->error_image = sy_render_create_texture_image(render_info, (void*)pixels, VkExtent2D{.width=16, .height=16}, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_USAGE_SAMPLED_BIT);
 */
-    uint8_t white = 255;
-    uint8_t black = 0;
-    uint8_t pixels[16*16]; //for 16x16 checkerboard texture
-    for (int x = 0; x < 16; x++) {
-	for (int y = 0; y < 16; y++) {
-	    pixels[y*16 + x] = ((x % 2) ^ (y % 2)) ? white : black;
-	}
-    }
 
-    render_info->error_image = sy_render_create_texture_image(render_info, (void*)pixels, VkExtent2D{.width=16, .height=16}, VK_FORMAT_R8_UNORM, VK_IMAGE_USAGE_SAMPLED_BIT);
-
+	
     VkSamplerCreateInfo sampler_create_info = {};
     sampler_create_info.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
     sampler_create_info.pNext = NULL;
@@ -72,9 +68,15 @@ void sy_render_info_init(SyRenderInfo *render_info, int win_width, int win_heigh
     sampler_create_info.anisotropyEnable = VK_FALSE;
     sampler_create_info.addressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
     sampler_create_info.addressModeV = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
-
-
+    
     SY_ERROR_COND(vkCreateSampler(render_info->logical_device, &sampler_create_info, NULL, &render_info->font_sampler) != VK_SUCCESS, "RENDER - Failed to create nearest sampler.");
+
+    SyFont font = sy_render_create_font(render_info, "/usr/share/fonts/TTF/UbuntuMonoNerdFont-Regular.ttf", 1024, 1024, 64, "AbCD$#");
+    SyFontCharacter x_char = font.character_map['X'];
+    printf("(%d, %d) (%d, %d)\n", x_char.tex_bottom_left[0], x_char.tex_bottom_left[1], x_char.tex_top_right[0], x_char.tex_top_right[1]);
+
+
+    render_info->error_image = font.atlas;
 
     float vertex_data[] =
 	{
@@ -99,8 +101,12 @@ void sy_render_info_init(SyRenderInfo *render_info, int win_width, int win_heigh
     
 
     text_buffer_data[0].pos_offset = glm::vec2(0.0f, 0.0f);
+/*
+    text_buffer_data[0].tex_bottom_left = glm::uvec2(b_char.tex_bottom_left[0], b_char.tex_bottom_left[1]);
+    text_buffer_data[0].tex_top_right = glm::uvec2(b_char.tex_top_right[0], b_char.tex_top_right[1]);
+*/
     text_buffer_data[0].tex_bottom_left = glm::uvec2(0, 0);
-    text_buffer_data[0].tex_top_right = glm::uvec2(16, 16);
+    text_buffer_data[0].tex_top_right = glm::uvec2(1024, 1024);
 /*
     text_buffer_data[1].pos_offset = glm::vec2(0.0f, 0.0f);
     text_buffer_data[1].tex_bottom_left = glm::uvec2(0, 0);

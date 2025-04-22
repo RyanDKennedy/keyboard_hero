@@ -1,6 +1,7 @@
 #pragma once
 
 #include "sy_render_info.hpp"
+#include "sy_fonts.hpp"
 
 SyRenderImage sy_render_create_texture_image(SyRenderInfo *render_info, void *data, VkExtent2D extent, VkFormat format, VkImageUsageFlags usage);
 void sy_render_transition_image(SyRenderInfo *render_info, SyRenderImage *image, VkImageLayout old_layout, VkImageLayout new_layout);
@@ -16,3 +17,5 @@ void sy_render_create_sync_objects(SyRenderInfo *render_info);
 // void sy_render_create_descriptor_pool(SyRenderInfo *render_info);
 void sy_render_create_pipelines(SyRenderInfo *render_info);
 void sy_render_create_allocator(SyRenderInfo *render_info);
+
+

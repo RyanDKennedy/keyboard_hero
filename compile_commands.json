@@ -1,110 +1,140 @@
 [
 {
+  "directory": "/home/kenne/programming/syengine/build/app",
+  "command": "/usr/bin/c++ -Dapp_EXPORTS -I/home/kenne/programming/syengine/app/src -I/home/kenne/programming/syengine/engine/src -I/home/kenne/programming/syengine/engine/external -g3 -Wall -g -std=gnu++17 -fPIC -o CMakeFiles/app.dir/src/app.cpp.o -c /home/kenne/programming/syengine/app/src/app.cpp",
+  "file": "/home/kenne/programming/syengine/app/src/app.cpp",
+  "output": "app/CMakeFiles/app.dir/src/app.cpp.o"
+},
+{
+  "directory": "/home/kenne/programming/syengine/build/app",
+  "command": "/usr/bin/c++ -Dapp_EXPORTS -I/home/kenne/programming/syengine/app/src -I/home/kenne/programming/syengine/engine/src -I/home/kenne/programming/syengine/engine/external -g3 -Wall -g -std=gnu++17 -fPIC -o CMakeFiles/app.dir/src/util.cpp.o -c /home/kenne/programming/syengine/app/src/util.cpp",
+  "file": "/home/kenne/programming/syengine/app/src/util.cpp",
+  "output": "app/CMakeFiles/app.dir/src/util.cpp.o"
+},
+{
+  "directory": "/home/kenne/programming/syengine/build/app",
+  "command": "/usr/bin/c++ -Dapp_EXPORTS -I/home/kenne/programming/syengine/app/src -I/home/kenne/programming/syengine/engine/src -I/home/kenne/programming/syengine/engine/external -g3 -Wall -g -std=gnu++17 -fPIC -o CMakeFiles/app.dir/src/menu.cpp.o -c /home/kenne/programming/syengine/app/src/menu.cpp",
+  "file": "/home/kenne/programming/syengine/app/src/menu.cpp",
+  "output": "app/CMakeFiles/app.dir/src/menu.cpp.o"
+},
+{
+  "directory": "/home/kenne/programming/syengine/build/app",
+  "command": "/usr/bin/c++ -Dapp_EXPORTS -I/home/kenne/programming/syengine/app/src -I/home/kenne/programming/syengine/engine/src -I/home/kenne/programming/syengine/engine/external -g3 -Wall -g -std=gnu++17 -fPIC -o CMakeFiles/app.dir/__/engine/src/sy_arena.cpp.o -c /home/kenne/programming/syengine/engine/src/sy_arena.cpp",
+  "file": "/home/kenne/programming/syengine/engine/src/sy_arena.cpp",
+  "output": "app/CMakeFiles/app.dir/__/engine/src/sy_arena.cpp.o"
+},
+{
   "directory": "/home/kenne/programming/syengine/build/engine",
-  "command": "/usr/bin/c++  -I/home/kenne/programming/syengine/engine/src -I/home/kenne/programming/syengine/engine/external -g -std=gnu++17 -o CMakeFiles/syengine.dir/src/sy_syengine.cpp.o -c /home/kenne/programming/syengine/engine/src/sy_syengine.cpp",
+  "command": "/usr/bin/c++  -I/home/kenne/programming/syengine/engine/src -I/home/kenne/programming/syengine/engine/external -I/usr/include/freetype2 -g3 -Wall -g -std=gnu++17 -o CMakeFiles/syengine.dir/src/sy_syengine.cpp.o -c /home/kenne/programming/syengine/engine/src/sy_syengine.cpp",
   "file": "/home/kenne/programming/syengine/engine/src/sy_syengine.cpp",
   "output": "engine/CMakeFiles/syengine.dir/src/sy_syengine.cpp.o"
 },
 {
   "directory": "/home/kenne/programming/syengine/build/engine",
-  "command": "/usr/bin/c++  -I/home/kenne/programming/syengine/engine/src -I/home/kenne/programming/syengine/engine/external -g -std=gnu++17 -o CMakeFiles/syengine.dir/src/sy_arena.cpp.o -c /home/kenne/programming/syengine/engine/src/sy_arena.cpp",
+  "command": "/usr/bin/c++  -I/home/kenne/programming/syengine/engine/src -I/home/kenne/programming/syengine/engine/external -I/usr/include/freetype2 -g3 -Wall -g -std=gnu++17 -o CMakeFiles/syengine.dir/src/sy_arena.cpp.o -c /home/kenne/programming/syengine/engine/src/sy_arena.cpp",
   "file": "/home/kenne/programming/syengine/engine/src/sy_arena.cpp",
   "output": "engine/CMakeFiles/syengine.dir/src/sy_arena.cpp.o"
 },
 {
   "directory": "/home/kenne/programming/syengine/build/engine",
-  "command": "/usr/bin/c++  -I/home/kenne/programming/syengine/engine/src -I/home/kenne/programming/syengine/engine/external -g -std=gnu++17 -o CMakeFiles/syengine.dir/src/sy_utils.cpp.o -c /home/kenne/programming/syengine/engine/src/sy_utils.cpp",
+  "command": "/usr/bin/c++  -I/home/kenne/programming/syengine/engine/src -I/home/kenne/programming/syengine/engine/external -I/usr/include/freetype2 -g3 -Wall -g -std=gnu++17 -o CMakeFiles/syengine.dir/src/sy_utils.cpp.o -c /home/kenne/programming/syengine/engine/src/sy_utils.cpp",
   "file": "/home/kenne/programming/syengine/engine/src/sy_utils.cpp",
   "output": "engine/CMakeFiles/syengine.dir/src/sy_utils.cpp.o"
 },
 {
   "directory": "/home/kenne/programming/syengine/build/engine",
-  "command": "/usr/bin/c++  -I/home/kenne/programming/syengine/engine/src -I/home/kenne/programming/syengine/engine/external -g -std=gnu++17 -o CMakeFiles/syengine.dir/src/render/sy_resources.cpp.o -c /home/kenne/programming/syengine/engine/src/render/sy_resources.cpp",
+  "command": "/usr/bin/c++  -I/home/kenne/programming/syengine/engine/src -I/home/kenne/programming/syengine/engine/external -I/usr/include/freetype2 -g3 -Wall -g -std=gnu++17 -o CMakeFiles/syengine.dir/src/render/sy_render_info.cpp.o -c /home/kenne/programming/syengine/engine/src/render/sy_render_info.cpp",
+  "file": "/home/kenne/programming/syengine/engine/src/render/sy_render_info.cpp",
+  "output": "engine/CMakeFiles/syengine.dir/src/render/sy_render_info.cpp.o"
+},
+{
+  "directory": "/home/kenne/programming/syengine/build/engine",
+  "command": "/usr/bin/c++  -I/home/kenne/programming/syengine/engine/src -I/home/kenne/programming/syengine/engine/external -I/usr/include/freetype2 -g3 -Wall -g -std=gnu++17 -o CMakeFiles/syengine.dir/src/render/sy_resources.cpp.o -c /home/kenne/programming/syengine/engine/src/render/sy_resources.cpp",
   "file": "/home/kenne/programming/syengine/engine/src/render/sy_resources.cpp",
   "output": "engine/CMakeFiles/syengine.dir/src/render/sy_resources.cpp.o"
 },
 {
   "directory": "/home/kenne/programming/syengine/build/engine",
-  "command": "/usr/bin/c++  -I/home/kenne/programming/syengine/engine/src -I/home/kenne/programming/syengine/engine/external -g -std=gnu++17 -o CMakeFiles/syengine.dir/src/render/sy_physical_device.cpp.o -c /home/kenne/programming/syengine/engine/src/render/sy_physical_device.cpp",
+  "command": "/usr/bin/c++  -I/home/kenne/programming/syengine/engine/src -I/home/kenne/programming/syengine/engine/external -I/usr/include/freetype2 -g3 -Wall -g -std=gnu++17 -o CMakeFiles/syengine.dir/src/render/sy_physical_device.cpp.o -c /home/kenne/programming/syengine/engine/src/render/sy_physical_device.cpp",
   "file": "/home/kenne/programming/syengine/engine/src/render/sy_physical_device.cpp",
   "output": "engine/CMakeFiles/syengine.dir/src/render/sy_physical_device.cpp.o"
 },
 {
   "directory": "/home/kenne/programming/syengine/build/engine",
-  "command": "/usr/bin/c++  -I/home/kenne/programming/syengine/engine/src -I/home/kenne/programming/syengine/engine/external -g -std=gnu++17 -o CMakeFiles/syengine.dir/src/render/sy_logical_device.cpp.o -c /home/kenne/programming/syengine/engine/src/render/sy_logical_device.cpp",
+  "command": "/usr/bin/c++  -I/home/kenne/programming/syengine/engine/src -I/home/kenne/programming/syengine/engine/external -I/usr/include/freetype2 -g3 -Wall -g -std=gnu++17 -o CMakeFiles/syengine.dir/src/render/sy_logical_device.cpp.o -c /home/kenne/programming/syengine/engine/src/render/sy_logical_device.cpp",
   "file": "/home/kenne/programming/syengine/engine/src/render/sy_logical_device.cpp",
   "output": "engine/CMakeFiles/syengine.dir/src/render/sy_logical_device.cpp.o"
 },
 {
   "directory": "/home/kenne/programming/syengine/build/engine",
-  "command": "/usr/bin/c++  -I/home/kenne/programming/syengine/engine/src -I/home/kenne/programming/syengine/engine/external -g -std=gnu++17 -o CMakeFiles/syengine.dir/src/render/sy_swapchain.cpp.o -c /home/kenne/programming/syengine/engine/src/render/sy_swapchain.cpp",
+  "command": "/usr/bin/c++  -I/home/kenne/programming/syengine/engine/src -I/home/kenne/programming/syengine/engine/external -I/usr/include/freetype2 -g3 -Wall -g -std=gnu++17 -o CMakeFiles/syengine.dir/src/render/sy_swapchain.cpp.o -c /home/kenne/programming/syengine/engine/src/render/sy_swapchain.cpp",
   "file": "/home/kenne/programming/syengine/engine/src/render/sy_swapchain.cpp",
   "output": "engine/CMakeFiles/syengine.dir/src/render/sy_swapchain.cpp.o"
 },
 {
   "directory": "/home/kenne/programming/syengine/build/engine",
-  "command": "/usr/bin/c++  -I/home/kenne/programming/syengine/engine/src -I/home/kenne/programming/syengine/engine/external -g -std=gnu++17 -o CMakeFiles/syengine.dir/src/render/sy_pipeline.cpp.o -c /home/kenne/programming/syengine/engine/src/render/sy_pipeline.cpp",
+  "command": "/usr/bin/c++  -I/home/kenne/programming/syengine/engine/src -I/home/kenne/programming/syengine/engine/external -I/usr/include/freetype2 -g3 -Wall -g -std=gnu++17 -o CMakeFiles/syengine.dir/src/render/sy_pipeline.cpp.o -c /home/kenne/programming/syengine/engine/src/render/sy_pipeline.cpp",
   "file": "/home/kenne/programming/syengine/engine/src/render/sy_pipeline.cpp",
   "output": "engine/CMakeFiles/syengine.dir/src/render/sy_pipeline.cpp.o"
 },
 {
   "directory": "/home/kenne/programming/syengine/build/engine",
-  "command": "/usr/bin/c++  -I/home/kenne/programming/syengine/engine/src -I/home/kenne/programming/syengine/engine/external -g -std=gnu++17 -o CMakeFiles/syengine.dir/src/render/sy_buffer.cpp.o -c /home/kenne/programming/syengine/engine/src/render/sy_buffer.cpp",
+  "command": "/usr/bin/c++  -I/home/kenne/programming/syengine/engine/src -I/home/kenne/programming/syengine/engine/external -I/usr/include/freetype2 -g3 -Wall -g -std=gnu++17 -o CMakeFiles/syengine.dir/src/render/sy_buffer.cpp.o -c /home/kenne/programming/syengine/engine/src/render/sy_buffer.cpp",
   "file": "/home/kenne/programming/syengine/engine/src/render/sy_buffer.cpp",
   "output": "engine/CMakeFiles/syengine.dir/src/render/sy_buffer.cpp.o"
 },
 {
   "directory": "/home/kenne/programming/syengine/build/engine",
-  "command": "/usr/bin/c++  -I/home/kenne/programming/syengine/engine/src -I/home/kenne/programming/syengine/engine/external -g -std=gnu++17 -o CMakeFiles/syengine.dir/src/render/sy_drawing.cpp.o -c /home/kenne/programming/syengine/engine/src/render/sy_drawing.cpp",
+  "command": "/usr/bin/c++  -I/home/kenne/programming/syengine/engine/src -I/home/kenne/programming/syengine/engine/external -I/usr/include/freetype2 -g3 -Wall -g -std=gnu++17 -o CMakeFiles/syengine.dir/src/render/sy_drawing.cpp.o -c /home/kenne/programming/syengine/engine/src/render/sy_drawing.cpp",
   "file": "/home/kenne/programming/syengine/engine/src/render/sy_drawing.cpp",
   "output": "engine/CMakeFiles/syengine.dir/src/render/sy_drawing.cpp.o"
 },
 {
   "directory": "/home/kenne/programming/syengine/build/engine",
-  "command": "/usr/bin/c++  -I/home/kenne/programming/syengine/engine/src -I/home/kenne/programming/syengine/engine/external -g -std=gnu++17 -o CMakeFiles/syengine.dir/src/obj_parser/sy_obj_parser.cpp.o -c /home/kenne/programming/syengine/engine/src/obj_parser/sy_obj_parser.cpp",
-  "file": "/home/kenne/programming/syengine/engine/src/obj_parser/sy_obj_parser.cpp",
-  "output": "engine/CMakeFiles/syengine.dir/src/obj_parser/sy_obj_parser.cpp.o"
+  "command": "/usr/bin/c++  -I/home/kenne/programming/syengine/engine/src -I/home/kenne/programming/syengine/engine/external -I/usr/include/freetype2 -g3 -Wall -g -std=gnu++17 -o CMakeFiles/syengine.dir/src/render/sy_descriptor_allocator.cpp.o -c /home/kenne/programming/syengine/engine/src/render/sy_descriptor_allocator.cpp",
+  "file": "/home/kenne/programming/syengine/engine/src/render/sy_descriptor_allocator.cpp",
+  "output": "engine/CMakeFiles/syengine.dir/src/render/sy_descriptor_allocator.cpp.o"
 },
 {
   "directory": "/home/kenne/programming/syengine/build/engine",
-  "command": "/usr/bin/c++  -I/home/kenne/programming/syengine/engine/src -I/home/kenne/programming/syengine/engine/external -g -std=gnu++17 -o CMakeFiles/syengine.dir/external/vma.cpp.o -c /home/kenne/programming/syengine/engine/external/vma.cpp",
+  "command": "/usr/bin/c++  -I/home/kenne/programming/syengine/engine/src -I/home/kenne/programming/syengine/engine/external -I/usr/include/freetype2 -g3 -Wall -g -std=gnu++17 -o CMakeFiles/syengine.dir/src/asset_system/sy_obj_parser.cpp.o -c /home/kenne/programming/syengine/engine/src/asset_system/sy_obj_parser.cpp",
+  "file": "/home/kenne/programming/syengine/engine/src/asset_system/sy_obj_parser.cpp",
+  "output": "engine/CMakeFiles/syengine.dir/src/asset_system/sy_obj_parser.cpp.o"
+},
+{
+  "directory": "/home/kenne/programming/syengine/build/engine",
+  "command": "/usr/bin/c++  -I/home/kenne/programming/syengine/engine/src -I/home/kenne/programming/syengine/engine/external -I/usr/include/freetype2 -g3 -Wall -g -std=gnu++17 -o CMakeFiles/syengine.dir/src/asset_system/sy_asset_system.cpp.o -c /home/kenne/programming/syengine/engine/src/asset_system/sy_asset_system.cpp",
+  "file": "/home/kenne/programming/syengine/engine/src/asset_system/sy_asset_system.cpp",
+  "output": "engine/CMakeFiles/syengine.dir/src/asset_system/sy_asset_system.cpp.o"
+},
+{
+  "directory": "/home/kenne/programming/syengine/build/engine",
+  "command": "/usr/bin/c++  -I/home/kenne/programming/syengine/engine/src -I/home/kenne/programming/syengine/engine/external -I/usr/include/freetype2 -g3 -Wall -g -std=gnu++17 -o CMakeFiles/syengine.dir/external/vma.cpp.o -c /home/kenne/programming/syengine/engine/external/vma.cpp",
   "file": "/home/kenne/programming/syengine/engine/external/vma.cpp",
   "output": "engine/CMakeFiles/syengine.dir/external/vma.cpp.o"
 },
 {
   "directory": "/home/kenne/programming/syengine/build/engine",
-  "command": "/usr/bin/c++  -I/home/kenne/programming/syengine/engine/src -I/home/kenne/programming/syengine/engine/external -g -std=gnu++17 -o CMakeFiles/syengine.dir/src/sy_linux_entry.cpp.o -c /home/kenne/programming/syengine/engine/src/sy_linux_entry.cpp",
+  "command": "/usr/bin/c++  -I/home/kenne/programming/syengine/engine/src -I/home/kenne/programming/syengine/engine/external -I/usr/include/freetype2 -g3 -Wall -g -std=gnu++17 -o CMakeFiles/syengine.dir/src/sy_linux_entry.cpp.o -c /home/kenne/programming/syengine/engine/src/sy_linux_entry.cpp",
   "file": "/home/kenne/programming/syengine/engine/src/sy_linux_entry.cpp",
   "output": "engine/CMakeFiles/syengine.dir/src/sy_linux_entry.cpp.o"
 },
 {
   "directory": "/home/kenne/programming/syengine/build/engine",
-  "command": "/usr/bin/c++  -I/home/kenne/programming/syengine/engine/src -I/home/kenne/programming/syengine/engine/external -g -std=gnu++17 -o CMakeFiles/syengine.dir/src/sy_linux_window.cpp.o -c /home/kenne/programming/syengine/engine/src/sy_linux_window.cpp",
+  "command": "/usr/bin/c++  -I/home/kenne/programming/syengine/engine/src -I/home/kenne/programming/syengine/engine/external -I/usr/include/freetype2 -g3 -Wall -g -std=gnu++17 -o CMakeFiles/syengine.dir/src/sy_linux_window.cpp.o -c /home/kenne/programming/syengine/engine/src/sy_linux_window.cpp",
   "file": "/home/kenne/programming/syengine/engine/src/sy_linux_window.cpp",
   "output": "engine/CMakeFiles/syengine.dir/src/sy_linux_window.cpp.o"
 },
 {
   "directory": "/home/kenne/programming/syengine/build/engine",
-  "command": "/usr/bin/c++  -I/home/kenne/programming/syengine/engine/src -I/home/kenne/programming/syengine/engine/external -g -std=gnu++17 -o CMakeFiles/syengine.dir/src/sy_linux_input.cpp.o -c /home/kenne/programming/syengine/engine/src/sy_linux_input.cpp",
+  "command": "/usr/bin/c++  -I/home/kenne/programming/syengine/engine/src -I/home/kenne/programming/syengine/engine/external -I/usr/include/freetype2 -g3 -Wall -g -std=gnu++17 -o CMakeFiles/syengine.dir/src/sy_linux_input.cpp.o -c /home/kenne/programming/syengine/engine/src/sy_linux_input.cpp",
   "file": "/home/kenne/programming/syengine/engine/src/sy_linux_input.cpp",
   "output": "engine/CMakeFiles/syengine.dir/src/sy_linux_input.cpp.o"
 },
 {
   "directory": "/home/kenne/programming/syengine/build/engine",
-  "command": "/usr/bin/c++  -I/home/kenne/programming/syengine/engine/src -I/home/kenne/programming/syengine/engine/external -g -std=gnu++17 -o CMakeFiles/syengine.dir/src/render/sy_linux_init.cpp.o -c /home/kenne/programming/syengine/engine/src/render/sy_linux_init.cpp",
+  "command": "/usr/bin/c++  -I/home/kenne/programming/syengine/engine/src -I/home/kenne/programming/syengine/engine/external -I/usr/include/freetype2 -g3 -Wall -g -std=gnu++17 -o CMakeFiles/syengine.dir/src/render/sy_linux_init.cpp.o -c /home/kenne/programming/syengine/engine/src/render/sy_linux_init.cpp",
   "file": "/home/kenne/programming/syengine/engine/src/render/sy_linux_init.cpp",
   "output": "engine/CMakeFiles/syengine.dir/src/render/sy_linux_init.cpp.o"
-},
-{
-  "directory": "/home/kenne/programming/syengine/build/app",
-  "command": "/usr/bin/c++ -Dapp_EXPORTS -I/home/kenne/programming/syengine/engine/src -I/home/kenne/programming/syengine/engine/external -g -std=gnu++17 -fPIC -o CMakeFiles/app.dir/app.cpp.o -c /home/kenne/programming/syengine/app/app.cpp",
-  "file": "/home/kenne/programming/syengine/app/app.cpp",
-  "output": "app/CMakeFiles/app.dir/app.cpp.o"
-},
-{
-  "directory": "/home/kenne/programming/syengine/build/app",
-  "command": "/usr/bin/c++ -Dapp_EXPORTS -I/home/kenne/programming/syengine/engine/src -I/home/kenne/programming/syengine/engine/external -g -std=gnu++17 -fPIC -o CMakeFiles/app.dir/__/engine/src/sy_arena.cpp.o -c /home/kenne/programming/syengine/engine/src/sy_arena.cpp",
-  "file": "/home/kenne/programming/syengine/engine/src/sy_arena.cpp",
-  "output": "app/CMakeFiles/app.dir/__/engine/src/sy_arena.cpp.o"
 }
 ]
