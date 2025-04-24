@@ -17,6 +17,7 @@ set(SY_SOURCE_FILES
     ${CMAKE_CURRENT_SOURCE_DIR}/src/render/sy_drawing.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/render/sy_descriptor_allocator.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/render/sy_fonts.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/render/sy_image.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/asset_system/sy_obj_parser.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/asset_system/sy_asset_system.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/external/vma.cpp

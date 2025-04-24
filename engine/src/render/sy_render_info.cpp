@@ -41,23 +41,23 @@ void sy_render_info_init(SyRenderInfo *render_info, int win_width, int win_heigh
 
 /*
     //checkerboard image
-
-    uint32_t width = 16;
-    uint32_t height = 16;
-
-    uint32_t magenta = glm::packUnorm4x8(glm::vec4(1, 0, 1, 1));
-    uint32_t black = glm::packUnorm4x8(glm::vec4(0, 0, 0, 0));
-    uint32_t pixels[16*16]; //for 16x16 checkerboard texture
-    for (int x = 0; x < 16; x++) {
-	for (int y = 0; y < 16; y++) {
-	    pixels[y*16 + x] = ((x % 2) ^ (y % 2)) ? magenta : black;
+    {
+	uint32_t width = 16;
+	uint32_t height = 16;
+	
+	uint32_t magenta = glm::packUnorm4x8(glm::vec4(1, 0, 1, 1));
+	uint32_t black = glm::packUnorm4x8(glm::vec4(0, 0, 0, 0));
+	uint32_t pixels[16*16]; //for 16x16 checkerboard texture
+	for (int x = 0; x < 16; x++) {
+	    for (int y = 0; y < 16; y++) {
+		pixels[y*16 + x] = ((x % 2) ^ (y % 2)) ? magenta : black;
+	    }
 	}
+	
+	render_info->error_image = sy_render_create_texture_image(render_info, (void*)pixels, VkExtent2D{.width=16, .height=16}, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_USAGE_SAMPLED_BIT);
     }
-
-    render_info->error_image = sy_render_create_texture_image(render_info, (void*)pixels, VkExtent2D{.width=16, .height=16}, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_USAGE_SAMPLED_BIT);
 */
 
-	
     VkSamplerCreateInfo sampler_create_info = {};
     sampler_create_info.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
     sampler_create_info.pNext = NULL;
@@ -71,10 +71,11 @@ void sy_render_info_init(SyRenderInfo *render_info, int win_width, int win_heigh
     
     SY_ERROR_COND(vkCreateSampler(render_info->logical_device, &sampler_create_info, NULL, &render_info->font_sampler) != VK_SUCCESS, "RENDER - Failed to create nearest sampler.");
 
+
     size_t img_width = 512;
     size_t img_height = 512;
 
-    SyFont font = sy_render_create_font(render_info, "/usr/share/fonts/TTF/UbuntuMonoNerdFont-Regular.ttf", img_width, img_height, 64, "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890,.?!_-+=", 3);
+    SyFont font = sy_render_create_font(render_info, "/usr/share/fonts/truetype/ubuntu/UbuntuMono-R.ttf", img_width, img_height, 32, "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890.,?'\"", 0);
 
     render_info->error_image = font.atlas;
 
@@ -100,18 +101,17 @@ void sy_render_info_init(SyRenderInfo *render_info, int win_width, int win_heigh
     text_buffer_data = (TextBufferData*)calloc(sizeof(TextBufferData), render_info->character_amt);
     
 
+    SyFontCharacter font_char = font.character_map['b'];
+
     text_buffer_data[0].pos_offset = glm::vec2(0.0f, 0.0f);
-/*
-    text_buffer_data[0].tex_bottom_left = glm::uvec2(b_char.tex_bottom_left[0], b_char.tex_bottom_left[1]);
-    text_buffer_data[0].tex_top_right = glm::uvec2(b_char.tex_top_right[0], b_char.tex_top_right[1]);
-*/
+
     text_buffer_data[0].tex_bottom_left = glm::uvec2(0, 0);
     text_buffer_data[0].tex_top_right = glm::uvec2(img_width, img_height);
+
 /*
-    text_buffer_data[1].pos_offset = glm::vec2(0.0f, 0.0f);
-    text_buffer_data[1].tex_bottom_left = glm::uvec2(0, 0);
-    text_buffer_data[1].tex_top_right = glm::uvec2(12, 12);
-*/    
+    text_buffer_data[0].tex_bottom_left = font_char.tex_bottom_left;
+    text_buffer_data[0].tex_top_right = font_char.tex_top_right;
+*/
 
     for (int i = 0; i < SY_RENDER_MAX_FRAMES_IN_FLIGHT; ++i)
     {

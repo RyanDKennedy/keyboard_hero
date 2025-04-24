@@ -4,7 +4,13 @@
 
 #include "freetype_include.hpp"
 
-SyFont sy_render_create_font(SyRenderInfo *render_info, const char *font_path, uint32_t texture_width, uint32_t texture_height, uint32_t character_width, const char *characters, size_t side_padding)
+void sy_render_destroy_font(SyRenderInfo *render_info, SyFont *font)
+{
+    sy_render_destroy_render_image(render_info->logical_device, render_info->vma_allocator, &font->atlas);
+    font->~SyFont();
+}
+
+SyFont sy_render_create_font(SyRenderInfo *render_info, const char *font_path, uint32_t texture_width, uint32_t texture_height, uint32_t character_width, const char *characters, uint32_t spacing)
 {
     SyFont result;
     
@@ -32,7 +38,7 @@ SyFont sy_render_create_font(SyRenderInfo *render_info, const char *font_path, u
 
     Box *boxes = (Box*)calloc(characters_size, sizeof(Box));
 
-    size_t current_x = 0;
+    size_t current_x = spacing;
 
     for (size_t i = 0; i < characters_size; ++i)
     {
@@ -40,22 +46,17 @@ SyFont sy_render_create_font(SyRenderInfo *render_info, const char *font_path, u
 	SY_ERROR_COND(FT_Load_Char(face, current_char, FT_LOAD_RENDER), "Failed to load font glyph.");	
 	
 	// Load current box
-	Box *current_box = &boxes[i];
 
-	current_box->left = current_x;
-	current_box->right = current_x + face->glyph->bitmap.width;
-	current_box->top = 0;
-	current_box->bottom = current_box->top + face->glyph->bitmap.rows;
-
-	if (current_x + face->glyph->bitmap.width > texture_width)
+	if (current_x + face->glyph->bitmap.width + spacing > texture_width)
 	{
-	    current_x = 0;
+	    current_x = spacing;
 	}
 
-      RECALCULATE_POSITION:
-
+	Box *current_box = &boxes[i];
 	current_box->left = current_x;
-	current_box->top = 0;
+	current_box->right = current_x + face->glyph->bitmap.width;
+	current_box->top = spacing;
+	current_box->bottom = current_box->top + face->glyph->bitmap.rows;
 
 	// Resolve collisions with other boxes
 	for (size_t j = 0; j < i; ++j)
@@ -65,41 +66,35 @@ SyFont sy_render_create_font(SyRenderInfo *render_info, const char *font_path, u
 
 	    // See if x values align
 	    bool x_values_align = false;
-	    current_box->bottom = current_box->top + face->glyph->bitmap.rows;
-	    current_box->right = current_box->left + face->glyph->bitmap.width;
-	    if (current_box->left < col_box->right && current_box->left > col_box->left)
+
+	    if (current_box->left < col_box->right + spacing && current_box->left >= col_box->left - spacing)
 	    {
 		x_values_align = true;
 	    }
 
-	    if (current_box->right < col_box->right && current_box->right > col_box->left)
+	    if (current_box->right <= col_box->right + spacing && current_box->right > col_box->left - spacing)
 	    {
 		x_values_align = true;
 	    }
 
-	    if (current_box->left < col_box->left && current_box->right > col_box->right)
+	    if (current_box->left <= col_box->left - spacing && current_box->right >= col_box->right + spacing)
 	    {
 		x_values_align = true;
 	    }
+
 
 	    if (x_values_align == false)
 		continue;
 
 	    // Check / Offset based on y values
-	    if (current_box->top < col_box->bottom)
+	    if (current_box->top < col_box->bottom + spacing)
 	    {
-		current_box->top = col_box->bottom + side_padding;
+		current_box->top = col_box->bottom + spacing;
 	    }
 
 	}
 	current_box->bottom = current_box->top + face->glyph->bitmap.rows;
 	current_box->right = current_box->left + face->glyph->bitmap.width;
-
-	if (current_box->bottom > texture_height && current_box->right <= texture_width)
-	{
-	    current_x += 5;
-	    goto RECALCULATE_POSITION;
-	}
 
 	SY_ERROR_COND(current_box->bottom > texture_height && current_box->right > texture_width, "Not enough space in texture for font atlas.");
 
@@ -121,7 +116,7 @@ SyFont sy_render_create_font(SyRenderInfo *render_info, const char *font_path, u
 		}
 	    }
 	}
-	current_x += face->glyph->bitmap.width + side_padding;
+	current_x += face->glyph->bitmap.width + spacing;
     }
 
     SyRenderImage atlas = sy_render_create_texture_image(render_info, (void*)pixels, VkExtent2D{.width=texture_width, .height=texture_height}, VK_FORMAT_R8_UNORM, VK_IMAGE_USAGE_SAMPLED_BIT);

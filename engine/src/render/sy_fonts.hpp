@@ -17,10 +17,9 @@ struct SyFontCharacter
 struct SyFont
 {
     std::unordered_map<char, SyFontCharacter> character_map;
-
     SyRenderImage atlas;
-
 };
 
-SyFont sy_render_create_font(SyRenderInfo *render_info, const char *font_path, uint32_t texture_width, uint32_t texture_height, uint32_t character_width, const char *characters, size_t side_padding);
+SyFont sy_render_create_font(SyRenderInfo *render_info, const char *font_path, uint32_t texture_width, uint32_t texture_height, uint32_t character_width, const char *characters, uint32_t spacing);
 
+void sy_render_destroy_font(SyRenderInfo *render_info, SyFont *font);

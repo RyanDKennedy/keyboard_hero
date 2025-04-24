@@ -17,6 +17,7 @@
 
 #include "render/types/sy_draw_info.hpp"
 #include "render/types/sy_asset_metadata.hpp"
+#include "render/sy_fonts.hpp"
 
 #include "asset_system/sy_asset_system.hpp"
 
@@ -48,6 +49,7 @@ void engine_init(SyPlatformInfo *platform_info, SyAppInfo *app_info, SyEngineSta
     SY_ECS_REGISTER_TYPE(app_info->ecs, SyDrawInfo);
     SY_ECS_REGISTER_TYPE(app_info->ecs, SyTransform);
     SY_ECS_REGISTER_TYPE(app_info->ecs, SyMaterial);
+    SY_ECS_REGISTER_TYPE(app_info->ecs, SyFont);
 
     // Init renderer
     sy_render_info_init(&platform_info->render_info, platform_info->input_info.window_width, platform_info->input_info.window_height);
@@ -142,6 +144,16 @@ void engine_destroy(SyPlatformInfo *platform_info, SyAppInfo *app_info, SyEngine
 	if (app_info->ecs.is_component_index_used<SyMesh>(i) == true)
 	{
 	    sy_destroy_mesh_from_index(&platform_info->render_info, &app_info->ecs, i);
+	}
+    }
+
+    // Cleanup fonts
+    size_t font_component_index = app_info->ecs.get_type_id<SyFont>();
+    for (size_t i = 0; i < app_info->ecs.m_component_used_arr[font_component_index].size(); ++i)
+    {
+	if (app_info->ecs.is_component_index_used<SyFont>(i) == true)
+	{
+	    sy_render_destroy_font(&platform_info->render_info, app_info->ecs.component_from_index<SyFont>(i));
 	}
     }
 

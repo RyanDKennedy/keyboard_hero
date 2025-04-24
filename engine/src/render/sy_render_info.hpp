@@ -3,6 +3,8 @@
 #include "render/sy_render_defines.hpp"
 #include "render/sy_render_settings.hpp" // this needs to be first because it sets up some #define's
 
+#include "render/sy_image.hpp"
+
 #include <vulkan/vulkan.h>
 #include "render/types/sy_mesh.hpp"
 #include "vk_mem_alloc.h"
@@ -11,12 +13,6 @@
 
 #include "sy_frame_uniform_data_info.hpp"
 
-struct SyRenderImage
-{
-    VmaAllocation alloc;
-    VkImage image;
-    VkImageView image_view;
-};
 
 struct SyRenderInfo
 {

@@ -171,9 +171,9 @@ VkPipeline sy_render_create_pipeline(SyRenderInfo *render_info, SyPipelineCreate
     VkPipelineColorBlendAttachmentState color_blend_attachments[attachments_amt];
     color_blend_attachments[0].colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT |
 	                                        VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
-    color_blend_attachments[0].blendEnable = VK_FALSE;
-    color_blend_attachments[0].srcColorBlendFactor = VK_BLEND_FACTOR_ONE;
-    color_blend_attachments[0].dstColorBlendFactor = VK_BLEND_FACTOR_ZERO;
+    color_blend_attachments[0].blendEnable = VK_TRUE;
+    color_blend_attachments[0].srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
+    color_blend_attachments[0].dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
     color_blend_attachments[0].colorBlendOp = VK_BLEND_OP_ADD;
     color_blend_attachments[0].srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
     color_blend_attachments[0].dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;

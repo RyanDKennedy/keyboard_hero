@@ -9,7 +9,6 @@ struct InstanceInfo
 
 layout (location = 0) in vec2 a_position;
 
-layout (location = 0) out vec2 v_pos;
 layout (location = 1) out vec2 v_tex_coord;
 
 layout (set = 2, binding = 0) readonly buffer Buffer
@@ -19,21 +18,28 @@ layout (set = 2, binding = 0) readonly buffer Buffer
 
 void main()
 {
-    v_pos = a_position + infos[gl_InstanceIndex].pos_offset;
-
     vec2 tex_coord;
 
     if (a_position.x < 0)
+    {
 	tex_coord.x = infos[gl_InstanceIndex].tex_bottom_left.x;
+    }    
     else
+    {
 	tex_coord.x = infos[gl_InstanceIndex].tex_top_right.x;
+    }
 
     if (a_position.y < 0)
+    {
 	tex_coord.y = infos[gl_InstanceIndex].tex_bottom_left.y;
+    }
     else
+    {
 	tex_coord.y = infos[gl_InstanceIndex].tex_top_right.y;
+    }
 
     v_tex_coord = tex_coord;
+    vec2 pos = a_position + infos[gl_InstanceIndex].pos_offset;
 
-    gl_Position = vec4(v_pos.xy, 0.0f, 1.0f);
+    gl_Position = vec4(pos.xy, 0.0f, 1.0f);
 }
