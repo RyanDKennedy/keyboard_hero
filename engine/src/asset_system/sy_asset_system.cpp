@@ -34,7 +34,7 @@ size_t sy_load_font_from_file(SyRenderInfo *render_info, SyEcs *ecs, const char 
     {
 	font_component_index = ecs->get_unused_component<SyFont>();
 	SyFont *font = ecs->component_from_index<SyFont>(font_component_index);
-	*font = sy_render_create_font(render_info, ecs, font_path, 1024, 1024, 64, " abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ,./<>?;:'\"[]{}\\|-_=+`~1234567890!@#$%^&*()", 2);
+	*font = sy_render_create_font(render_info, ecs, font_path, 512, 512, 64, " abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ,./<>?;:'\"[]{}\\|-_=+`~1234567890!@#$%^&*()", 2);
     }
 
     size_t asset_metadata_index;
