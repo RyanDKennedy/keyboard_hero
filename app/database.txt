@@ -1,0 +1,11 @@
+2 tables
+
+table 1 - songs
+
+table 2 - notes
+
+CREATE DATABASE KeyboardHero;
+
+CREATE TABLE Songs (
+       name text non NOT NULL,
+);

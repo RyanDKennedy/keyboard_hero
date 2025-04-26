@@ -17,7 +17,7 @@ void menu_load(SyAppInfo *app_info)
 	ui_text->pos = glm::vec2(-0.9f, -0.6f + i * 0.15f);
 	ui_text->scale = glm::vec2(0.1f, 0.1f);
     }
-    app_info->ecs.component<SyUIText>(g_state->buttons[0])->text = "Start";
+    app_info->ecs.component<SyUIText>(g_state->buttons[0])->text = "Play";
     app_info->ecs.component<SyUIText>(g_state->buttons[1])->text = "Create";
     app_info->ecs.component<SyUIText>(g_state->buttons[2])->text = "Edit";
 
