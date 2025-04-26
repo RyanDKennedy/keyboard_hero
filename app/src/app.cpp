@@ -11,6 +11,7 @@ void register_ecs_components(SyEcs *ecs)
     SY_ECS_REGISTER_TYPE(*ecs, SyDrawInfo);
     SY_ECS_REGISTER_TYPE(*ecs, SyTransform);
     SY_ECS_REGISTER_TYPE(*ecs, SyMaterial);
+    SY_ECS_REGISTER_TYPE(*ecs, SyUIText);
 }
 
 extern "C"

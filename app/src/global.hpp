@@ -6,6 +6,7 @@
 #include "render/types/sy_material.hpp"
 #include "render/types/sy_draw_info.hpp"
 #include "render/types/sy_asset_metadata.hpp"
+#include "render/types/sy_ui_text.hpp"
 #include "types/sy_camera_settings.hpp"
 #include "glm_include.hpp"
 
