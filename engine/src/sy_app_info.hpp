@@ -1,5 +1,6 @@
 #pragma once
 
+#include "render/types/sy_asset_metadata.hpp"
 #include "sy_input_info.hpp"
 #include "sy_arena.hpp"
 #include "sy_ecs.hpp"
@@ -27,6 +28,6 @@ struct SyAppInfo
 #ifndef NDEBUG
     // ASSET SYSTEM FUNCTION POINTERS:
     // These are only used for debug builds
-    size_t(*sy_load_mesh_from_obj)(void *render_info, SyEcs *ecs, const char *obj_path);
+    size_t(*sy_load_asset_from_file)(void *render_info, SyEcs *ecs, const char *file_path, SyAssetType type);
 #endif
 };

@@ -1,10 +1,15 @@
 #include "menu.hpp"
+#include "global.hpp"
 
 void menu_load(SyAppInfo *app_info)
 {
-    size_t play_metadata_id = SY_LOAD_MESH_FROM_OBJ(app_info->render_info, &app_info->ecs, "play.obj");
-    size_t edit_metadata_id = SY_LOAD_MESH_FROM_OBJ(app_info->render_info, &app_info->ecs, "edit.obj");
-    size_t create_metadata_id = SY_LOAD_MESH_FROM_OBJ(app_info->render_info, &app_info->ecs, "create.obj");
+
+    size_t font_index = SY_LOAD_ASSET_FROM_FILE(app_info->render_info, &app_info->ecs, "/usr/share/fonts/truetype/ubuntu/UbuntuMono-R.ttf", SyAssetType::font);
+    size_t font2_index = SY_LOAD_ASSET_FROM_FILE(app_info->render_info, &app_info->ecs, "/usr/share/fonts/truetype/quicksand/Quicksand-Regular.ttf", SyAssetType::font);
+
+    size_t play_metadata_id = SY_LOAD_ASSET_FROM_FILE(app_info->render_info, &app_info->ecs, "play.obj", SyAssetType::mesh);
+    size_t edit_metadata_id = SY_LOAD_ASSET_FROM_FILE(app_info->render_info, &app_info->ecs, "edit.obj", SyAssetType::mesh);
+    size_t create_metadata_id = SY_LOAD_ASSET_FROM_FILE(app_info->render_info, &app_info->ecs, "create.obj", SyAssetType::mesh);
     for (size_t i = 0; i < g_state->buttons_amt; ++i)
     {
 	g_state->buttons[i] = app_info->ecs.new_entity();
@@ -26,6 +31,24 @@ void menu_load(SyAppInfo *app_info)
     app_info->ecs.component<SyDrawInfo>(g_state->buttons[0])->asset_metadata_id = play_metadata_id;
     app_info->ecs.component<SyDrawInfo>(g_state->buttons[1])->asset_metadata_id = edit_metadata_id;
     app_info->ecs.component<SyDrawInfo>(g_state->buttons[2])->asset_metadata_id = create_metadata_id;
+
+
+    if (0)
+    {
+    SyEntityHandle text = app_info->ecs.new_entity();
+    app_info->ecs.entity_add_component<SyDrawInfo>(text);
+    SyDrawInfo *text_draw_info = app_info->ecs.component<SyDrawInfo>(text);
+    text_draw_info->should_draw = true;
+    text_draw_info->asset_metadata_id = font_index;
+    }
+    {
+    SyEntityHandle text = app_info->ecs.new_entity();
+    app_info->ecs.entity_add_component<SyDrawInfo>(text);
+    SyDrawInfo *text_draw_info = app_info->ecs.component<SyDrawInfo>(text);
+    text_draw_info->should_draw = true;
+    text_draw_info->asset_metadata_id = font2_index;
+    }
+
 }
 
 void menu_start(SyAppInfo *app_info)

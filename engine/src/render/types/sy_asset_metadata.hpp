@@ -7,7 +7,8 @@ enum class SyAssetType
 {
     mesh,
     model,
-    texture
+    texture,
+    font
 };
 
 #define SY_ASSET_METADATA_MAX_CHILDREN 5

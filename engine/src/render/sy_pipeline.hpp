@@ -13,7 +13,8 @@ struct SyPipelineCreateInfo
 // TODO   const char *geometry_shader_path;
 // TODO   bool has_geometry_shader;
     
-    VkVertexInputBindingDescription vertex_input_binding_description;
+    VkVertexInputBindingDescription *vertex_input_binding_descriptions;
+    uint32_t vertex_input_binding_descriptions_amt;
     VkVertexInputAttributeDescription *vertex_input_attribute_descriptions;
     uint32_t vertex_input_attribute_descriptions_amt;
     

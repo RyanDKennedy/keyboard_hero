@@ -67,18 +67,14 @@ VkPipeline sy_render_create_pipeline(SyRenderInfo *render_info, SyPipelineCreate
     dynamic_state_create_info.pDynamicStates = dynamic_states;
 
     // vertex input bindings
-    VkVertexInputBindingDescription binding_descriptions[] =  {pipeline_create_info->vertex_input_binding_description};
-    uint32_t attr_descriptions_amt = pipeline_create_info->vertex_input_attribute_descriptions_amt;
-    VkVertexInputAttributeDescription *attr_descriptions = pipeline_create_info->vertex_input_attribute_descriptions;
-
     VkPipelineVertexInputStateCreateInfo vertex_input_create_info;
     vertex_input_create_info.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
     vertex_input_create_info.pNext = NULL;
     vertex_input_create_info.flags = 0;
-    vertex_input_create_info.vertexBindingDescriptionCount = SY_ARRLEN(binding_descriptions);
-    vertex_input_create_info.pVertexBindingDescriptions = binding_descriptions;
-    vertex_input_create_info.vertexAttributeDescriptionCount = attr_descriptions_amt;
-    vertex_input_create_info.pVertexAttributeDescriptions = attr_descriptions;
+    vertex_input_create_info.vertexBindingDescriptionCount = pipeline_create_info->vertex_input_binding_descriptions_amt;
+    vertex_input_create_info.pVertexBindingDescriptions = pipeline_create_info->vertex_input_binding_descriptions;
+    vertex_input_create_info.vertexAttributeDescriptionCount = pipeline_create_info->vertex_input_attribute_descriptions_amt;
+    vertex_input_create_info.pVertexAttributeDescriptions = pipeline_create_info->vertex_input_attribute_descriptions; 
 
     // input assembly
 

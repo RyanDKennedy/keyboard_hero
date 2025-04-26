@@ -78,14 +78,9 @@ struct SyRenderInfo
     VkPipeline text_pipeline;
 
     // FIXME:
-    SyRenderImage error_image;
     VkSampler font_sampler;
-    SyMesh error_image_mesh;
-    VkBuffer storage_buffer[SY_RENDER_MAX_FRAMES_IN_FLIGHT];
-    VmaAllocation storage_buffer_allocation[SY_RENDER_MAX_FRAMES_IN_FLIGHT];
-    uint32_t character_amt;
-    size_t storage_buffer_size;
-    
+
+    SyBufferAllocation quad_buffer;
 };
 
 void sy_render_info_init(SyRenderInfo *render_info, int win_width, int win_height);

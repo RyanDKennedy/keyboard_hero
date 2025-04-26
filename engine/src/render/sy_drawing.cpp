@@ -36,10 +36,10 @@ void recreate_swapchain(SyRenderInfo *render_info, SyInputInfo *input_info)
     sy_render_create_framebuffers(render_info);
 }
 
-VkDescriptorSet create_and_write_to_descriptor_set_and_buffer(SyRenderInfo *render_info, VkDescriptorSetLayout layout, void *data, size_t data_size)
+VkDescriptorSet create_and_write_to_descriptor_set_and_uniform_buffer(SyRenderInfo *render_info, VkDescriptorSetLayout layout, void *data, size_t data_size)
 {
     VkDescriptorSet descriptor_set = render_info->frame_uniform_data[render_info->current_frame].descriptor_allocator.allocate(render_info->logical_device, layout);
-    SyUniformAllocation allocation;
+    SyBufferAllocation allocation;
     
     { // create uniform buffer and move data into it
 	VkBufferCreateInfo buffer_info = { VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO };
@@ -78,10 +78,52 @@ VkDescriptorSet create_and_write_to_descriptor_set_and_buffer(SyRenderInfo *rend
     return descriptor_set;
 }
 
+VkDescriptorSet create_and_write_to_descriptor_set_and_storage_buffer(SyRenderInfo *render_info, VkDescriptorSetLayout layout, void *data, size_t data_size)
+{
+    VkDescriptorSet descriptor_set = render_info->frame_uniform_data[render_info->current_frame].descriptor_allocator.allocate(render_info->logical_device, layout);
+    SyBufferAllocation allocation;
+    
+    { // create uniform buffer and move data into it
+	VkBufferCreateInfo buffer_info = { VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO };
+	buffer_info.size = data_size;
+	buffer_info.usage = VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
+	
+	VmaAllocationCreateInfo alloc_info = {0};
+	alloc_info.usage = VMA_MEMORY_USAGE_AUTO_PREFER_HOST;
+	alloc_info.flags = VMA_ALLOCATION_CREATE_HOST_ACCESS_RANDOM_BIT;
+	
+	vmaCreateBuffer(render_info->vma_allocator, &buffer_info, &alloc_info, &allocation.buffer, &allocation.allocation, nullptr);
+	render_info->frame_uniform_data[render_info->current_frame].allocations.push_back(allocation);
+	
+	vmaCopyMemoryToAllocation(render_info->vma_allocator, data, allocation.allocation, 0, data_size);
+    }
+    
+    VkDescriptorBufferInfo buffer_info;
+    buffer_info.buffer = allocation.buffer;
+    buffer_info.offset = 0;
+    buffer_info.range = data_size;
+    
+    VkWriteDescriptorSet descriptor_write;
+    descriptor_write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+    descriptor_write.pNext = NULL;
+    descriptor_write.dstSet = descriptor_set;
+    descriptor_write.dstBinding = 0;
+    descriptor_write.dstArrayElement = 0;
+    descriptor_write.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+    descriptor_write.descriptorCount = 1;
+    descriptor_write.pBufferInfo = &buffer_info;
+    descriptor_write.pImageInfo = NULL;
+    descriptor_write.pTexelBufferView = NULL;
+    
+    vkUpdateDescriptorSets(render_info->logical_device, 1, &descriptor_write, 0, NULL);
+
+    return descriptor_set;
+}
+
+
 VkDescriptorSet create_descriptor_set_and_image(SyRenderInfo *render_info, VkDescriptorSetLayout layout, VkImageView image_view, VkSampler sampler)
 {
     VkDescriptorSet descriptor_set = render_info->frame_uniform_data[render_info->current_frame].descriptor_allocator.allocate(render_info->logical_device, layout);
-    SyUniformAllocation allocation;
     
     VkDescriptorImageInfo image_info = {};
     image_info.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
@@ -109,7 +151,7 @@ void record_command_buffer(SyRenderInfo *render_info, VkCommandBuffer command_bu
 {
     { // Reset descriptor bullshit
 	render_info->frame_uniform_data[render_info->current_frame].descriptor_allocator.clear_descriptors(render_info->logical_device);
-	for (SyUniformAllocation &uniform_allocation : render_info->frame_uniform_data[render_info->current_frame].allocations)
+	for (SyBufferAllocation &uniform_allocation : render_info->frame_uniform_data[render_info->current_frame].allocations)
 	{
 	    vmaDestroyBuffer(render_info->vma_allocator, uniform_allocation.buffer, uniform_allocation.allocation);
 	}
@@ -197,11 +239,11 @@ void record_command_buffer(SyRenderInfo *render_info, VkCommandBuffer command_bu
 	} frame_uniform_structure;
 	frame_uniform_structure.vp_matrix = projection * view;
 
-	VkDescriptorSet descriptor_set = create_and_write_to_descriptor_set_and_buffer(render_info, render_info->frame_descriptor_set_layout, &frame_uniform_structure, sizeof(frame_uniform_structure));
+	VkDescriptorSet descriptor_set = create_and_write_to_descriptor_set_and_uniform_buffer(render_info, render_info->frame_descriptor_set_layout, &frame_uniform_structure, sizeof(frame_uniform_structure));
 	vkCmdBindDescriptorSets(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, render_info->single_color_pipeline_layout, 0, 1, &descriptor_set, 0, NULL);
     }
 
-
+    std::vector<size_t> fonts_to_render; // FIXME
 
     // Draw entities
     for (size_t i = 0; i < ecs->m_entity_used.size(); ++i)
@@ -235,7 +277,7 @@ void record_command_buffer(SyRenderInfo *render_info, VkCommandBuffer command_bu
 			material_uniform_struct.diffuse = material->diffuse;
 		    }
 
-		    VkDescriptorSet descriptor_set = create_and_write_to_descriptor_set_and_buffer(render_info, render_info->material_descriptor_set_layout, &material_uniform_struct, sizeof(material_uniform_struct));
+		    VkDescriptorSet descriptor_set = create_and_write_to_descriptor_set_and_uniform_buffer(render_info, render_info->material_descriptor_set_layout, &material_uniform_struct, sizeof(material_uniform_struct));
 		    vkCmdBindDescriptorSets(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, render_info->single_color_pipeline_layout, 1, 1, &descriptor_set, 0, NULL);
 		}
 		{
@@ -257,7 +299,7 @@ void record_command_buffer(SyRenderInfo *render_info, VkCommandBuffer command_bu
 			mesh_uniform_struct.model_matrix = glm::translate(glm::mat4(1), transform->position) * mesh_uniform_struct.model_matrix;
 		    }
 		    
-		    VkDescriptorSet descriptor_set = create_and_write_to_descriptor_set_and_buffer(render_info, render_info->object_descriptor_set_layout, &mesh_uniform_struct, sizeof(mesh_uniform_struct));
+		    VkDescriptorSet descriptor_set = create_and_write_to_descriptor_set_and_uniform_buffer(render_info, render_info->object_descriptor_set_layout, &mesh_uniform_struct, sizeof(mesh_uniform_struct));
 		    vkCmdBindDescriptorSets(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, render_info->single_color_pipeline_layout, 2, 1, &descriptor_set, 0, NULL);
 		    
 		}
@@ -271,6 +313,12 @@ void record_command_buffer(SyRenderInfo *render_info, VkCommandBuffer command_bu
 		vkCmdDrawIndexed(command_buffer, mesh->index_amt, 1, 0, 0, 0);
 	    }
 	    break;
+
+	    case SyAssetType::font:
+	    {
+		fonts_to_render.push_back(i);
+	    }
+	    break;
 	    
 	    default:
 		continue;
@@ -279,27 +327,24 @@ void record_command_buffer(SyRenderInfo *render_info, VkCommandBuffer command_bu
     }
 
     // FIXME:
-    { // draw error texture
-	vkCmdBindPipeline(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, render_info->text_pipeline);
-	// set the dynamic things in the pipeline (viewport and scissor)
-	VkViewport viewport;
-	viewport.x = 0;
-	viewport.y = 0;
-	viewport.width = render_info->swapchain_image_extent.width;
-	viewport.height = render_info->swapchain_image_extent.height;
-	viewport.minDepth = 0.0f;
-	viewport.maxDepth = 1.0f;
-	vkCmdSetViewport(command_buffer, 0, 1, &viewport);
-	
-	VkRect2D scissor;
-	scissor.extent.width = render_info->swapchain_image_extent.width;
-	scissor.extent.height = render_info->swapchain_image_extent.height;
-	scissor.offset.x = 0;
-	scissor.offset.y = 0;
-	vkCmdSetScissor(command_buffer, 0, 1, &scissor);
+    vkCmdBindPipeline(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, render_info->text_pipeline);
+    // set the dynamic things in the pipeline (viewport and scissor)
+
+    vkCmdSetViewport(command_buffer, 0, 1, &viewport);
+    vkCmdSetScissor(command_buffer, 0, 1, &scissor);
+    
+    VkDeviceSize vertex_buffer_offset = 0;
+    vkCmdBindVertexBuffers(command_buffer, 0, 1, &render_info->quad_buffer.buffer, &vertex_buffer_offset);
+
+    for (size_t i : fonts_to_render)
+    {
+	SyDrawInfo *draw_info = ecs->component<SyDrawInfo>(i);
+	SyAssetMetadata *metadata = ecs->component_from_index<SyAssetMetadata>(draw_info->asset_metadata_id);
+	SyFont *font = ecs->component_from_index<SyFont>(metadata->asset_component_index);
+	SyRenderImage *font_image = ecs->component_from_index<SyRenderImage>(font->texture_index);
 
 	// Bind/Create uniforms
-	VkDescriptorSet character_map_descriptor_set = create_descriptor_set_and_image(render_info, render_info->character_map_descriptor_set_layout, render_info->error_image.image_view, render_info->font_sampler);
+	VkDescriptorSet character_map_descriptor_set = create_descriptor_set_and_image(render_info, render_info->character_map_descriptor_set_layout, font_image->image_view, render_info->font_sampler);
 
 	struct
 	{
@@ -307,44 +352,35 @@ void record_command_buffer(SyRenderInfo *render_info, VkCommandBuffer command_bu
 	} character_information_data;
 	character_information_data.color = glm::vec3(0.0f, 1.0f, 0.0f);
 
-	VkDescriptorSet character_information_descriptor_set = create_and_write_to_descriptor_set_and_buffer(render_info, render_info->character_information_descriptor_set_layout, &character_information_data, sizeof(character_information_data));
+	VkDescriptorSet character_information_descriptor_set = create_and_write_to_descriptor_set_and_uniform_buffer(render_info, render_info->character_information_descriptor_set_layout, &character_information_data, sizeof(character_information_data));
 
 	VkDescriptorSet sets[] = {character_map_descriptor_set, character_information_descriptor_set};
 	
 	vkCmdBindDescriptorSets(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, render_info->text_pipeline_layout, 0, 2, sets, 0, NULL);
 
 
-	VkDescriptorSet text_buffer_descriptor_set = render_info->frame_uniform_data[render_info->current_frame].descriptor_allocator.allocate(render_info->logical_device, render_info->text_buffer_descriptor_set_layout);
-
+	struct TextBufferData
 	{
-	    VkDescriptorBufferInfo buffer_info;
-	    buffer_info.buffer = render_info->storage_buffer[render_info->current_frame];
-	    buffer_info.offset = 0;
-	    buffer_info.range = render_info->storage_buffer_size;
-	    
-	    VkWriteDescriptorSet descriptor_write;
-	    descriptor_write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-	    descriptor_write.pNext = NULL;
-	    descriptor_write.dstSet = text_buffer_descriptor_set;
-	    descriptor_write.dstBinding = 0;
-	    descriptor_write.dstArrayElement = 0;
-	    descriptor_write.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-	    descriptor_write.descriptorCount = 1;
-	    descriptor_write.pBufferInfo = &buffer_info;
-	    descriptor_write.pImageInfo = NULL;
-	    descriptor_write.pTexelBufferView = NULL;
-	    
-	    vkUpdateDescriptorSets(render_info->logical_device, 1, &descriptor_write, 0, NULL);
-	}
+	    glm::vec2 pos_offset;
+	    glm::uvec2 tex_bottom_left;
+	    glm::uvec2 tex_top_right;
+	} *text_buffer_data;
+	
+	size_t storage_buffer_size = sizeof(TextBufferData);
+	text_buffer_data = (TextBufferData*)calloc(storage_buffer_size, 1);
+	
+	text_buffer_data[0].pos_offset = glm::vec2(0.0f, 0.0f);
+	text_buffer_data[0].tex_bottom_left = font->character_map['$'].tex_bottom_left;
+	text_buffer_data[0].tex_top_right = font->character_map['$'].tex_top_right;
+	
+	VkDescriptorSet text_buffer_descriptor_set = create_and_write_to_descriptor_set_and_storage_buffer(render_info, render_info->text_buffer_descriptor_set_layout, text_buffer_data, storage_buffer_size);
+	
+	free(text_buffer_data);
 	
 	vkCmdBindDescriptorSets(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, render_info->text_pipeline_layout, 2, 1, &text_buffer_descriptor_set, 0, NULL);
 
-	// Buffers
-	VkDeviceSize vertex_buffer_offset = 0;
-	vkCmdBindVertexBuffers(command_buffer, 0, 1, &render_info->error_image_mesh.vertex_buffer, &vertex_buffer_offset);
-	
 	// Draw
-	vkCmdDraw(command_buffer, 4, render_info->character_amt, 0, 0);
+	vkCmdDraw(command_buffer, 6, 1, 0, 0);
     }
 
     vkCmdEndRenderPass(command_buffer);

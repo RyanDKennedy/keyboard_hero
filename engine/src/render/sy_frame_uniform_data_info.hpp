@@ -4,7 +4,7 @@
 #include "vk_mem_alloc.h"
 #include "render/sy_descriptor_allocator.hpp"
 
-struct SyUniformAllocation
+struct SyBufferAllocation
 {
     VmaAllocation allocation;
     VkBuffer buffer;
@@ -13,5 +13,6 @@ struct SyUniformAllocation
 struct SyFrameUniformDataInfo
 {
     SyDescriptorAllocator descriptor_allocator;
-    std::vector<SyUniformAllocation> allocations;
+    std::vector<SyBufferAllocation> allocations;
+    
 };

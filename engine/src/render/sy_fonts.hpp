@@ -5,6 +5,7 @@
 #include <vulkan/vulkan_core.h>
 #include "glm_include.hpp"
 
+#include "sy_ecs.hpp"
 #include "sy_render_info.hpp"
 
 
@@ -17,9 +18,10 @@ struct SyFontCharacter
 struct SyFont
 {
     std::unordered_map<char, SyFontCharacter> character_map;
-    SyRenderImage atlas;
+    size_t texture_index; // index into SyRenderImage with texture
 };
 
-SyFont sy_render_create_font(SyRenderInfo *render_info, const char *font_path, uint32_t texture_width, uint32_t texture_height, uint32_t character_width, const char *characters, uint32_t spacing);
+// returns an asset metadata info index
+SyFont sy_render_create_font(SyRenderInfo *render_info, SyEcs *ecs, const char *font_path, uint32_t texture_width, uint32_t texture_height, uint32_t character_width, const char *characters, uint32_t spacing);
 
-void sy_render_destroy_font(SyRenderInfo *render_info, SyFont *font);
+void sy_render_destroy_font(SyRenderInfo *render_info, SyEcs *ecs, SyFont *font);

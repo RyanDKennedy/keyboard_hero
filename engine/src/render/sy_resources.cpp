@@ -391,7 +391,8 @@ void sy_render_create_pipelines(SyRenderInfo *render_info)
 	SyPipelineCreateInfo create_info;
 	create_info.vertex_shader_path = "single_color/vertex.spv";
 	create_info.fragment_shader_path = "single_color/fragment.spv";
-	create_info.vertex_input_binding_description = binding_description;
+	create_info.vertex_input_binding_descriptions = &binding_description;
+	create_info.vertex_input_binding_descriptions_amt = 1;
 	create_info.vertex_input_attribute_descriptions = attr;
 	create_info.vertex_input_attribute_descriptions_amt = SY_ARRLEN(attr);
 	create_info.render_type = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
@@ -402,14 +403,10 @@ void sy_render_create_pipelines(SyRenderInfo *render_info)
     }
 
     { // Create text pipeline
-	// Vertex Buffer Format
-	// float vertex x position
-	// float vertex y position
-
-	VkVertexInputBindingDescription binding_description;
-	binding_description.binding = 0;
-	binding_description.stride = sizeof(float) * 2;
-	binding_description.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;    
+	VkVertexInputBindingDescription binding_descriptions[1];
+	binding_descriptions[0].binding = 0;
+	binding_descriptions[0].stride = sizeof(float) * 2;
+	binding_descriptions[0].inputRate = VK_VERTEX_INPUT_RATE_VERTEX;    
 
 	VkVertexInputAttributeDescription attr[1];
 	attr[0].binding = 0;
@@ -417,12 +414,13 @@ void sy_render_create_pipelines(SyRenderInfo *render_info)
 	attr[0].format = VK_FORMAT_R32G32_SFLOAT;
 	attr[0].offset = 0;
 
-	SyPipelineCreateInfo create_info;
+	SyPipelineCreateInfo create_info = {};
 	create_info.vertex_shader_path = "text/vertex.spv";
 	create_info.fragment_shader_path = "text/fragment.spv";
-	create_info.vertex_input_binding_description = binding_description;
+	create_info.vertex_input_binding_descriptions = binding_descriptions;
 	create_info.vertex_input_attribute_descriptions = attr;
 	create_info.vertex_input_attribute_descriptions_amt = SY_ARRLEN(attr);
+	create_info.vertex_input_binding_descriptions_amt = SY_ARRLEN(binding_descriptions);
 	create_info.render_type = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP;
 	create_info.subpass_number = 0;
 	create_info.pipeline_layout = render_info->text_pipeline_layout;

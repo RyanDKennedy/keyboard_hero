@@ -2,9 +2,54 @@
 
 #include "render/sy_buffer.hpp"
 #include "render/sy_resources.hpp"
+#include "render/sy_fonts.hpp"
 #include "render/types/sy_mesh.hpp"
 #include "render/types/sy_draw_info.hpp"
 #include "render/types/sy_asset_metadata.hpp"
+
+size_t sy_load_asset_from_file(SyRenderInfo *render_info, SyEcs *ecs, const char *asset_path, SyAssetType type)
+{
+    switch (type)
+    {
+	case SyAssetType::mesh:
+	{
+	    return sy_load_mesh_from_obj(render_info, ecs, asset_path);
+	}
+
+	case SyAssetType::font:
+	{
+	    return sy_load_font_from_file(render_info, ecs, asset_path);
+	}
+
+	default:
+	    SY_ERROR("UNSUPPORTED ASSET TYPE PASSED");
+    }
+
+
+}
+
+size_t sy_load_font_from_file(SyRenderInfo *render_info, SyEcs *ecs, const char *font_path)
+{
+    size_t font_component_index;
+    {
+	font_component_index = ecs->get_unused_component<SyFont>();
+	SyFont *font = ecs->component_from_index<SyFont>(font_component_index);
+	*font = sy_render_create_font(render_info, ecs, font_path, 1024, 1024, 64, "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ,./<>?;:'\"[]{}\\|-_=+`~1234567890!@#$%^&*()", 0);
+    }
+
+    size_t asset_metadata_index;
+    {
+	asset_metadata_index = ecs->get_unused_component<SyAssetMetadata>();
+	SyAssetMetadata *metadata = ecs->component_from_index<SyAssetMetadata>(asset_metadata_index);
+
+	metadata->asset_component_index = font_component_index;
+	metadata->asset_type = SyAssetType::font;
+	metadata->children_amt = 0;
+	strncpy(metadata->name, font_path, SY_ASSET_METADATA_NAME_BUFFER_SIZE);
+    }
+    
+    return asset_metadata_index;
+}
 
 size_t sy_load_mesh_from_obj(SyRenderInfo *render_info, SyEcs *ecs, const char *obj_path)
 {
@@ -50,4 +95,13 @@ void sy_destroy_mesh_from_index(SyRenderInfo *render_info, SyEcs *ecs, size_t me
     SyMesh *mesh = ecs->component_from_index<SyMesh>(mesh_index);
     vmaDestroyBuffer(render_info->vma_allocator, mesh->vertex_buffer, mesh->vertex_buffer_alloc);
     vmaDestroyBuffer(render_info->vma_allocator, mesh->index_buffer, mesh->index_buffer_alloc);
+    ecs->release_component<SyMesh>(mesh_index);
+}
+
+void sy_destroy_font_from_index(SyRenderInfo *render_info, SyEcs *ecs, size_t font_index)
+{
+    vkDeviceWaitIdle(render_info->logical_device);
+    SyFont *font = ecs->component_from_index<SyFont>(font_index);
+    sy_render_destroy_font(render_info, ecs, font);
+    ecs->release_component<SyFont>(font_index);
 }

@@ -101,8 +101,12 @@ struct SyAmbiguousVector
 	{
 	    for (size_t i = m_filled_length; i < index + 1; ++i)
 	    {
-		T a = {};
-		push_back<T>(a);
+		// Check if we are out of memory, if so allocate more
+		++m_filled_length;
+		if (m_filled_length > m_alloc_length)
+		{
+		    reallocate(m_alloc_length * 2);
+		}
 	    }
 	}
 

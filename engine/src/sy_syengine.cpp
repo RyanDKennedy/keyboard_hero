@@ -49,6 +49,7 @@ void engine_init(SyPlatformInfo *platform_info, SyAppInfo *app_info, SyEngineSta
     SY_ECS_REGISTER_TYPE(app_info->ecs, SyDrawInfo);
     SY_ECS_REGISTER_TYPE(app_info->ecs, SyTransform);
     SY_ECS_REGISTER_TYPE(app_info->ecs, SyMaterial);
+    SY_ECS_REGISTER_TYPE(app_info->ecs, SyRenderImage);
     SY_ECS_REGISTER_TYPE(app_info->ecs, SyFont);
 
     // Init renderer
@@ -58,7 +59,7 @@ void engine_init(SyPlatformInfo *platform_info, SyAppInfo *app_info, SyEngineSta
     SY_OUTPUT_INFO("Starting App");
 #ifndef NDEBUG
 #define ASSIGN_DEBUG_FUNCTION_POINTER(left, right) left = (decltype(left))(right);
-    ASSIGN_DEBUG_FUNCTION_POINTER(app_info->sy_load_mesh_from_obj, sy_load_mesh_from_obj);
+    ASSIGN_DEBUG_FUNCTION_POINTER(app_info->sy_load_asset_from_file, sy_load_asset_from_file);
     platform_info->app_init(app_info);
 #else
     app_init(app_info);
@@ -153,7 +154,7 @@ void engine_destroy(SyPlatformInfo *platform_info, SyAppInfo *app_info, SyEngine
     {
 	if (app_info->ecs.is_component_index_used<SyFont>(i) == true)
 	{
-	    sy_render_destroy_font(&platform_info->render_info, app_info->ecs.component_from_index<SyFont>(i));
+	    sy_destroy_font_from_index(&platform_info->render_info, &app_info->ecs, i);
 	}
     }
 

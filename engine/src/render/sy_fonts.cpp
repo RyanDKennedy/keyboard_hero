@@ -4,13 +4,15 @@
 
 #include "freetype_include.hpp"
 
-void sy_render_destroy_font(SyRenderInfo *render_info, SyFont *font)
+void sy_render_destroy_font(SyRenderInfo *render_info, SyEcs *ecs, SyFont *font)
 {
-    sy_render_destroy_render_image(render_info->logical_device, render_info->vma_allocator, &font->atlas);
+    SyRenderImage *image = ecs->component_from_index<SyRenderImage>(font->texture_index);
+    sy_render_destroy_render_image(render_info->logical_device, render_info->vma_allocator, image);
+    ecs->release_component<SyRenderImage>(font->texture_index);
     font->~SyFont();
 }
 
-SyFont sy_render_create_font(SyRenderInfo *render_info, const char *font_path, uint32_t texture_width, uint32_t texture_height, uint32_t character_width, const char *characters, uint32_t spacing)
+SyFont sy_render_create_font(SyRenderInfo *render_info, SyEcs *ecs, const char *font_path, uint32_t texture_width, uint32_t texture_height, uint32_t character_width, const char *characters, uint32_t spacing)
 {
     SyFont result;
     
@@ -119,15 +121,18 @@ SyFont sy_render_create_font(SyRenderInfo *render_info, const char *font_path, u
 	current_x += face->glyph->bitmap.width + spacing;
     }
 
-    SyRenderImage atlas = sy_render_create_texture_image(render_info, (void*)pixels, VkExtent2D{.width=texture_width, .height=texture_height}, VK_FORMAT_R8_UNORM, VK_IMAGE_USAGE_SAMPLED_BIT);
+    size_t texture_index = ecs->get_unused_component<SyRenderImage>();
+    SyRenderImage *image = ecs->component_from_index<SyRenderImage>(texture_index);
+
+    result.texture_index = texture_index;
+
+    *image = sy_render_create_texture_image(render_info, (void*)pixels, VkExtent2D{.width=texture_width, .height=texture_height}, VK_FORMAT_R8_UNORM, VK_IMAGE_USAGE_SAMPLED_BIT);
 
     free(boxes);
     free(pixels);
 
     FT_Done_Face(face);
     FT_Done_FreeType(ft);
-
-    result.atlas = atlas;
 
     return result;
 }
