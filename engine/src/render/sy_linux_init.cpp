@@ -49,7 +49,7 @@ void create_instance(SyRenderInfo *render_info)
     SY_ERROR_COND(sy_g_render_use_validation_layers == true && supports_validation_layers == false, "RENDERER: Vulkan Validation layers active but not supported.");
 
     // Make sure extensions are supported
-    SY_ERROR_COND(check_extension_support(), "RENDERER: Vulkan Extensions not supported");
+    SY_ERROR_COND(check_extension_support() == 0, "RENDERER: Vulkan Extensions not supported");
     
     /* Application Info
        Use: GPU developers use this to identify the running application so that they can
@@ -152,7 +152,7 @@ bool check_extension_support()
 	const char *extension_name = sy_g_render_vulkan_extensions[i];
 
 	bool extension_found = false;
-	for (int available_i; available_i < extension_count; ++available_i)
+	for (int available_i = 0; available_i < extension_count; ++available_i)
 	{
 	    if (strcmp(extension_name, available_extensions[available_i].extensionName) == 0)
 	    {
@@ -163,6 +163,7 @@ bool check_extension_support()
 	if (extension_found == false)
 	{
 	    result = false;
+	    SY_OUTPUT_INFO("Coudn't find vulkan extension \"%s\"", extension_name);
 	    break;
 	}
     }

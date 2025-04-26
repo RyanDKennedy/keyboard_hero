@@ -413,8 +413,8 @@ void record_command_buffer(SyRenderInfo *render_info, VkCommandBuffer command_bu
 
 	    text_buffer_data[i].pos_offset = glm::vec2(next_x + char_data.offset[0] * ui_text.scale[0] / window_aspect_ratio, ui_text.pos[1] + char_data.offset[1] * ui_text.scale[1]);
 	    text_buffer_data[i].scale = glm::vec2(ui_text.scale[0] * char_data.scale[0] / window_aspect_ratio, ui_text.scale[1] * char_data.scale[1]);
-	    text_buffer_data[i].tex_bottom_left = char_data.tex_bottom_left;
-	    text_buffer_data[i].tex_top_right = char_data.tex_top_right;
+	    text_buffer_data[i].tex_bottom_left = glm::uvec2(char_data.tex_bottom_left[0] - 1, char_data.tex_bottom_left[1] - 1);
+	    text_buffer_data[i].tex_top_right = glm::uvec2(char_data.tex_top_right[0] + 1, char_data.tex_top_right[1] + 1);
 
 	    next_x = next_x + (char_data.advance * ui_text.scale[0] / window_aspect_ratio);
 	}
