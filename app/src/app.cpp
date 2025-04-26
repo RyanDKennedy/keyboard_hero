@@ -52,6 +52,8 @@ void app_init(SyAppInfo *app_info)
 */
     }
 
+    g_state->font_asset_metadata_index = SY_LOAD_ASSET_FROM_FILE(app_info->render_info, &app_info->ecs, "fonts/UbuntuMono-R.ttf", SyAssetType::font);
+
     menu_load(app_info);
 
     menu_start(app_info);

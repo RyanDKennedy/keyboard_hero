@@ -2,6 +2,8 @@
 
 #include "sy_resources.hpp"
 
+#include "sy_utils.hpp"
+
 #include "freetype_include.hpp"
 
 void sy_render_destroy_font(SyRenderInfo *render_info, SyEcs *ecs, SyFont *font)
@@ -21,9 +23,13 @@ SyFont sy_render_create_font(SyRenderInfo *render_info, SyEcs *ecs, const char *
     FT_Library ft;
     SY_ERROR_COND(FT_Init_FreeType(&ft) != 0, "Failed to init freetype.");
     
+    size_t font_data_size;
+    FT_Byte *font_data = (FT_Byte*)sy_read_resource_file(font_path, &font_data_size);
+    SY_ERROR_COND(font_data == NULL, "Failed to read font resource %s", font_path);
+
     FT_Face face;
-    SY_ERROR_COND(FT_New_Face(ft, font_path, 0, &face), "Failed to load font file.");
-    
+    SY_ERROR_COND(FT_New_Memory_Face(ft, font_data, font_data_size, 0, &face), "Failed to load font file.");
+
     
     FT_Set_Pixel_Sizes(face, character_width, 0);
 
@@ -141,6 +147,8 @@ SyFont sy_render_create_font(SyRenderInfo *render_info, SyEcs *ecs, const char *
 
     FT_Done_Face(face);
     FT_Done_FreeType(ft);
+
+    free(font_data);
 
     return result;
 }

@@ -242,7 +242,7 @@ struct SyEcs
     {
 	SyEntityData &entity_data = m_entity_data.get<SyEntityData>(entity);
 	const size_t type_id = get_type_id<T>();
-	SY_ASSERT(entity_data.mask[type_id] == true && "ECS: You forgot to add the component to your entity.");
+	SY_ASSERT(entity_data.mask[type_id] == true && "ECS: You forgot to add the component to your entity. %s", m_registered_type_names[type_id]);
 	return &m_component_data_arr[type_id].get<T>(entity_data.indices[type_id]);
     }
 

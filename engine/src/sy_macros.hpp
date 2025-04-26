@@ -24,7 +24,7 @@
 
 #ifndef NDEBUG // Debug Mode
 
-#define SY_ASSERT(cond) if (!(cond)) { SY_ERROR("SY_ASSERT("#cond") failed.") }
+#define SY_ASSERT(cond, ...) if (!(cond)) { SY_ERROR(#cond" failed." __VA_OPT__(,) __VA_ARGS__) }
 
 #define SY_OUTPUT_DEBUG(TEXT, ...)					\
     {									\
@@ -33,7 +33,7 @@
 
 #else // Release mode
 
-#define SY_ASSERT(cond)
+#define SY_ASSERT(cond, ...)
 #define SY_OUTPUT_DEBUG(...)
 
 #endif

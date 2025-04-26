@@ -19,18 +19,26 @@
 
 enum class GameMode
 {
+    none, // for testing
     menu,
+    play_menu,
+    create,
+    edit,
 };
 
 struct Global
 {
     GameMode game_mode;
+    size_t font_asset_metadata_index;
+    
 
     SyEntityHandle player;
 
+    // Menu stuff
     static const size_t buttons_amt = 3;
     SyEntityHandle buttons[buttons_amt];
     size_t selected_btn;
+    SyEntityHandle menu_title;
 
 };
 
