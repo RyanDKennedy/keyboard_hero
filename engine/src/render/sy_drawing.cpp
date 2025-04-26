@@ -382,36 +382,82 @@ void record_command_buffer(SyRenderInfo *render_info, VkCommandBuffer command_bu
 	size_t storage_buffer_size = sizeof(TextBufferData) * text_len;
 	text_buffer_data = (TextBufferData*)calloc(sizeof(text_buffer_data[0]), text_len);
 
-	float alignment_offset = 0.0f;
-	if (ui_text.alignment == SyTextAlignment::center)
+
+	std::vector<float> line_lengths;
 	{
 	    float next_x = 0;
 	    for (size_t i = 0; i < text_len; ++i)
 	    {
+		if (font->character_map.contains(ui_text.text[i]) == false && ui_text.text[i] != '\n' && ui_text.text[i] != '\t')
+		    continue;
+
+		if (ui_text.text[i] == '\n')
+		{
+		    line_lengths.push_back(next_x);
+		    next_x = 0;
+		    continue;
+		}
+		
+		if (ui_text.text[i] == '\t')
+		{
+		    SyFontCharacter char_data = font->character_map[ui_text.text[' ']];
+		    next_x = next_x + (char_data.advance * ui_text.scale[0] / window_aspect_ratio) * 4;
+		    continue;
+		}
+
 		SyFontCharacter char_data = font->character_map[ui_text.text[i]];
 		next_x = next_x + (char_data.advance * ui_text.scale[0] / window_aspect_ratio);
 	    }
 
-	    alignment_offset = (float)-next_x / 2;
+	    line_lengths.push_back(next_x);
+
+	}
+	
+	float next_x = ui_text.pos[0];
+	float next_y = ui_text.pos[1];
+	size_t line_number = 0;
+	if (ui_text.alignment == SyTextAlignment::center)
+	{
+	    next_x -= (float)line_lengths[line_number++] / 2.0f;
 	}
 	else if (ui_text.alignment == SyTextAlignment::right)
 	{
-	    float next_x = 0;
-	    for (size_t i = 0; i < text_len; ++i)
-	    {
-		SyFontCharacter char_data = font->character_map[ui_text.text[i]];
-		next_x = next_x + (char_data.advance * ui_text.scale[0] / window_aspect_ratio);
-	    }
-
-	    alignment_offset = (float)-next_x;
+	    next_x -= (float)line_lengths[line_number++];
 	}
-	
-	float next_x = ui_text.pos[0] + alignment_offset;
+
+
 	for (size_t i = 0; i < text_len; ++i)
 	{
+	    if (font->character_map.contains(ui_text.text[i]) == false && ui_text.text[i] != '\n' && ui_text.text[i] != '\t')
+		continue;
+
+	    if (ui_text.text[i] == '\n')
+	    {
+		next_x = ui_text.pos[0];
+		next_y = next_y + (font->line_height * ui_text.scale[1]);
+
+		if (ui_text.alignment == SyTextAlignment::center)
+		{
+		    next_x -= (float)line_lengths[line_number++] / 2.0f;
+		}
+		else if (ui_text.alignment == SyTextAlignment::right)
+		{
+		    next_x -= (float)line_lengths[line_number++];
+		}
+		
+		continue;
+	    }
+
+	    if (ui_text.text[i] == '\t')
+	    {
+		SyFontCharacter char_data = font->character_map[ui_text.text[' ']];
+		next_x = next_x + (char_data.advance * ui_text.scale[0] / window_aspect_ratio) * 4;
+		continue;
+	    }
+	    
 	    SyFontCharacter char_data = font->character_map[ui_text.text[i]];
 
-	    text_buffer_data[i].pos_offset = glm::vec2(next_x + char_data.offset[0] * ui_text.scale[0] / window_aspect_ratio, ui_text.pos[1] + char_data.offset[1] * ui_text.scale[1]);
+	    text_buffer_data[i].pos_offset = glm::vec2(next_x + char_data.offset[0] * ui_text.scale[0] / window_aspect_ratio, next_y + char_data.offset[1] * ui_text.scale[1]);
 	    text_buffer_data[i].scale = glm::vec2(ui_text.scale[0] * char_data.scale[0] / window_aspect_ratio, ui_text.scale[1] * char_data.scale[1]);
 	    text_buffer_data[i].tex_bottom_left = glm::uvec2(char_data.tex_bottom_left[0] - 1, char_data.tex_bottom_left[1] - 1);
 	    text_buffer_data[i].tex_top_right = glm::uvec2(char_data.tex_top_right[0] + 1, char_data.tex_top_right[1] + 1);

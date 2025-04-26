@@ -24,6 +24,7 @@ struct SyFont
     size_t texture_index; // index into SyRenderImage with texture
     size_t character_max_width;
     glm::uvec2 texture_dimensions;
+    float line_height;
 };
 
 // returns an asset metadata info index

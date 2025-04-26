@@ -26,6 +26,8 @@ SyFont sy_render_create_font(SyRenderInfo *render_info, SyEcs *ecs, const char *
     
     
     FT_Set_Pixel_Sizes(face, character_width, 0);
+
+    result.line_height = (float)face->size->metrics.height / 64.0f / (float)character_width;
     
     
     uint8_t *pixels = (uint8_t*)calloc(texture_width * texture_height, sizeof(uint8_t));

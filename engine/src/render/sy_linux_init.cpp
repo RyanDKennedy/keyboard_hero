@@ -152,7 +152,7 @@ bool check_extension_support()
 	const char *extension_name = sy_g_render_vulkan_extensions[i];
 
 	bool extension_found = false;
-	for (int available_i = 0; available_i < extension_count; ++available_i)
+	for (size_t available_i = 0; available_i < extension_count; ++available_i)
 	{
 	    if (strcmp(extension_name, available_extensions[available_i].extensionName) == 0)
 	    {
@@ -194,11 +194,6 @@ void populate_debug_messenger_create_info(VkDebugUtilsMessengerCreateInfoEXT *cr
 
 static VKAPI_ATTR VkBool32 VKAPI_CALL validation_layers_debug_callback(VkDebugUtilsMessageSeverityFlagBitsEXT message_severity, VkDebugUtilsMessageTypeFlagsEXT message_type, const VkDebugUtilsMessengerCallbackDataEXT *p_callback_data, void *p_user_data)
 {
-    const char *error_label = "ERROR";
-    const char *warning_label = "WARNING";
-    const char *verbose_label = "VERBOSE";
-
-    const char *used_label = "NO LABEL";
 
     if (message_severity == VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT)
     {

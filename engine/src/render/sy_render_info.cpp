@@ -42,8 +42,8 @@ void sy_render_info_init(SyRenderInfo *render_info, int win_width, int win_heigh
     sampler_create_info.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
     sampler_create_info.pNext = NULL;
     sampler_create_info.flags = 0;
-    sampler_create_info.magFilter = VK_FILTER_NEAREST;
-    sampler_create_info.minFilter = VK_FILTER_NEAREST;
+    sampler_create_info.magFilter = VK_FILTER_LINEAR;
+    sampler_create_info.minFilter = VK_FILTER_LINEAR;
     sampler_create_info.unnormalizedCoordinates = VK_TRUE;
     sampler_create_info.anisotropyEnable = VK_FALSE;
     sampler_create_info.addressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
