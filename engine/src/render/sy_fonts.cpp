@@ -15,6 +15,8 @@ void sy_render_destroy_font(SyRenderInfo *render_info, SyEcs *ecs, SyFont *font)
 SyFont sy_render_create_font(SyRenderInfo *render_info, SyEcs *ecs, const char *font_path, uint32_t texture_width, uint32_t texture_height, uint32_t character_width, const char *characters, uint32_t spacing)
 {
     SyFont result;
+    result.character_max_width = character_width;
+    result.texture_dimensions = glm::uvec2(texture_width, texture_height);
     
     FT_Library ft;
     SY_ERROR_COND(FT_Init_FreeType(&ft) != 0, "Failed to init freetype.");
@@ -105,10 +107,14 @@ SyFont sy_render_create_font(SyRenderInfo *render_info, SyEcs *ecs, const char *
 	    SyFontCharacter font_character =
 		{
 		    .tex_bottom_left = glm::uvec2(current_box->left, current_box->top),
-		    .tex_top_right = glm::uvec2(current_box->right, current_box->bottom)
+		    .tex_top_right = glm::uvec2(current_box->right, current_box->bottom),
+		    .scale = glm::vec2((float)face->glyph->bitmap.width / (float)character_width, (float)face->glyph->bitmap.rows / (float)character_width),
+		    .offset = glm::vec2((float)face->glyph->bitmap_left / (float)character_width, -1 * (float)face->glyph->bitmap_top / (float)character_width),
+		    .advance = (float)face->glyph->advance.x / 64.0f / (float)character_width,
 		};
-	    result.character_map.insert({current_char, font_character});
 
+	    result.character_map.insert({current_char, font_character});
+	    
 
 	    for (size_t y = 0; y < face->glyph->bitmap.rows; ++y)
 	    {

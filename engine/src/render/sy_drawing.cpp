@@ -9,6 +9,7 @@
 #include "render/types/sy_asset_metadata.hpp"
 #include "render/types/sy_draw_info.hpp"
 #include "render/types/sy_material.hpp"
+#include "render/types/sy_ui_text.hpp"
 #include "sy_ecs.hpp"
 #include "sy_macros.hpp"
 #include "sy_swapchain.hpp"
@@ -336,12 +337,23 @@ void record_command_buffer(SyRenderInfo *render_info, VkCommandBuffer command_bu
     VkDeviceSize vertex_buffer_offset = 0;
     vkCmdBindVertexBuffers(command_buffer, 0, 1, &render_info->quad_buffer.buffer, &vertex_buffer_offset);
 
-    for (size_t i : fonts_to_render)
+    for (size_t font_entity_index : fonts_to_render)
     {
-	SyDrawInfo *draw_info = ecs->component<SyDrawInfo>(i);
+	SyDrawInfo *draw_info = ecs->component<SyDrawInfo>(font_entity_index);
 	SyAssetMetadata *metadata = ecs->component_from_index<SyAssetMetadata>(draw_info->asset_metadata_id);
 	SyFont *font = ecs->component_from_index<SyFont>(metadata->asset_component_index);
 	SyRenderImage *font_image = ecs->component_from_index<SyRenderImage>(font->texture_index);
+
+	// Assign a SyUIText to render, default if it doesn't have one
+	SyUIText ui_text;
+	ui_text.text = "No Text";
+	ui_text.color = glm::vec3(1.0f, 0.0f, 1.0f);
+	ui_text.pos = glm::vec2(0.0f, 0.0f);
+	ui_text.scale = glm::vec2(0.1f, 0.1f);
+	if (ecs->entity_has_component<SyUIText>(font_entity_index))
+	{
+	    ui_text = *ecs->component<SyUIText>(font_entity_index);
+	}
 
 	// Bind/Create uniforms
 	VkDescriptorSet character_map_descriptor_set = create_descriptor_set_and_image(render_info, render_info->character_map_descriptor_set_layout, font_image->image_view, render_info->font_sampler);
@@ -350,7 +362,7 @@ void record_command_buffer(SyRenderInfo *render_info, VkCommandBuffer command_bu
 	{
 	    glm::vec3 color;
 	} character_information_data;
-	character_information_data.color = glm::vec3(0.0f, 1.0f, 0.0f);
+	character_information_data.color = ui_text.color;
 
 	VkDescriptorSet character_information_descriptor_set = create_and_write_to_descriptor_set_and_uniform_buffer(render_info, render_info->character_information_descriptor_set_layout, &character_information_data, sizeof(character_information_data));
 
@@ -358,29 +370,41 @@ void record_command_buffer(SyRenderInfo *render_info, VkCommandBuffer command_bu
 	
 	vkCmdBindDescriptorSets(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, render_info->text_pipeline_layout, 0, 2, sets, 0, NULL);
 
-
+	// Create the text buffer
 	struct TextBufferData
 	{
 	    glm::vec2 pos_offset;
+	    glm::vec2 scale;
 	    glm::uvec2 tex_bottom_left;
 	    glm::uvec2 tex_top_right;
 	} *text_buffer_data;
+
+	size_t text_len = strlen(ui_text.text);
+	size_t storage_buffer_size = sizeof(TextBufferData) * text_len;
+	text_buffer_data = (TextBufferData*)calloc(sizeof(text_buffer_data[0]), text_len);
 	
-	size_t storage_buffer_size = sizeof(TextBufferData);
-	text_buffer_data = (TextBufferData*)calloc(storage_buffer_size, 1);
-	
-	text_buffer_data[0].pos_offset = glm::vec2(0.0f, 0.0f);
-	text_buffer_data[0].tex_bottom_left = font->character_map['$'].tex_bottom_left;
-	text_buffer_data[0].tex_top_right = font->character_map['$'].tex_top_right;
+	float next_x = ui_text.pos[0];
+	for (size_t i = 0; i < text_len; ++i)
+	{
+	    SyFontCharacter char_data = font->character_map[ui_text.text[i]];
+
+	    text_buffer_data[i].pos_offset = glm::vec2(next_x + char_data.offset[0] * ui_text.scale[0], ui_text.pos[1] + char_data.offset[1] * ui_text.scale[1]);
+	    text_buffer_data[i].scale = glm::vec2(ui_text.scale[0] * char_data.scale[0], ui_text.scale[1] * char_data.scale[1]);
+	    text_buffer_data[i].tex_bottom_left = char_data.tex_bottom_left;
+	    text_buffer_data[i].tex_top_right = char_data.tex_top_right;
+
+	    next_x = next_x + (char_data.advance * ui_text.scale[0]);
+	}
 	
 	VkDescriptorSet text_buffer_descriptor_set = create_and_write_to_descriptor_set_and_storage_buffer(render_info, render_info->text_buffer_descriptor_set_layout, text_buffer_data, storage_buffer_size);
 	
 	free(text_buffer_data);
 	
 	vkCmdBindDescriptorSets(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, render_info->text_pipeline_layout, 2, 1, &text_buffer_descriptor_set, 0, NULL);
+	
 
 	// Draw
-	vkCmdDraw(command_buffer, 6, 1, 0, 0);
+	vkCmdDraw(command_buffer, 4, text_len, 0, 0);
     }
 
     vkCmdEndRenderPass(command_buffer);

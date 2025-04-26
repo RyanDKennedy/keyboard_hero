@@ -54,12 +54,9 @@ void sy_render_info_init(SyRenderInfo *render_info, int win_width, int win_heigh
     {
 	float vertex_data[] =
 	    {
-		-1.0f, -1.0f, // 0 top left
-		1.0f, -1.0f,  // 1 top right
-		-1.0f, 1.0f,  // 2 bottom left
-
-		-1.0f, 1.0f,  // 2 bottom left
-		1.0f, -1.0f,  // 1 top right
+		0.0f, 0.0f, // 0 top left
+		1.0f, 0.0f,  // 1 top right
+		0.0f, 1.0f,  // 2 bottom left
 		1.0f, 1.0f    // 3 bottom right
 	    };
 

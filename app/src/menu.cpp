@@ -33,7 +33,7 @@ void menu_load(SyAppInfo *app_info)
     app_info->ecs.component<SyDrawInfo>(g_state->buttons[2])->asset_metadata_id = create_metadata_id;
 
 
-    if (0)
+    if (1)
     {
     SyEntityHandle text = app_info->ecs.new_entity();
     app_info->ecs.entity_add_component<SyDrawInfo>(text);
@@ -41,6 +41,7 @@ void menu_load(SyAppInfo *app_info)
     text_draw_info->should_draw = true;
     text_draw_info->asset_metadata_id = font_index;
     }
+    else
     {
     SyEntityHandle text = app_info->ecs.new_entity();
     app_info->ecs.entity_add_component<SyDrawInfo>(text);

@@ -6,6 +6,7 @@
 
 #include "components/sy_transform.hpp"
 #include "render/types/sy_material.hpp"
+#include "render/types/sy_ui_text.hpp"
 #include "sy_ecs.hpp"
 #include "sy_macros.hpp"
 
@@ -51,6 +52,7 @@ void engine_init(SyPlatformInfo *platform_info, SyAppInfo *app_info, SyEngineSta
     SY_ECS_REGISTER_TYPE(app_info->ecs, SyMaterial);
     SY_ECS_REGISTER_TYPE(app_info->ecs, SyRenderImage);
     SY_ECS_REGISTER_TYPE(app_info->ecs, SyFont);
+    SY_ECS_REGISTER_TYPE(app_info->ecs, SyUIText);
 
     // Init renderer
     sy_render_info_init(&platform_info->render_info, platform_info->input_info.window_width, platform_info->input_info.window_height);

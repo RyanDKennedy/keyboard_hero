@@ -3,6 +3,7 @@
 struct InstanceInfo
 {
     vec2 pos_offset;
+    vec2 scale;
     uvec2 tex_bottom_left;
     uvec2 tex_top_right;
 };
@@ -22,7 +23,7 @@ void main()
 
     InstanceInfo instance_info = infos[gl_InstanceIndex];
 
-    if (a_pos.x < 0)
+    if (a_pos.x == 0.0f)
     {
 	tex_coord.x = instance_info.tex_bottom_left.x;
     }    
@@ -31,7 +32,7 @@ void main()
 	tex_coord.x = instance_info.tex_top_right.x;
     }
 
-    if (a_pos.y < 0)
+    if (a_pos.y == 0.0f)
     {
 	tex_coord.y = instance_info.tex_bottom_left.y;
     }
@@ -41,7 +42,7 @@ void main()
     }
 
     v_tex_coord = tex_coord;
-    vec2 pos = a_pos + instance_info.pos_offset;
+    vec2 pos = vec2(a_pos.x * instance_info.scale.x, a_pos.y * instance_info.scale.y) + instance_info.pos_offset;
 
     gl_Position = vec4(pos.xy, 0.0f, 1.0f);
 }

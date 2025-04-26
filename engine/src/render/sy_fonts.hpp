@@ -13,12 +13,17 @@ struct SyFontCharacter
 {
     glm::uvec2 tex_bottom_left;
     glm::uvec2 tex_top_right;
+    glm::vec2 scale;
+    glm::vec2 offset;
+    float advance;
 };
 
 struct SyFont
 {
     std::unordered_map<char, SyFontCharacter> character_map;
     size_t texture_index; // index into SyRenderImage with texture
+    size_t character_max_width;
+    glm::uvec2 texture_dimensions;
 };
 
 // returns an asset metadata info index
