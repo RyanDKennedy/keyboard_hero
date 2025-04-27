@@ -99,6 +99,7 @@ void menu_run(SyAppInfo *app_info)
 		g_state->game_mode = GameMode::picker;
 		break;
 	}
+	return;
     }
 
 }

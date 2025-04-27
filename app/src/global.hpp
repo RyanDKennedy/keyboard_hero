@@ -39,16 +39,24 @@ struct MenuCtx
 
 struct EditCtx
 {
+    size_t persistent_arena_starting_alloc;
+
+    char *song_name;
     SyEntityHandle title;
+    char *title_data;
     static const size_t keys_amt = 4;
     SyEntityHandle key_entities[keys_amt];
 };
 
 struct CreateCtx
 {
-    SyEntityHandle text;
-    char *text_data;
-    size_t text_data_len;
+    SyEntityHandle name_label;
+    char *name_label_data;
+    size_t name_label_data_len;
+
+    SyEntityHandle name;
+    char *name_data;
+    size_t name_data_len;
 };
 
 struct Global

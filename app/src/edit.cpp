@@ -1,5 +1,6 @@
 #include "edit.hpp"
 #include "global.hpp"
+#include "menu.hpp"
 #include "render/types/sy_asset_metadata.hpp"
 #include "render/types/sy_material.hpp"
 #include "util.hpp"
@@ -51,10 +52,21 @@ void edit_load(SyAppInfo *app_info)
     }
 }
 
-void edit_start(SyAppInfo *app_info)
+void edit_start(SyAppInfo *app_info, const char *song_name)
 {
     EditCtx *edit_ctx = &g_state->edit_ctx;
 
+    edit_ctx->persistent_arena_starting_alloc = app_info->persistent_arena.m_current_offset;
+
+    // allocate and fill title data and song data
+    edit_ctx->title_data = (char*)app_info->persistent_arena.alloc(strlen("Song Customizer: ") + strlen(song_name) + 1);
+    sprintf(edit_ctx->title_data, "Song Customizer: %s", song_name);
+    app_info->ecs.component<SyUIText>(edit_ctx->title)->text = edit_ctx->title_data;
+
+    edit_ctx->song_name = (char*)app_info->persistent_arena.alloc(strlen(song_name) + 1);
+    strcpy(edit_ctx->song_name, song_name);
+
+    // make everything draw
     app_info->ecs.component<SyDrawInfo>(edit_ctx->title)->should_draw = true;
     for (size_t i = 0; i < edit_ctx->keys_amt; ++i)
     {
@@ -68,6 +80,13 @@ void edit_run(SyAppInfo *app_info)
 
     orthographic_movement(app_info, 15, 15, 15);
 
+    if (app_info->input_info.escape == SyKeyState::released)
+    {
+	edit_stop(app_info);
+	g_state->game_mode = GameMode::menu;
+	menu_start(app_info);
+	return;
+    }
 }
 
 void edit_stop(SyAppInfo *app_info)
@@ -80,4 +99,5 @@ void edit_stop(SyAppInfo *app_info)
 	app_info->ecs.component<SyDrawInfo>(edit_ctx->key_entities[i])->should_draw = false;
     }
 
+    app_info->persistent_arena.m_current_offset = edit_ctx->persistent_arena_starting_alloc;
 }
