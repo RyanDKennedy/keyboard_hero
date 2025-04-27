@@ -6,6 +6,8 @@ set(APP_SOURCE_FILES
   ${CMAKE_CURRENT_SOURCE_DIR}/src/app.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/src/util.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/src/menu.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/edit.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/create.cpp
   ${CMAKE_SOURCE_DIR}/engine/src/sy_arena.cpp
 )
 
@@ -17,6 +19,8 @@ elseif(CMAKE_BUILD_TYPE STREQUAL "Release")
   add_library(${PROJECT_NAME} STATIC ${APP_SOURCE_FILES})
 endif()
 
+find_package(SQLite3 REQUIRED)
+
 target_include_directories(${PROJECT_NAME}
   PUBLIC
   ${CMAKE_CURRENT_SOURCE_DIR}/src/
@@ -26,5 +30,6 @@ target_include_directories(${PROJECT_NAME}
 
 target_link_libraries(${PROJECT_NAME}
   PRIVATE
+  SQLite::SQLite3
   ${SY_EXTRA_APP_LIBRARIES}
 )

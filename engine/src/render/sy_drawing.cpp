@@ -352,6 +352,8 @@ void record_command_buffer(SyRenderInfo *render_info, VkCommandBuffer command_bu
 	if (ecs->entity_has_component<SyUIText>(font_entity_index))
 	{
 	    ui_text = *ecs->component<SyUIText>(font_entity_index);
+	    if (strlen(ui_text.text) == 0)
+		continue;
 	}
 
 	// Bind/Create uniforms

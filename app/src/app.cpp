@@ -4,6 +4,8 @@
 #include "util.hpp"
 
 #include "menu.hpp"
+#include "edit.hpp"
+#include "create.hpp"
 
 void register_ecs_components(SyEcs *ecs)
 {
@@ -18,9 +20,29 @@ extern "C"
 void app_init(SyAppInfo *app_info)
 {
     register_ecs_components(&app_info->ecs);
-
     app_info->global_mem = app_info->persistent_arena.alloc(sizeof(Global));
     g_state = (Global*)app_info->global_mem;
+    new (g_state) Global;
+
+    // Init db
+    SY_ERROR_COND(sqlite3_open("app/KeyboardHero.db", &g_state->db) != SQLITE_OK, "Failed to open db.");
+
+    SY_ERROR_COND(sqlite3_exec(g_state->db, "CREATE TABLE IF NOT EXISTS Songs (\
+       id integer NOT NULL PRIMARY KEY AUTOINCREMENT, \
+       name text non NOT NULL, \
+       duration real NOT NULL\
+);", NULL, NULL, NULL) != SQLITE_OK, "Failed to create Songs table");
+
+
+    SY_ERROR_COND(sqlite3_exec(g_state->db, "CREATE TABLE IF NOT EXISTS Notes (\
+       id integer NOT NULL PRIMARY KEY AUTOINCREMENT, \
+       song_id integer NOT NULL, \
+       key integer NOT NULL, \
+       timestamp real NOT NULL, \
+       duration real NOT NULL, \
+       FOREIGN KEY(song_id) REFERENCES Songs(id)\
+);", NULL, NULL, NULL) != SQLITE_OK, "Failed to create Notes table");
+
 
     g_state->game_mode = GameMode::menu;
 
@@ -37,24 +59,18 @@ void app_init(SyAppInfo *app_info)
     { // Camera configuration
 	app_info->camera_settings.active_camera = g_state->player;
 
-	app_info->camera_settings.projection_type = SyCameraProjectionType::perspective;
-	app_info->camera_settings.perspective_settings.aspect_ratio = (float)app_info->input_info.window_width / app_info->input_info.window_height;
-	app_info->camera_settings.perspective_settings.far_plane = 100.f;
-	app_info->camera_settings.perspective_settings.near_plane = 0.1f;
-	app_info->camera_settings.perspective_settings.fov = 65.f;
-
-/*
 	app_info->camera_settings.projection_type = SyCameraProjectionType::orthographic;
 	app_info->camera_settings.orthographic_settings.top = 10.0f;
 	app_info->camera_settings.orthographic_settings.bottom = -10.0f;
 	app_info->camera_settings.orthographic_settings.near = -50.0f;
 	app_info->camera_settings.orthographic_settings.far = 50.0f;
-*/
     }
 
     g_state->font_asset_metadata_index = SY_LOAD_ASSET_FROM_FILE(app_info->render_info, &app_info->ecs, "fonts/UbuntuMono-R.ttf", SyAssetType::font);
 
     menu_load(app_info);
+    edit_load(app_info);
+    create_load(app_info);
 
     menu_start(app_info);
 }
@@ -63,9 +79,6 @@ extern "C"
 void app_run(SyAppInfo *app_info)
 {
     g_state = (Global*)app_info->global_mem;
-
-    if (app_info->input_info.escape == SyKeyState::released)
-	app_info->stop_game = true;
 
     if (app_info->input_info.p == SyKeyState::pressed)
 	printf("FPS: %f\n", 1.0f / app_info->delta_time);
@@ -77,16 +90,31 @@ void app_run(SyAppInfo *app_info)
     }
 
     //orthographic_movement(app_info, 5.0f, 5.0f, 5.0f);
-    perspective_movement(app_info, 5.0f, 5.0f);
+    //perspective_movement(app_info, 5.0f, 5.0f);
 
-    if (g_state->game_mode == GameMode::menu)
-	menu_run(app_info);
+    switch(g_state->game_mode)
+    {
+	case GameMode::menu:
+	    menu_run(app_info);
+	    break;
+
+	case GameMode::edit:
+	    edit_run(app_info);
+	    break;
+
+	case GameMode::create:
+	    create_run(app_info);
+	    break;
+    }
 }
 
 extern "C"
 void app_destroy(SyAppInfo *app_info)
 {
     g_state = (Global*)app_info->global_mem;
+    g_state->~Global();
+
+    SY_ERROR_COND(sqlite3_close(g_state->db) != SQLITE_OK, "Failed to close db.");
 }
 
 

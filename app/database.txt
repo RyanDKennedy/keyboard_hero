@@ -7,5 +7,17 @@ table 2 - notes
 CREATE DATABASE KeyboardHero;
 
 CREATE TABLE Songs (
-       name text non NOT NULL,
+       id integer NOT NULL AUTO_INCREMENT PRIMARY KEY,
+       name text non NOT NULL, // the name of the song
+       duration real NOT NULL, // the duration in seconds
+);
+
+CREATE TABLE Notes (
+       id integer NOT NULL AUTO_INCREMENT,
+       song_id integer NOT NULL, // the song which this note belongs to
+       key integer NOT NULL, // which button this note is on
+       timestamp real NOT NULL, // the start of the button in seconds
+       duration real NOT NULL, // the duration of the button in seconds
+       PRIMARY KEY (id),
+       FOREIGN KEY (song_id) REFERENCES Songs(id)
 );

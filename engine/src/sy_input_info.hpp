@@ -1,5 +1,7 @@
 #pragma once
 
+#include <stddef.h>
+
 enum class SyKeyState
 {
     unpressed,
@@ -9,6 +11,8 @@ enum class SyKeyState
 
 struct SyInputInfo
 {
+    static const size_t text_buffer_size = 32;
+    char text_buffer[text_buffer_size];
     float mouse_x;
     float mouse_y;
     float mouse_dx;

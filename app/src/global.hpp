@@ -10,6 +10,8 @@
 #include "types/sy_camera_settings.hpp"
 #include "glm_include.hpp"
 
+#include <sqlite3.h>
+
 #ifndef NDEBUG
 #define SY_LOAD_ASSET_FROM_FILE(render_info, ...) app_info->sy_load_asset_from_file((void*)(render_info), __VA_ARGS__);
 #else
@@ -21,25 +23,45 @@ enum class GameMode
 {
     none, // for testing
     menu,
-    play_menu,
     create,
     edit,
+    picker,
+    play,
 };
 
-struct Global
+struct MenuCtx
 {
-    GameMode game_mode;
-    size_t font_asset_metadata_index;
-    
-
-    SyEntityHandle player;
-
-    // Menu stuff
     static const size_t buttons_amt = 3;
     SyEntityHandle buttons[buttons_amt];
     size_t selected_btn;
     SyEntityHandle menu_title;
+};
 
+struct EditCtx
+{
+    SyEntityHandle title;
+    static const size_t keys_amt = 4;
+    SyEntityHandle key_entities[keys_amt];
+};
+
+struct CreateCtx
+{
+    SyEntityHandle text;
+    char *text_data;
+};
+
+struct Global
+{
+    sqlite3 *db;
+
+    GameMode game_mode;
+    size_t font_asset_metadata_index;
+
+    SyEntityHandle player;
+
+    MenuCtx menu_ctx;
+    EditCtx edit_ctx;
+    CreateCtx create_ctx;
 };
 
 inline Global *g_state;

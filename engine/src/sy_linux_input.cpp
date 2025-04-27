@@ -24,8 +24,90 @@ void set_to_unpressed(SyKeyState *key)
     }
 }
 
+void clear_input_info(SyInputInfo *input_info)
+{
+    memset(input_info->text_buffer, 0, input_info->text_buffer_size);
+    input_info->a = SyKeyState::unpressed;
+    input_info->b = SyKeyState::unpressed;
+    input_info->c = SyKeyState::unpressed;
+    input_info->d = SyKeyState::unpressed;
+    input_info->e = SyKeyState::unpressed;
+    input_info->f = SyKeyState::unpressed;
+    input_info->g = SyKeyState::unpressed;
+    input_info->h = SyKeyState::unpressed;
+    input_info->i = SyKeyState::unpressed;
+    input_info->j = SyKeyState::unpressed;
+    input_info->k = SyKeyState::unpressed;
+    input_info->l = SyKeyState::unpressed;
+    input_info->m = SyKeyState::unpressed;
+    input_info->n = SyKeyState::unpressed;
+    input_info->o = SyKeyState::unpressed;
+    input_info->p = SyKeyState::unpressed;
+    input_info->q = SyKeyState::unpressed;
+    input_info->r = SyKeyState::unpressed;
+    input_info->s = SyKeyState::unpressed;
+    input_info->t = SyKeyState::unpressed;
+    input_info->u = SyKeyState::unpressed;
+    input_info->v = SyKeyState::unpressed;
+    input_info->w = SyKeyState::unpressed;
+    input_info->x = SyKeyState::unpressed;
+    input_info->y = SyKeyState::unpressed;
+    input_info->z = SyKeyState::unpressed;
+    input_info->zero = SyKeyState::unpressed;
+    input_info->one = SyKeyState::unpressed;
+    input_info->two = SyKeyState::unpressed;
+    input_info->three = SyKeyState::unpressed;
+    input_info->four = SyKeyState::unpressed;
+    input_info->five = SyKeyState::unpressed;
+    input_info->six = SyKeyState::unpressed;
+    input_info->seven = SyKeyState::unpressed;
+    input_info->eight = SyKeyState::unpressed;
+    input_info->nine = SyKeyState::unpressed;
+    input_info->space = SyKeyState::unpressed;
+    input_info->shift_left = SyKeyState::unpressed;
+    input_info->shift_right = SyKeyState::unpressed;
+    input_info->control_left = SyKeyState::unpressed;
+    input_info->control_right = SyKeyState::unpressed;
+    input_info->alt_left = SyKeyState::unpressed;
+    input_info->alt_right = SyKeyState::unpressed;
+    input_info->tab = SyKeyState::unpressed;
+    input_info->caps_lock = SyKeyState::unpressed;
+    input_info->back_space = SyKeyState::unpressed;
+    input_info->enter = SyKeyState::unpressed;
+    input_info->escape = SyKeyState::unpressed;
+    input_info->arrow_up = SyKeyState::unpressed;
+    input_info->arrow_down = SyKeyState::unpressed;
+    input_info->arrow_left = SyKeyState::unpressed;
+    input_info->arrow_right = SyKeyState::unpressed;
+    input_info->f1 = SyKeyState::unpressed;
+    input_info->f2 = SyKeyState::unpressed;
+    input_info->f3 = SyKeyState::unpressed;
+    input_info->f4 = SyKeyState::unpressed;
+    input_info->f5 = SyKeyState::unpressed;
+    input_info->f6 = SyKeyState::unpressed;
+    input_info->f7 = SyKeyState::unpressed;
+    input_info->f8 = SyKeyState::unpressed;
+    input_info->f9 = SyKeyState::unpressed;
+    input_info->f10 = SyKeyState::unpressed;
+    input_info->f11 = SyKeyState::unpressed;
+    input_info->f12 = SyKeyState::unpressed;
+    input_info->comma = SyKeyState::unpressed;
+    input_info->period = SyKeyState::unpressed;
+    input_info->forward_slash = SyKeyState::unpressed;
+    input_info->semicolon = SyKeyState::unpressed;
+    input_info->single_quote = SyKeyState::unpressed;
+    input_info->bracket_left = SyKeyState::unpressed;
+    input_info->bracket_right = SyKeyState::unpressed;
+    input_info->back_slash = SyKeyState::unpressed;
+    input_info->minus = SyKeyState::unpressed;
+    input_info->equal = SyKeyState::unpressed;
+    input_info->apostrophe = SyKeyState::unpressed;
+    input_info->grave = SyKeyState::unpressed;
+}
+
 void poll_events(SyXCBInfo *xcb_info, SyInputInfo *input_info)
 {
+    memset(input_info->text_buffer, 0, sizeof(input_info->text_buffer[0]) * input_info->text_buffer_size);
     set_to_unpressed(&input_info->a);
     set_to_unpressed(&input_info->b);
     set_to_unpressed(&input_info->c);
@@ -234,8 +316,22 @@ void handle_event_expose(SyXCBInfo *xcb_info, SyInputInfo *input_info, xcb_gener
     free(reply);
 }
 
+#define SY_KEY_SPECIFIC_CASE(key, xkb_ver, boolean)\
+    case XKB_KEY_##xkb_ver:			   \
+    {						   \
+	input_info->key = boolean;		   \
+	xkb_state_update_key(xcb_info->xkb_state, message->detail, (boolean == SyKeyState::released)? XKB_KEY_UP : XKB_KEY_DOWN); \
+									\
+	if (boolean == SyKeyState::pressed)				\
+	{								\
+	    char buf[5];						\
+	    xkb_keysym_to_utf8(keysym, buf, 5); \
+	    strncat(input_info->text_buffer, buf, input_info->text_buffer_size - strlen(input_info->text_buffer) - 1); \
+									\
+	}								\
+	break;								\
+    }
 
-#define SY_KEY_SPECIFIC_CASE(key, xkb_ver, boolean) case XKB_KEY_##xkb_ver: input_info->key = boolean; break;
 #define SY_KEY_CASE(key, boolean) SY_KEY_SPECIFIC_CASE(key, key, boolean);
 
 void handle_event_key_release(SyXCBInfo *xcb_info, SyInputInfo *input_info, xcb_generic_event_t *event)
@@ -243,7 +339,7 @@ void handle_event_key_release(SyXCBInfo *xcb_info, SyInputInfo *input_info, xcb_
     xcb_key_release_event_t *message = (xcb_key_release_event_t*)event;
 
     xkb_keysym_t keysym = xkb_state_key_get_one_sym(xcb_info->xkb_state, message->detail);
-    switch (keysym)
+    switch (xkb_keysym_to_lower(keysym))
     {
 	SY_KEY_CASE(a, SyKeyState::released);
 	SY_KEY_CASE(b, SyKeyState::released);
@@ -330,7 +426,7 @@ void handle_event_key_press(SyXCBInfo *xcb_info, SyInputInfo *input_info, xcb_ge
     xcb_key_press_event_t *message = (xcb_key_press_event_t*)event;
 
     xkb_keysym_t keysym = xkb_state_key_get_one_sym(xcb_info->xkb_state, message->detail);
-    switch (keysym)
+    switch (xkb_keysym_to_lower(keysym))
     {
 	SY_KEY_CASE(a, SyKeyState::pressed);
 	SY_KEY_CASE(b, SyKeyState::pressed);
