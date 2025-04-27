@@ -12,6 +12,8 @@
 
 #include <sqlite3.h>
 
+#include "db.hpp"
+
 #ifndef NDEBUG
 #define SY_LOAD_ASSET_FROM_FILE(render_info, ...) app_info->sy_load_asset_from_file((void*)(render_info), __VA_ARGS__);
 #else
@@ -41,11 +43,18 @@ struct EditCtx
 {
     size_t persistent_arena_starting_alloc;
 
-    char *song_name;
+    DBSong song;
+
     SyEntityHandle title;
     char *title_data;
+
     static const size_t keys_amt = 4;
     SyEntityHandle key_entities[keys_amt];
+
+    SyEntityHandle display;
+    size_t display_data_size;
+    char *display_data;
+
 };
 
 struct CreateCtx

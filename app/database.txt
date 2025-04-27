@@ -8,7 +8,7 @@ CREATE DATABASE KeyboardHero;
 
 CREATE TABLE Songs (
        id integer NOT NULL AUTO_INCREMENT PRIMARY KEY,
-       name text non NOT NULL, // the name of the song
+       name text non NOT NULL UNIQUE, // the name of the song
        duration real NOT NULL, // the duration in seconds
 );
 

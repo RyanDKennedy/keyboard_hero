@@ -5,6 +5,7 @@ project(app)
 set(APP_SOURCE_FILES
   ${CMAKE_CURRENT_SOURCE_DIR}/src/app.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/src/util.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/db.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/src/menu.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/src/edit.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/src/create.cpp

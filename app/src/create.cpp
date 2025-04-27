@@ -1,4 +1,5 @@
 #include "create.hpp"
+#include "db.hpp"
 #include "edit.hpp"
 #include "menu.hpp"
 
@@ -120,12 +121,15 @@ void create_run(SyAppInfo *app_info)
 
     if (app_info->input_info.enter == SyKeyState::released && strlen(create_ctx->name_data) > 0)
     {
-	char song_name[255] = {};
-	strcpy(song_name, create_ctx->name_data);
+	DBSong song = db_create_song(g_state->db, create_ctx->name_data, 10.0f);
+	if (song.id == -1)
+	{
+	    return;
+	}
 
 	create_stop(app_info);
 	g_state->game_mode = GameMode::edit;
-	edit_start(app_info, song_name);
+	edit_start(app_info, song);
 
 	return;
     }

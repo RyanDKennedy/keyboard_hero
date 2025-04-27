@@ -115,7 +115,7 @@ int main(int argc, char *argv[])
     // RENDER LOOP
 
     // Delta time stuff
-    size_t frame_limit_frame_time = SY_US_SECOND / 140;
+    size_t frame_limit_frame_time = SY_US_SECOND / 60;
     size_t delta_time_frame_start = get_current_time_us();
     size_t delta_time_frame_end;
 

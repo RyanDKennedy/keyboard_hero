@@ -30,7 +30,7 @@ void orthographic_movement(SyAppInfo *app_info, float camera_speed, float zoom_s
     
     if (abs(app_info->input_info.mouse_dy) != 0)
     {
-	player_transform->rotation[0] += app_info->delta_time * camera_speed * -app_info->input_info.mouse_dy;
+	player_transform->rotation[0] -= app_info->delta_time * camera_speed * -app_info->input_info.mouse_dy;
 	if (player_transform->rotation[0] < -85.0)
 	    player_transform->rotation[0] = -85.0;
 	
