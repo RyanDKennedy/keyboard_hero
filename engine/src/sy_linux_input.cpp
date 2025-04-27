@@ -7,6 +7,7 @@
 #include <xcb/xcb_event.h>
 #include <xcb/xproto.h>
 #include <xcb/xinput.h>
+#include <xkbcommon/xkbcommon-compat.h>
 #include <xkbcommon/xkbcommon-keysyms.h>
 #include <xkbcommon/xkbcommon.h>
 
@@ -321,14 +322,6 @@ void handle_event_expose(SyXCBInfo *xcb_info, SyInputInfo *input_info, xcb_gener
     {						   \
 	input_info->key = boolean;		   \
 	xkb_state_update_key(xcb_info->xkb_state, message->detail, (boolean == SyKeyState::released)? XKB_KEY_UP : XKB_KEY_DOWN); \
-									\
-	if (boolean == SyKeyState::pressed)				\
-	{								\
-	    char buf[5];						\
-	    xkb_keysym_to_utf8(keysym, buf, 5); \
-	    strncat(input_info->text_buffer, buf, input_info->text_buffer_size - strlen(input_info->text_buffer) - 1); \
-									\
-	}								\
 	break;								\
     }
 
@@ -339,7 +332,17 @@ void handle_event_key_release(SyXCBInfo *xcb_info, SyInputInfo *input_info, xcb_
     xcb_key_release_event_t *message = (xcb_key_release_event_t*)event;
 
     xkb_keysym_t keysym = xkb_state_key_get_one_sym(xcb_info->xkb_state, message->detail);
-    switch (xkb_keysym_to_lower(keysym))
+
+    xkb_keymap *keymap = xkb_state_get_keymap(xcb_info->xkb_state);
+    xkb_layout_index_t layout = xkb_state_key_get_layout(xcb_info->xkb_state, message->detail);
+    if (xkb_state_key_get_level(xcb_info->xkb_state, message->detail, layout) != 0)
+    {
+	const xkb_keysym_t *key_syms;
+	size_t key_syms_amt = xkb_keymap_key_get_syms_by_level(keymap, message->detail, layout, 0, &key_syms);
+	keysym = key_syms[0];
+    }
+
+    switch (keysym)
     {
 	SY_KEY_CASE(a, SyKeyState::released);
 	SY_KEY_CASE(b, SyKeyState::released);
@@ -426,7 +429,23 @@ void handle_event_key_press(SyXCBInfo *xcb_info, SyInputInfo *input_info, xcb_ge
     xcb_key_press_event_t *message = (xcb_key_press_event_t*)event;
 
     xkb_keysym_t keysym = xkb_state_key_get_one_sym(xcb_info->xkb_state, message->detail);
-    switch (xkb_keysym_to_lower(keysym))
+
+    {
+	char buf[5];							
+	xkb_state_key_get_utf8(xcb_info->xkb_state, message->detail, buf, 5); 
+	strncat(input_info->text_buffer, buf, input_info->text_buffer_size - strlen(input_info->text_buffer) - 1); 
+    }									
+
+    xkb_keymap *keymap = xkb_state_get_keymap(xcb_info->xkb_state);
+    xkb_layout_index_t layout = xkb_state_key_get_layout(xcb_info->xkb_state, message->detail);
+    if (xkb_state_key_get_level(xcb_info->xkb_state, message->detail, layout) != 0)
+    {
+	const xkb_keysym_t *key_syms;
+	size_t key_syms_amt = xkb_keymap_key_get_syms_by_level(keymap, message->detail, layout, 0, &key_syms);
+	keysym = key_syms[0];
+    }
+
+    switch (keysym)
     {
 	SY_KEY_CASE(a, SyKeyState::pressed);
 	SY_KEY_CASE(b, SyKeyState::pressed);

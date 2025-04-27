@@ -80,7 +80,7 @@ void app_run(SyAppInfo *app_info)
 {
     g_state = (Global*)app_info->global_mem;
 
-    if (app_info->input_info.p == SyKeyState::pressed)
+    if (app_info->input_info.forward_slash == SyKeyState::pressed)
 	printf("FPS: %f\n", 1.0f / app_info->delta_time);
 
     if (app_info->input_info.r == SyKeyState::pressed)
