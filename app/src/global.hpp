@@ -37,6 +37,20 @@ struct MenuCtx
     SyEntityHandle buttons[buttons_amt];
     size_t selected_btn;
     SyEntityHandle menu_title;
+
+    bool able_to_play; // this determines if play button is greyed out, this only happens when the db has no songs in it.
+};
+
+struct PickerCtx
+{
+    size_t persistent_arena_starting_alloc;
+
+    size_t songs_amt;
+    DBSong *songs;
+    SyEntityHandle *song_labels;
+    size_t selected_song;
+
+    GameMode next_game_mode;
 };
 
 struct EditCtx
@@ -78,6 +92,7 @@ struct Global
     SyEntityHandle player;
 
     MenuCtx menu_ctx;
+    PickerCtx picker_ctx;
     EditCtx edit_ctx;
     CreateCtx create_ctx;
 };

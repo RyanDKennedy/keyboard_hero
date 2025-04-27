@@ -62,7 +62,7 @@ void edit_load(SyAppInfo *app_info)
 	ui_text->color = glm::vec3(0.8f, 0.8f, 1.f);
 	ui_text->pos = glm::vec2(0.f, -0.85f);
 	ui_text->scale = glm::vec2(0.05f, 0.05f);
-	ui_text->text = "Duration: 0s";
+	ui_text->text = "You shouldn't see this text";
     }
 }
 
@@ -82,10 +82,10 @@ void edit_start(SyAppInfo *app_info, DBSong song)
     app_info->ecs.component<SyUIText>(edit_ctx->title)->text = edit_ctx->title_data;
 
     // update display
-    edit_ctx->display_data_size = strlen("Duration: 0000.00s\nCurrent Player Time 0000.00s") + 1;
+    edit_ctx->display_data_size = strlen("Duration: 0000.00s\nCurrent Player Time: 0000.00s") + 1;
     edit_ctx->display_data = (char*)app_info->persistent_arena.alloc(edit_ctx->display_data_size);
     app_info->ecs.component<SyUIText>(edit_ctx->display)->text = edit_ctx->display_data;
-    snprintf(edit_ctx->display_data, edit_ctx->display_data_size, "Duration: %.2fs\nCurrent Player Time %.2fs", edit_ctx->song.duration, 0.0);
+    snprintf(edit_ctx->display_data, edit_ctx->display_data_size, "Duration: %.2fs\nCurrent Player Time: %.2fs", edit_ctx->song.duration, 0.0);
 
 
     // Change keys length
@@ -175,7 +175,7 @@ void edit_run(SyAppInfo *app_info)
     }
 
     // update display
-    snprintf(edit_ctx->display_data, edit_ctx->display_data_size, "Duration: %.2fs\nCurrent Player Time %.2fs", edit_ctx->song.duration, current_player_time);
+    snprintf(edit_ctx->display_data, edit_ctx->display_data_size, "Duration: %.2fs\nCurrent Player Time: %.2fs", edit_ctx->song.duration, current_player_time);
 
 
     if (app_info->input_info.escape == SyKeyState::released)

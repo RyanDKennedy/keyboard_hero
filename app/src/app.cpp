@@ -3,6 +3,7 @@
 #include <stdio.h>
 
 #include "global.hpp"
+#include "picker.hpp"
 #include "util.hpp"
 
 #include "menu.hpp"
@@ -56,6 +57,7 @@ void app_init(SyAppInfo *app_info)
     menu_load(app_info);
     edit_load(app_info);
     create_load(app_info);
+    picker_load(app_info);
 
     menu_start(app_info);
 }
@@ -67,9 +69,6 @@ void app_run(SyAppInfo *app_info)
 
     if (app_info->input_info.forward_slash == SyKeyState::pressed)
 	printf("FPS: %f\n", 1.0f / app_info->delta_time);
-
-    //orthographic_movement(app_info, 5.0f, 5.0f, 5.0f);
-    //perspective_movement(app_info, 5.0f, 5.0f);
 
     switch(g_state->game_mode)
     {
@@ -89,6 +88,7 @@ void app_run(SyAppInfo *app_info)
 	    break;
 
 	case GameMode::picker:
+	    picker_run(app_info);
 	    break;
 
 	case GameMode::play:

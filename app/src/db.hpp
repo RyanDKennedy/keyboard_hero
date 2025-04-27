@@ -23,3 +23,4 @@ void db_close(sqlite3 **db);
  */
 DBSong db_create_song(sqlite3 *db, const char *name, float duration);
 DBSong db_get_song_from_name(sqlite3 *db, const char *name);
+void db_get_all_songs(sqlite3 *db, DBSong *out_songs, size_t *out_songs_size);

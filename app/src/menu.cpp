@@ -1,6 +1,8 @@
 #include "menu.hpp"
 #include "create.hpp"
+#include "db.hpp"
 #include "global.hpp"
+#include "picker.hpp"
 
 void menu_load(SyAppInfo *app_info)
 {
@@ -45,12 +47,16 @@ void menu_start(SyAppInfo *app_info)
 
     menu_ctx->selected_btn = 0;
 
+    size_t songs_amt = 0;
+    db_get_all_songs(g_state->db, NULL, &songs_amt);
+    menu_ctx->able_to_play = songs_amt != 0;
+
+    // draw stuff
     for (size_t i = 0; i < menu_ctx->buttons_amt; ++i)
     {
 	SyDrawInfo *draw_info = app_info->ecs.component<SyDrawInfo>(menu_ctx->buttons[i]);
 	draw_info->should_draw = true;
     }
-
     app_info->ecs.component<SyDrawInfo>(menu_ctx->menu_title)->should_draw = true;
 }
 
@@ -58,13 +64,13 @@ void menu_run(SyAppInfo *app_info)
 {
     MenuCtx *menu_ctx = &g_state->menu_ctx;
 
+
     if (app_info->input_info.arrow_up == SyKeyState::released)
     {
 	if (menu_ctx->selected_btn > 0)
 	    menu_ctx->selected_btn -= 1;
 	else
 	    menu_ctx->selected_btn = menu_ctx->buttons_amt - 1;
-
     }
     if (app_info->input_info.arrow_down == SyKeyState::released)
     {
@@ -72,13 +78,27 @@ void menu_run(SyAppInfo *app_info)
 	menu_ctx->selected_btn %= menu_ctx->buttons_amt;
     }
 
+    if (menu_ctx->able_to_play == false)
+	menu_ctx->selected_btn = 1;
+
     // Buttons color
-    for (size_t i = 0; i < menu_ctx->buttons_amt; ++i)
     {
-	SyUIText *ui_text = app_info->ecs.component<SyUIText>(menu_ctx->buttons[i]);
-	ui_text->color = glm::vec3(0.5f, 0.5f, 0.5f);
+	for (size_t i = 0; i < menu_ctx->buttons_amt; ++i)
+	{
+	    SyUIText *ui_text = app_info->ecs.component<SyUIText>(menu_ctx->buttons[i]);
+	    ui_text->color = glm::vec3(0.5f, 0.5f, 0.5f);
+	}
+
+	if (menu_ctx->able_to_play == false)
+	{
+	    app_info->ecs.component<SyUIText>(menu_ctx->buttons[0])->color = glm::vec3(0.2, 0.1, 0.1);
+	    app_info->ecs.component<SyUIText>(menu_ctx->buttons[2])->color = glm::vec3(0.2, 0.1, 0.1);
+	}
+
+	app_info->ecs.component<SyUIText>(menu_ctx->buttons[menu_ctx->selected_btn])->color = glm::vec3(1.0f, 1.0f, 0.0f);
+	
     }
-    app_info->ecs.component<SyUIText>(menu_ctx->buttons[menu_ctx->selected_btn])->color = glm::vec3(1.0f, 1.0f, 0.0f);
+
 
     if (app_info->input_info.arrow_right == SyKeyState::released)
     {
@@ -88,6 +108,7 @@ void menu_run(SyAppInfo *app_info)
 	{
 	    case 0:
 		g_state->game_mode = GameMode::picker;
+		picker_start(app_info, GameMode::play);
 		break;
 
 	    case 1:
@@ -97,6 +118,7 @@ void menu_run(SyAppInfo *app_info)
 
 	    case 2:
 		g_state->game_mode = GameMode::picker;
+		picker_start(app_info, GameMode::edit);
 		break;
 	}
 	return;

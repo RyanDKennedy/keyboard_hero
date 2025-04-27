@@ -89,5 +89,60 @@ DBSong db_get_song_from_name(sqlite3 *db, const char *name)
     return result;
 }
 
+void db_get_all_songs(sqlite3 *db, DBSong *out_songs, size_t *out_songs_size)
+{
+    int status; // stores the result (success or failure) from functions.
+
+    if (out_songs_size != NULL)
+    {
+	const char *records_query = "SELECT COUNT(*) FROM Songs;";
+
+	// Prepare Statement
+	sqlite3_stmt *statement = NULL;
+	status = sqlite3_prepare_v2(db, records_query, strlen(records_query), &statement, NULL);
+	SY_ERROR_COND(status != SQLITE_OK || statement == NULL, "Failed to prepare statement %d", status);
+	
+	// Step Statement
+	while ((status = sqlite3_step(statement)) == SQLITE_ROW)
+	{
+	    *out_songs_size = sqlite3_column_int64(statement, 0);
+	}
+	
+	SY_ERROR_COND(status != SQLITE_DONE, "Failed to step db %d", status);
+	
+	// Finalize Statement
+	status = sqlite3_finalize(statement);
+	SY_ERROR_COND(status != SQLITE_OK, "Failed to finalize db statement");
+
+    }
+
+    if (out_songs != NULL)
+    {
+	const char *records_query = "SELECT id, name, duration FROM Songs;";
+	
+	// Prepare Statement
+	sqlite3_stmt *statement = NULL;
+	status = sqlite3_prepare_v2(db, records_query, strlen(records_query), &statement, NULL);
+	SY_ERROR_COND(status != SQLITE_OK || statement == NULL, "Failed to prepare statement %d", status);
+	
+	// Step Statement
+	int row_num = 0;
+	while ((status = sqlite3_step(statement)) == SQLITE_ROW)
+	{
+	    out_songs[row_num].id = sqlite3_column_int64(statement, 0);
+	    strncpy(out_songs[row_num].name, (const char*)sqlite3_column_text(statement, 1), 256);
+	    out_songs[row_num].duration = sqlite3_column_double(statement, 2);
+	    ++row_num;
+	}
+	
+	SY_ERROR_COND(status != SQLITE_DONE, "Failed to step db %d", status);
+	
+	// Finalize Statement
+	status = sqlite3_finalize(statement);
+	SY_ERROR_COND(status != SQLITE_OK, "Failed to finalize db statement");
+	
+    }
+
+}
 
 
