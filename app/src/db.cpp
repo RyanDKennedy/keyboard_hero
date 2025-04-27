@@ -145,4 +145,16 @@ void db_get_all_songs(sqlite3 *db, DBSong *out_songs, size_t *out_songs_size)
 
 }
 
+void db_update_song(sqlite3 *db, DBSong song)
+{
+    const char *query = "UPDATE Songs SET name = '%s', duration = %f WHERE id = %ld;";
+
+    int formatted_query_mem_size = (strlen(query) + 300) * sizeof(char);
+    char *formatted_query = (char*)alloca(formatted_query_mem_size);
+
+    SY_ERROR_COND(snprintf(formatted_query, formatted_query_mem_size, query, song.name, song.duration, song.id) == formatted_query_mem_size, "Failed to format query, you need to allocate more space, adjust number and recompile.");
+
+    SY_ERROR_COND(sqlite3_exec(db, formatted_query, NULL, NULL, NULL) != SQLITE_OK, "Failed to update song.");
+}
+
 

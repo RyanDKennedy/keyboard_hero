@@ -180,6 +180,9 @@ void edit_run(SyAppInfo *app_info)
 
     if (app_info->input_info.escape == SyKeyState::released)
     {
+	// save changes
+	db_update_song(g_state->db, edit_ctx->song);
+
 	edit_stop(app_info);
 	g_state->game_mode = GameMode::menu;
 	menu_start(app_info);
