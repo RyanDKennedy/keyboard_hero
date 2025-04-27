@@ -272,6 +272,12 @@ void poll_events(SyXCBInfo *xcb_info, SyInputInfo *input_info)
 
     }
 
+    for (size_t i = 0; i < strlen(input_info->text_buffer); ++i)
+    {
+	if (input_info->text_buffer[i] == '\r')
+	    input_info->text_buffer[i] = '\n';
+    }
+
 }
 
 void handle_event_input_motion(SyXCBInfo *xcb_info, SyInputInfo *input_info, xcb_generic_event_t *event)
@@ -434,7 +440,7 @@ void handle_event_key_press(SyXCBInfo *xcb_info, SyInputInfo *input_info, xcb_ge
 	char buf[5];							
 	xkb_state_key_get_utf8(xcb_info->xkb_state, message->detail, buf, 5); 
 	strncat(input_info->text_buffer, buf, input_info->text_buffer_size - strlen(input_info->text_buffer) - 1); 
-    }									
+    }
 
     xkb_keymap *keymap = xkb_state_get_keymap(xcb_info->xkb_state);
     xkb_layout_index_t layout = xkb_state_key_get_layout(xcb_info->xkb_state, message->detail);

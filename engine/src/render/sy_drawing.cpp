@@ -352,8 +352,6 @@ void record_command_buffer(SyRenderInfo *render_info, VkCommandBuffer command_bu
 	if (ecs->entity_has_component<SyUIText>(font_entity_index))
 	{
 	    ui_text = *ecs->component<SyUIText>(font_entity_index);
-	    if (strlen(ui_text.text) == 0)
-		continue;
 	}
 
 	// Bind/Create uniforms
@@ -381,8 +379,17 @@ void record_command_buffer(SyRenderInfo *render_info, VkCommandBuffer command_bu
 	} *text_buffer_data;
 
 	size_t text_len = strlen(ui_text.text);
-	size_t storage_buffer_size = sizeof(TextBufferData) * text_len;
-	text_buffer_data = (TextBufferData*)calloc(sizeof(text_buffer_data[0]), text_len);
+	size_t buf_len = text_len;
+	for (size_t i = 0; i < strlen(ui_text.text); ++i)
+	{
+	    if (font->character_map.contains(ui_text.text[i]) == false || ui_text.text[i] == '\n' || ui_text.text[i] == '\t' || ui_text.text[i] == ' ')
+		--buf_len;
+	}
+	if (buf_len == 0)
+	    continue;
+
+	size_t storage_buffer_size = sizeof(TextBufferData) * buf_len;
+	text_buffer_data = (TextBufferData*)calloc(sizeof(text_buffer_data[0]), buf_len);
 
 
 	std::vector<float> line_lengths;
@@ -402,7 +409,7 @@ void record_command_buffer(SyRenderInfo *render_info, VkCommandBuffer command_bu
 		
 		if (ui_text.text[i] == '\t')
 		{
-		    SyFontCharacter char_data = font->character_map[ui_text.text[' ']];
+		    SyFontCharacter char_data = font->character_map[' '];
 		    next_x = next_x + (char_data.advance * ui_text.scale[0] / window_aspect_ratio) * 4;
 		    continue;
 		}
@@ -427,10 +434,10 @@ void record_command_buffer(SyRenderInfo *render_info, VkCommandBuffer command_bu
 	    next_x -= (float)line_lengths[line_number++];
 	}
 
-
+	size_t buf_index = 0;
 	for (size_t i = 0; i < text_len; ++i)
 	{
-	    if (font->character_map.contains(ui_text.text[i]) == false && ui_text.text[i] != '\n' && ui_text.text[i] != '\t')
+	    if (font->character_map.contains(ui_text.text[i]) == false && ui_text.text[i] != '\n' && ui_text.text[i] != '\t' && ui_text.text[i] != ' ')
 		continue;
 
 	    if (ui_text.text[i] == '\n')
@@ -450,19 +457,27 @@ void record_command_buffer(SyRenderInfo *render_info, VkCommandBuffer command_bu
 		continue;
 	    }
 
+	    if (ui_text.text[i] == ' ')
+	    {
+		SyFontCharacter char_data = font->character_map[' '];
+		next_x = next_x + (char_data.advance * ui_text.scale[0] / window_aspect_ratio);
+		continue;
+	    }
+
 	    if (ui_text.text[i] == '\t')
 	    {
-		SyFontCharacter char_data = font->character_map[ui_text.text[' ']];
+		SyFontCharacter char_data = font->character_map[' '];
 		next_x = next_x + (char_data.advance * ui_text.scale[0] / window_aspect_ratio) * 4;
 		continue;
 	    }
 	    
 	    SyFontCharacter char_data = font->character_map[ui_text.text[i]];
 
-	    text_buffer_data[i].pos_offset = glm::vec2(next_x + char_data.offset[0] * ui_text.scale[0] / window_aspect_ratio, next_y + char_data.offset[1] * ui_text.scale[1]);
-	    text_buffer_data[i].scale = glm::vec2(ui_text.scale[0] * char_data.scale[0] / window_aspect_ratio, ui_text.scale[1] * char_data.scale[1]);
-	    text_buffer_data[i].tex_bottom_left = glm::uvec2(char_data.tex_bottom_left[0] - 1, char_data.tex_bottom_left[1] - 1);
-	    text_buffer_data[i].tex_top_right = glm::uvec2(char_data.tex_top_right[0] + 1, char_data.tex_top_right[1] + 1);
+	    text_buffer_data[buf_index].pos_offset = glm::vec2(next_x + char_data.offset[0] * ui_text.scale[0] / window_aspect_ratio, next_y + char_data.offset[1] * ui_text.scale[1]);
+	    text_buffer_data[buf_index].scale = glm::vec2(ui_text.scale[0] * char_data.scale[0] / window_aspect_ratio, ui_text.scale[1] * char_data.scale[1]);
+	    text_buffer_data[buf_index].tex_bottom_left = glm::uvec2(char_data.tex_bottom_left[0] - 1, char_data.tex_bottom_left[1] - 1);
+	    text_buffer_data[buf_index].tex_top_right = glm::uvec2(char_data.tex_top_right[0] + 1, char_data.tex_top_right[1] + 1);
+	    ++buf_index;
 
 	    next_x = next_x + (char_data.advance * ui_text.scale[0] / window_aspect_ratio);
 	}
@@ -475,7 +490,7 @@ void record_command_buffer(SyRenderInfo *render_info, VkCommandBuffer command_bu
 	
 
 	// Draw
-	vkCmdDraw(command_buffer, 4, text_len, 0, 0);
+	vkCmdDraw(command_buffer, 4, buf_len, 0, 0);
     }
 
     vkCmdEndRenderPass(command_buffer);

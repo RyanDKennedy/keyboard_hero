@@ -48,6 +48,7 @@ struct CreateCtx
 {
     SyEntityHandle text;
     char *text_data;
+    size_t text_data_len;
 };
 
 struct Global

@@ -39,3 +39,5 @@
 #endif
 
 #define SY_ARRLEN(arr) (sizeof(arr) / sizeof(arr[0]))
+#define SY_MAX(arg1, arg2) ((arg1 > arg2)? arg1 : arg2)
+#define SY_MIN(arg1, arg2) ((arg1 < arg2)? arg1 : arg2)

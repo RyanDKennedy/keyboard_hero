@@ -83,12 +83,6 @@ void app_run(SyAppInfo *app_info)
     if (app_info->input_info.forward_slash == SyKeyState::pressed)
 	printf("FPS: %f\n", 1.0f / app_info->delta_time);
 
-    if (app_info->input_info.r == SyKeyState::pressed)
-    {
-	SyTransform *transform = app_info->ecs.component<SyTransform>(g_state->player);
-	print_transform("", transform);
-    }
-
     //orthographic_movement(app_info, 5.0f, 5.0f, 5.0f);
     //perspective_movement(app_info, 5.0f, 5.0f);
 
