@@ -354,22 +354,7 @@ void record_command_buffer(SyRenderInfo *render_info, VkCommandBuffer command_bu
 	    ui_text = *ecs->component<SyUIText>(font_entity_index);
 	}
 
-	// Bind/Create uniforms
-	VkDescriptorSet character_map_descriptor_set = create_descriptor_set_and_image(render_info, render_info->character_map_descriptor_set_layout, font_image->image_view, render_info->font_sampler);
-
-	struct
-	{
-	    glm::vec3 color;
-	} character_information_data;
-	character_information_data.color = ui_text.color;
-
-	VkDescriptorSet character_information_descriptor_set = create_and_write_to_descriptor_set_and_uniform_buffer(render_info, render_info->character_information_descriptor_set_layout, &character_information_data, sizeof(character_information_data));
-
-	VkDescriptorSet sets[] = {character_map_descriptor_set, character_information_descriptor_set};
-	
-	vkCmdBindDescriptorSets(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, render_info->text_pipeline_layout, 0, 2, sets, 0, NULL);
-
-	// Create the text buffer
+	// Calculate if we need to render based on size of text buffer
 	struct TextBufferData
 	{
 	    glm::vec2 pos_offset;
@@ -388,6 +373,22 @@ void record_command_buffer(SyRenderInfo *render_info, VkCommandBuffer command_bu
 	if (buf_len == 0)
 	    continue;
 
+	// Bind/Create uniforms
+	VkDescriptorSet character_map_descriptor_set = create_descriptor_set_and_image(render_info, render_info->character_map_descriptor_set_layout, font_image->image_view, render_info->font_sampler);
+
+	struct
+	{
+	    glm::vec3 color;
+	} character_information_data;
+	character_information_data.color = ui_text.color;
+
+	VkDescriptorSet character_information_descriptor_set = create_and_write_to_descriptor_set_and_uniform_buffer(render_info, render_info->character_information_descriptor_set_layout, &character_information_data, sizeof(character_information_data));
+
+	VkDescriptorSet sets[] = {character_map_descriptor_set, character_information_descriptor_set};
+	
+	vkCmdBindDescriptorSets(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, render_info->text_pipeline_layout, 0, 2, sets, 0, NULL);
+
+	// Create Text Buffer
 	size_t storage_buffer_size = sizeof(TextBufferData) * buf_len;
 	text_buffer_data = (TextBufferData*)calloc(sizeof(text_buffer_data[0]), buf_len);
 

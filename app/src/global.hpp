@@ -31,6 +31,12 @@ enum class GameMode
     play,
 };
 
+struct EntityNote
+{
+    DBNote note;
+    SyEntityHandle entity;
+};
+
 struct MenuCtx
 {
     static const size_t buttons_amt = 3;
@@ -68,6 +74,13 @@ struct EditCtx
     SyEntityHandle display;
     size_t display_data_size;
     char *display_data;
+
+    size_t note_asset_metadata_id;
+    size_t persistent_arena_notes_alloc;
+    size_t notes_amt;
+    EntityNote *notes;
+
+    size_t currently_selected_note;
 
 };
 

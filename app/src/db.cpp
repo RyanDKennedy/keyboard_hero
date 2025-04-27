@@ -38,21 +38,21 @@ void db_close(sqlite3 **db)
 
 DBSong db_create_song(sqlite3 *db, const char *name, float duration)
 {
-    const char *query = "INSERT INTO Songs (name, duration) VALUES ('%s', %f);";
+    const char *query = "INSERT INTO Songs (name, duration)  VALUES ('%s', %f);";
 
     int formatted_query_mem_size = (strlen(query) + 256) * sizeof(char);
     char *formatted_query = (char*)alloca(formatted_query_mem_size);
 
     SY_ERROR_COND(snprintf(formatted_query, formatted_query_mem_size, query, name, duration) == formatted_query_mem_size, "Failed to format query, you need to allocate more space, adjust number and recompile.");
 
-    int status = sqlite3_exec(db, formatted_query, NULL, NULL, NULL);
-    if (status != SQLITE_OK)
-    {
-	DBSong result = {.id = -1};
-	return result;
-    }
+    SY_ERROR_COND(sqlite3_exec(db, formatted_query, NULL, NULL, NULL) != SQLITE_OK, "Failed to insert song.");
 
-    return db_get_song_from_name(db, name);
+    DBSong result;
+    result.id = sqlite3_last_insert_rowid(db);
+    strncpy(result.name, name, 256);
+    result.duration = duration;
+
+    return result;
 }
 
 DBSong db_get_song_from_name(sqlite3 *db, const char *name)
@@ -157,4 +157,104 @@ void db_update_song(sqlite3 *db, DBSong song)
     SY_ERROR_COND(sqlite3_exec(db, formatted_query, NULL, NULL, NULL) != SQLITE_OK, "Failed to update song.");
 }
 
+DBNote db_create_note(sqlite3 *db, ssize_t song_id, uint32_t key, float timestamp, float duration)
+{
+    const char *query = "INSERT INTO Notes (song_id, key, timestamp, duration)  VALUES (%ld, %lu, %f, %f);";
 
+    int formatted_query_mem_size = (strlen(query) + 256) * sizeof(char);
+    char *formatted_query = (char*)alloca(formatted_query_mem_size);
+
+    SY_ERROR_COND(snprintf(formatted_query, formatted_query_mem_size, query, song_id, key, timestamp, duration) == formatted_query_mem_size, "Failed to format query, you need to allocate more space, adjust number and recompile.");
+
+    SY_ERROR_COND(sqlite3_exec(db, formatted_query, NULL, NULL, NULL) != SQLITE_OK, "Failed to delete note.");
+
+    DBNote result;
+    result.id = sqlite3_last_insert_rowid(db);
+    result.song_id = song_id;
+    result.key = key;
+    result.timestamp = timestamp;
+    result.duration = duration;
+
+    return result;
+}
+
+void db_delete_note(sqlite3 *db, ssize_t id)
+{
+    const char *query = "DELETE FROM Notes WHERE id = %ld;";
+
+    int formatted_query_mem_size = (strlen(query) + 20) * sizeof(char);
+    char *formatted_query = (char*)alloca(formatted_query_mem_size);
+    SY_ERROR_COND(snprintf(formatted_query, formatted_query_mem_size, query, id) == formatted_query_mem_size, "Failed to format query, you need to allocate more space, adjust number and recompile.");
+
+    SY_ERROR_COND(sqlite3_exec(db, formatted_query, NULL, NULL, NULL) != SQLITE_OK, "Failed to delete note.");
+}
+
+void db_update_note(sqlite3 *db, DBNote note)
+{
+    const char *query = "UPDATE Notes SET song_id = %ld, key = %u, timestamp = %f, duration = %f WHERE id = %ld;";
+
+    int formatted_query_mem_size = (strlen(query) + 256) * sizeof(char);
+    char *formatted_query = (char*)alloca(formatted_query_mem_size);
+    SY_ERROR_COND(snprintf(formatted_query, formatted_query_mem_size, query, note.song_id, note.key, note.timestamp, note.duration, note.id) == formatted_query_mem_size, "Failed to format query, you need to allocate more space, adjust number and recompile.");
+
+    SY_ERROR_COND(sqlite3_exec(db, formatted_query, NULL, NULL, NULL) != SQLITE_OK, "Failed to update note.");
+}
+
+
+void db_get_all_notes(sqlite3 *db, DBNote *out_notes, size_t *out_notes_size)
+{
+    int status; // stores the result (success or failure) from functions.
+
+    if (out_notes_size != NULL)
+    {
+	const char *records_query = "SELECT COUNT(*) FROM Notes;";
+
+	// Prepare Statement
+	sqlite3_stmt *statement = NULL;
+	status = sqlite3_prepare_v2(db, records_query, strlen(records_query), &statement, NULL);
+	SY_ERROR_COND(status != SQLITE_OK || statement == NULL, "Failed to prepare statement %d", status);
+	
+	// Step Statement
+	while ((status = sqlite3_step(statement)) == SQLITE_ROW)
+	{
+	    *out_notes_size = sqlite3_column_int64(statement, 0);
+	}
+	
+	SY_ERROR_COND(status != SQLITE_DONE, "Failed to step db %d", status);
+	
+	// Finalize Statement
+	status = sqlite3_finalize(statement);
+	SY_ERROR_COND(status != SQLITE_OK, "Failed to finalize db statement");
+
+    }
+
+    if (out_notes != NULL)
+    {
+	const char *records_query = "SELECT id, song_id, key, timestamp, duration FROM Notes ORDER BY timestamp ASC;";
+	
+	// Prepare Statement
+	sqlite3_stmt *statement = NULL;
+	status = sqlite3_prepare_v2(db, records_query, strlen(records_query), &statement, NULL);
+	SY_ERROR_COND(status != SQLITE_OK || statement == NULL, "Failed to prepare statement %d", status);
+	
+	// Step Statement
+	int row_num = 0;
+	while ((status = sqlite3_step(statement)) == SQLITE_ROW)
+	{
+	    out_notes[row_num].id = sqlite3_column_int64(statement, 0);
+	    out_notes[row_num].song_id = sqlite3_column_int64(statement, 1);
+	    out_notes[row_num].key = sqlite3_column_int64(statement, 2);
+	    out_notes[row_num].timestamp = sqlite3_column_double(statement, 3);
+	    out_notes[row_num].duration = sqlite3_column_double(statement, 4);
+	    ++row_num;
+	}
+	
+	SY_ERROR_COND(status != SQLITE_DONE, "Failed to step db %d", status);
+	
+	// Finalize Statement
+	status = sqlite3_finalize(statement);
+	SY_ERROR_COND(status != SQLITE_OK, "Failed to finalize db statement");
+	
+    }
+
+}

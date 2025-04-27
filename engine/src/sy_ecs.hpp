@@ -316,7 +316,7 @@ struct SyEcs
      * @param entity The entity which you want to add the component to.
      */
     template <typename T>
-    void entity_add_component(SyEntityHandle entity)
+    T* entity_add_component(SyEntityHandle entity)
     {
 	SyEntityData &entity_data = m_entity_data.get<SyEntityData>(entity);
 	const size_t type_id = get_type_id<T>();
@@ -325,6 +325,8 @@ struct SyEcs
 	entity_data.mask[type_id] = true;
 
 	entity_data.indices[type_id] = get_unused_component<T>();
+
+	return component<T>(entity);
     }
 
     /**

@@ -33,7 +33,7 @@ void sy_render_info_init(SyRenderInfo *render_info, int win_width, int win_heigh
     render_info->frame_uniform_data = new SyFrameUniformDataInfo[SY_RENDER_MAX_FRAMES_IN_FLIGHT];
     for (int i = 0; i < SY_RENDER_MAX_FRAMES_IN_FLIGHT; ++i)
     {
-	render_info->frame_uniform_data[i].descriptor_allocator.init_pool(render_info->logical_device, 20, 1);
+	render_info->frame_uniform_data[i].descriptor_allocator.init_pool(render_info->logical_device, 100, 1);
     }
 
     // Test
