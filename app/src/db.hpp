@@ -41,4 +41,4 @@ void db_update_song(sqlite3 *db, DBSong song);
 DBNote db_create_note(sqlite3 *db, ssize_t song_id, uint32_t key, float timestamp, float duration);
 void db_delete_note(sqlite3 *db, ssize_t id);
 void db_update_note(sqlite3 *db, DBNote note);
-void db_get_all_notes(sqlite3 *db, DBNote *out_notes, size_t *out_notes_size);
+void db_get_all_notes_from_song(sqlite3 *db, ssize_t song_id, DBNote *out_notes, size_t *out_notes_size);

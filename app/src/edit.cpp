@@ -20,13 +20,13 @@ void reload_notes(SyAppInfo *app_info)
     // reset persistent arena
     app_info->persistent_arena.m_current_offset = edit_ctx->persistent_arena_notes_alloc;	
 
-    db_get_all_notes(g_state->db, NULL, &edit_ctx->notes_amt);
+    db_get_all_notes_from_song(g_state->db, edit_ctx->song.id, NULL, &edit_ctx->notes_amt);
     edit_ctx->notes = (EntityNote*)app_info->persistent_arena.alloc(sizeof(EntityNote) * edit_ctx->notes_amt);
     
     size_t frame_arena_offset = app_info->frame_arena.m_current_offset;
     
     DBNote *db_notes = (DBNote*)app_info->frame_arena.alloc(sizeof(DBNote) * edit_ctx->notes_amt);
-    db_get_all_notes(g_state->db, db_notes, NULL);
+    db_get_all_notes_from_song(g_state->db, edit_ctx->song.id, db_notes, NULL);
     
     // format and create entities
     for (size_t i = 0; i < edit_ctx->notes_amt; ++i)
@@ -167,13 +167,13 @@ void edit_start(SyAppInfo *app_info, DBSong song)
 
 	// retrieve
 	edit_ctx->persistent_arena_notes_alloc = app_info->persistent_arena.m_current_offset;	
-	db_get_all_notes(g_state->db, NULL, &edit_ctx->notes_amt);
+	db_get_all_notes_from_song(g_state->db, edit_ctx->song.id, NULL, &edit_ctx->notes_amt);
 	edit_ctx->notes = (EntityNote*)app_info->persistent_arena.alloc(sizeof(EntityNote) * edit_ctx->notes_amt);
 	
 	size_t frame_arena_offset = app_info->frame_arena.m_current_offset;
 
 	DBNote *db_notes = (DBNote*)app_info->frame_arena.alloc(sizeof(DBNote) * edit_ctx->notes_amt);
-	db_get_all_notes(g_state->db, db_notes, NULL);
+	db_get_all_notes_from_song(g_state->db, edit_ctx->song.id, db_notes, NULL);
 
 	// format and create entities
 	for (size_t i = 0; i < edit_ctx->notes_amt; ++i)
@@ -277,27 +277,42 @@ void edit_run(SyAppInfo *app_info)
 	    transform->scale = glm::vec3(0.4f, 0.4f, 10.0f * edit_ctx->song.duration);
 	}
     }
-
-    // update notes
-    if (app_info->input_info.q == SyKeyState::released || // delete
-	app_info->input_info.e == SyKeyState::released) // add
+    if (app_info->input_info.p == SyKeyState::released ||
+	app_info->input_info.o == SyKeyState::released)
     {
-	if (app_info->input_info.q == SyKeyState::released && edit_ctx->notes_amt > 0)
-	    db_delete_note(g_state->db, edit_ctx->notes[edit_ctx->currently_selected_note].note.id);
-
-	if (app_info->input_info.e == SyKeyState::released)
-	    db_create_note(g_state->db, edit_ctx->song.id, 0, current_player_time, 1.0f);
-
-	reload_notes(app_info);
+	db_update_song(g_state->db, edit_ctx->song);	
     }
 
 
+    // delete notes
+    if (app_info->input_info.q == SyKeyState::released && edit_ctx->notes_amt > 0)
+    {
+	db_delete_note(g_state->db, edit_ctx->notes[edit_ctx->currently_selected_note].note.id);
+	reload_notes(app_info);
+    }
+    
+    // add notes
+    if (app_info->input_info.e == SyKeyState::released)
+    {
+	DBNote new_note = db_create_note(g_state->db, edit_ctx->song.id, 0, current_player_time, 1.0f);
+	reload_notes(app_info);
+	for (size_t i = 0; i < edit_ctx->notes_amt; ++i)
+	{
+	    if (new_note.id == edit_ctx->notes[i].note.id)
+	    {
+		edit_ctx->currently_selected_note = i;
+		break;
+	    }
+	}
+    }
+
+    // change selected note
     if (app_info->input_info.a == SyKeyState::released && edit_ctx->currently_selected_note > 0)
 	--edit_ctx->currently_selected_note;
-    
     if (app_info->input_info.d == SyKeyState::released && edit_ctx->currently_selected_note < edit_ctx->notes_amt - 1)
 	++edit_ctx->currently_selected_note;
 
+    // change note key
     if (app_info->input_info.arrow_left == SyKeyState::released ||
 	app_info->input_info.arrow_right == SyKeyState::released)
     {
@@ -315,6 +330,53 @@ void edit_run(SyAppInfo *app_info)
 
     }
 
+    // change note length
+    if (app_info->input_info.space == SyKeyState::pressed)
+    {
+	edit_ctx->notes[edit_ctx->currently_selected_note].note.duration += 0.5 * app_info->delta_time;
+	app_info->ecs.component<SyTransform>(edit_ctx->notes[edit_ctx->currently_selected_note].entity)->scale[2] = 10 * edit_ctx->notes[edit_ctx->currently_selected_note].note.duration;
+    }
+    if (app_info->input_info.shift_left == SyKeyState::pressed)
+    {
+	edit_ctx->notes[edit_ctx->currently_selected_note].note.duration -= 0.5 * app_info->delta_time;
+
+	if (edit_ctx->notes[edit_ctx->currently_selected_note].note.duration < 0.05)
+	    edit_ctx->notes[edit_ctx->currently_selected_note].note.duration = 0.05;
+
+	app_info->ecs.component<SyTransform>(edit_ctx->notes[edit_ctx->currently_selected_note].entity)->scale[2] = 10 * edit_ctx->notes[edit_ctx->currently_selected_note].note.duration;
+    }
+    if (app_info->input_info.space == SyKeyState::released || app_info->input_info.shift_left == SyKeyState::released)
+    {
+	db_update_note(g_state->db, edit_ctx->notes[edit_ctx->currently_selected_note].note);
+    }
+
+    // change note position
+    if (app_info->input_info.arrow_up == SyKeyState::pressed)
+    {
+	edit_ctx->notes[edit_ctx->currently_selected_note].note.timestamp += 0.5 * app_info->delta_time;
+	app_info->ecs.component<SyTransform>(edit_ctx->notes[edit_ctx->currently_selected_note].entity)->position[2] = -10 * edit_ctx->notes[edit_ctx->currently_selected_note].note.timestamp;
+    }
+    if (app_info->input_info.arrow_down == SyKeyState::pressed)
+    {
+	edit_ctx->notes[edit_ctx->currently_selected_note].note.timestamp -= 0.5 * app_info->delta_time;
+	app_info->ecs.component<SyTransform>(edit_ctx->notes[edit_ctx->currently_selected_note].entity)->position[2] = -10 * edit_ctx->notes[edit_ctx->currently_selected_note].note.timestamp;
+    }
+    if (app_info->input_info.arrow_up == SyKeyState::released ||
+	app_info->input_info.arrow_down == SyKeyState::released)
+    {
+	DBNote selected_note = edit_ctx->notes[edit_ctx->currently_selected_note].note;
+	db_update_note(g_state->db, edit_ctx->notes[edit_ctx->currently_selected_note].note);
+	reload_notes(app_info);
+	for (size_t i = 0; i < edit_ctx->notes_amt; ++i)
+	{
+	    if (selected_note.id == edit_ctx->notes[i].note.id)
+	    {
+		edit_ctx->currently_selected_note = i;
+		break;
+	    }
+	}
+    }
+
     // set notes colors
     for (size_t i = 0; i < edit_ctx->notes_amt; ++i)
     {
@@ -328,12 +390,8 @@ void edit_run(SyAppInfo *app_info)
     // update display
     snprintf(edit_ctx->display_data, edit_ctx->display_data_size, "Song Duration: %.2fs\nCurrent Player Time: %.2fs", edit_ctx->song.duration, current_player_time);
 
-
     if (app_info->input_info.escape == SyKeyState::released)
     {
-	// save changes
-	db_update_song(g_state->db, edit_ctx->song);
-
 	edit_stop(app_info);
 	g_state->game_mode = GameMode::menu;
 	menu_start(app_info);

@@ -201,13 +201,16 @@ void db_update_note(sqlite3 *db, DBNote note)
 }
 
 
-void db_get_all_notes(sqlite3 *db, DBNote *out_notes, size_t *out_notes_size)
+void db_get_all_notes_from_song(sqlite3 *db, ssize_t song_id, DBNote *out_notes, size_t *out_notes_size)
 {
     int status; // stores the result (success or failure) from functions.
 
     if (out_notes_size != NULL)
     {
-	const char *records_query = "SELECT COUNT(*) FROM Notes;";
+	const char *unformatted_records_query = "SELECT COUNT(*) FROM Notes WHERE song_id = %ld;";
+
+	char *records_query = (char*)alloca(strlen(unformatted_records_query) + 20);
+	snprintf(records_query, strlen(unformatted_records_query) + 20, unformatted_records_query, song_id);
 
 	// Prepare Statement
 	sqlite3_stmt *statement = NULL;
@@ -230,7 +233,10 @@ void db_get_all_notes(sqlite3 *db, DBNote *out_notes, size_t *out_notes_size)
 
     if (out_notes != NULL)
     {
-	const char *records_query = "SELECT id, song_id, key, timestamp, duration FROM Notes ORDER BY timestamp ASC;";
+	const char *unformatted_records_query = "SELECT id, song_id, key, timestamp, duration FROM Notes WHERE song_id = %ld ORDER BY timestamp ASC;";
+
+	char *records_query = (char*)alloca(strlen(unformatted_records_query) + 20);
+	snprintf(records_query, strlen(unformatted_records_query) + 20, unformatted_records_query, song_id);
 	
 	// Prepare Statement
 	sqlite3_stmt *statement = NULL;
