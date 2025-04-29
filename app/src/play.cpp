@@ -1,9 +1,13 @@
 #include "play.hpp"
+#include "db.hpp"
+#include "global.hpp"
 #include "menu.hpp"
 
 void play_load(SyAppInfo *app_info)
 {
     PlayCtx *play_ctx = &g_state->play_ctx;
+
+    play_ctx->note_asset_metadata_id = SY_LOAD_ASSET_FROM_FILE(app_info->render_info, &app_info->ecs, "app/note.obj", SyAssetType::mesh);
 
     { // create title
 	play_ctx->title = app_info->ecs.new_entity();
@@ -54,6 +58,8 @@ void play_start(SyAppInfo *app_info, DBSong song)
     // load song
     play_ctx->song = song;
 
+    play_ctx->time_running = 0.0f;
+
     // get offset of arena before this game mode
     play_ctx->persistent_arena_starting_alloc = app_info->persistent_arena.m_current_offset;
 
@@ -68,6 +74,36 @@ void play_start(SyAppInfo *app_info, DBSong song)
 	SyTransform *transform = app_info->ecs.component<SyTransform>(play_ctx->key_entities[i]);
 	transform->scale[2] = 10.0f * song.duration;
     }
+
+    // retrieve notes
+    size_t frame_arena_notes_alloc = app_info->frame_arena.m_current_offset;
+    db_get_all_notes_from_song(g_state->db, play_ctx->song.id, NULL, &play_ctx->notes_amt);
+    DBNote *notes = (DBNote*)app_info->frame_arena.alloc(play_ctx->notes_amt * sizeof(DBNote));
+    play_ctx->notes = (EntityNote*)app_info->persistent_arena.alloc(play_ctx->notes_amt * sizeof(EntityNote));
+    db_get_all_notes_from_song(g_state->db, play_ctx->song.id, notes, NULL);
+    for (size_t i = 0; i < play_ctx->notes_amt; ++i)
+    {
+	play_ctx->notes[i].note = notes[i];
+	SyEntityHandle entity = app_info->ecs.new_entity();
+	play_ctx->notes[i].entity = entity;
+	
+	SyDrawInfo *draw_info = app_info->ecs.entity_add_component<SyDrawInfo>(entity);
+	SyMaterial *material = app_info->ecs.entity_add_component<SyMaterial>(entity);
+	SyTransform *transform = app_info->ecs.entity_add_component<SyTransform>(entity);
+	
+	draw_info->should_draw = true;
+	draw_info->asset_metadata_id = play_ctx->note_asset_metadata_id;
+	
+	material->diffuse = glm::vec3(1.0f, 0.5f, 1.0f);
+	
+	transform->scale = glm::vec3(0.35f, 0.35f, 10.0f * play_ctx->notes[i].note.duration);
+	transform->position = glm::vec3(0.0f, 0.7f, -10.0f * play_ctx->notes[i].note.timestamp);
+	transform->rotation = glm::vec3(0.0f, 0.0f, 0.0f);
+	
+	transform->position[0] = app_info->ecs.component<SyTransform>(play_ctx->key_entities[play_ctx->notes[i].note.key])->position[0];	
+
+    }
+    app_info->frame_arena.m_current_offset = frame_arena_notes_alloc;
 
     // make everything draw
     app_info->ecs.component<SyDrawInfo>(play_ctx->title)->should_draw = true;
@@ -106,6 +142,8 @@ void play_run(SyAppInfo *app_info)
 	return;
     }
 
+    play_ctx->time_running += app_info->delta_time;
+
     { // player movement
 	SyTransform *player_transform = app_info->ecs.component<SyTransform>(app_info->camera_settings.active_camera); 
 	
@@ -128,17 +166,15 @@ void play_run(SyAppInfo *app_info)
 		player_transform->rotation[0] = -0.5;
 	}    
 	
-	if (app_info->input_info.w == SyKeyState::pressed)
-	    player_transform->position[2] -= 10.0f * app_info->delta_time;
-	
-	if (app_info->input_info.s == SyKeyState::pressed)
-	    player_transform->position[2] += 10.0f * app_info->delta_time;
-	
-	if (player_transform->position[2] > 10.0f)
-	    player_transform->position[2] = 10.0f;
-	
-	if (player_transform->position[2] / -10 + 1 > play_ctx->song.duration)
-	    player_transform->position[2] = (play_ctx->song.duration - 1) * -10.0f;
+	player_transform->position[2] = (play_ctx->time_running - 1) * -10.0f;
+
+	if (play_ctx->time_running > play_ctx->song.duration)
+	{
+	    play_stop(app_info);
+	    g_state->game_mode = GameMode::menu;
+	    menu_start(app_info);
+	    return;
+	}   
 
 	app_info->camera_settings.perspective_settings.aspect_ratio = (float)app_info->input_info.window_width / app_info->input_info.window_height;
     }
@@ -148,10 +184,18 @@ void play_stop(SyAppInfo *app_info)
 {
     PlayCtx *play_ctx = &g_state->play_ctx;
 
+    // destroy notes
+    for (size_t i = 0; i < play_ctx->notes_amt; ++i)
+    {
+	app_info->ecs.destroy_entity(play_ctx->notes[i].entity);
+    }
+
     // hide_everything
     app_info->ecs.component<SyDrawInfo>(play_ctx->title)->should_draw = false;
     for (size_t i = 0; i < play_ctx->keys_amt; ++i)
     {
 	app_info->ecs.component<SyDrawInfo>(play_ctx->key_entities[i])->should_draw = false;
     }
+
+    app_info->persistent_arena.m_current_offset = play_ctx->persistent_arena_starting_alloc;
 }
