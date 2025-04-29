@@ -10,15 +10,16 @@ void reload_notes(SyAppInfo *app_info)
 {
     EditCtx *edit_ctx = &g_state->edit_ctx;
 
+    // cleanup
     for (size_t i = 0; i < edit_ctx->notes_amt; ++i)
     {
 	app_info->ecs.destroy_entity(edit_ctx->notes[i].entity);
     }
     
-    // retrieve
-
     // reset persistent arena
     app_info->persistent_arena.m_current_offset = edit_ctx->persistent_arena_notes_alloc;	
+
+    // retrieve
 
     db_get_all_notes_from_song(g_state->db, edit_ctx->song.id, NULL, &edit_ctx->notes_amt);
     edit_ctx->notes = (EntityNote*)app_info->persistent_arena.alloc(sizeof(EntityNote) * edit_ctx->notes_amt);
@@ -50,7 +51,7 @@ void reload_notes(SyAppInfo *app_info)
 	
 	transform->position[0] = app_info->ecs.component<SyTransform>(edit_ctx->key_entities[edit_ctx->notes[i].note.key])->position[0];
     }
-    
+
     app_info->frame_arena.m_current_offset = frame_arena_offset;
 
     // Find closest note and select it
@@ -125,9 +126,24 @@ void edit_load(SyAppInfo *app_info)
 	display_draw_info->should_draw = false;
 	display_draw_info->asset_metadata_id = g_state->font_asset_metadata_index;
 	SyUIText *ui_text = app_info->ecs.component<SyUIText>(edit_ctx->display);
-	ui_text->alignment = SyTextAlignment::center;
+	ui_text->alignment = SyTextAlignment::right;
 	ui_text->color = glm::vec3(0.8f, 0.8f, 1.f);
-	ui_text->pos = glm::vec2(0.f, -0.85f);
+	ui_text->pos = glm::vec2(0.95f, -0.85f);
+	ui_text->scale = glm::vec2(0.05f, 0.05f);
+	ui_text->text = "You shouldn't see this text";
+    }
+
+    { // create note display
+	edit_ctx->note_display = app_info->ecs.new_entity();
+	app_info->ecs.entity_add_component<SyDrawInfo>(edit_ctx->note_display);
+	app_info->ecs.entity_add_component<SyUIText>(edit_ctx->note_display);
+	SyDrawInfo *note_display_draw_info = app_info->ecs.component<SyDrawInfo>(edit_ctx->note_display);
+	note_display_draw_info->should_draw = false;
+	note_display_draw_info->asset_metadata_id = g_state->font_asset_metadata_index;
+	SyUIText *ui_text = app_info->ecs.component<SyUIText>(edit_ctx->note_display);
+	ui_text->alignment = SyTextAlignment::left;
+	ui_text->color = glm::vec3(0.8f, 0.8f, 1.f);
+	ui_text->pos = glm::vec2(-0.95f, -0.85f);
 	ui_text->scale = glm::vec2(0.05f, 0.05f);
 	ui_text->text = "You shouldn't see this text";
     }
@@ -204,6 +220,7 @@ void edit_start(SyAppInfo *app_info, DBSong song)
     // make everything draw
     app_info->ecs.component<SyDrawInfo>(edit_ctx->title)->should_draw = true;
     app_info->ecs.component<SyDrawInfo>(edit_ctx->display)->should_draw = true;
+    app_info->ecs.component<SyDrawInfo>(edit_ctx->note_display)->should_draw = true;
     for (size_t i = 0; i < edit_ctx->keys_amt; ++i)
     {
 	app_info->ecs.component<SyDrawInfo>(edit_ctx->key_entities[i])->should_draw = true;
@@ -261,21 +278,24 @@ void edit_run(SyAppInfo *app_info)
     float current_player_time = app_info->ecs.component<SyTransform>(g_state->player)->position[2] / -10.0f + 1.0f;
 
     // Change song duration
-    if (app_info->input_info.p == SyKeyState::pressed || app_info->input_info.o == SyKeyState::pressed)
+    if (app_info->input_info.p == SyKeyState::pressed)
     {
-	int sign = (app_info->input_info.p == SyKeyState::pressed) - (app_info->input_info.o == SyKeyState::pressed);
-	
-	edit_ctx->song.duration += sign * app_info->delta_time;
+	edit_ctx->song.duration +=  app_info->delta_time;
+
+	// Change keys length
+	for (size_t i = 0; i < edit_ctx->keys_amt; ++i)
+	    app_info->ecs.component<SyTransform>(edit_ctx->key_entities[i])->scale[2] = 10.0f * edit_ctx->song.duration;
+    }
+    if (app_info->input_info.o == SyKeyState::pressed)
+    {
+	edit_ctx->song.duration -=  app_info->delta_time;
 
 	if (edit_ctx->song.duration < 1.0f)
 	    edit_ctx->song.duration = 1.0f;
 
 	// Change keys length
 	for (size_t i = 0; i < edit_ctx->keys_amt; ++i)
-	{
-	    SyTransform *transform = app_info->ecs.component<SyTransform>(edit_ctx->key_entities[i]);
-	    transform->scale = glm::vec3(0.4f, 0.4f, 10.0f * edit_ctx->song.duration);
-	}
+	    app_info->ecs.component<SyTransform>(edit_ctx->key_entities[i])->scale[2] = 10.0f * edit_ctx->song.duration;
     }
     if (app_info->input_info.p == SyKeyState::released ||
 	app_info->input_info.o == SyKeyState::released)
@@ -377,18 +397,62 @@ void edit_run(SyAppInfo *app_info)
 	}
     }
 
-    // set notes colors
+    { // update song duration so that it is always long enough for the song
+	float end_value = 0.0f;
+	for (size_t i = 0; i < edit_ctx->notes_amt; ++i)
+	{
+	    float current_value = edit_ctx->notes[i].note.timestamp + edit_ctx->notes[i].note.duration;
+	    if (current_value > end_value)
+		end_value = current_value;
+	}
+
+	if (edit_ctx->song.duration - 0.5f < end_value)
+	{
+	    edit_ctx->song.duration = end_value + 0.5f;
+	    for (size_t i = 0; i < edit_ctx->keys_amt; ++i)
+		app_info->ecs.component<SyTransform>(edit_ctx->key_entities[i])->scale[2] = 10.0f * edit_ctx->song.duration;
+	}
+    }
+
+    // set notes colors, heights
     for (size_t i = 0; i < edit_ctx->notes_amt; ++i)
     {
 	SyMaterial *material = app_info->ecs.component<SyMaterial>(edit_ctx->notes[i].entity);
+	SyTransform *transform = app_info->ecs.component<SyTransform>(edit_ctx->notes[i].entity);
+
+	transform->scale[1] = 0.35f;
+	transform->position[1] = 0.70f;
 	material->diffuse = glm::vec3(1.0f, 0.5f, 1.0f);
 
 	if (i == edit_ctx->currently_selected_note)
+	{
 	    material->diffuse = glm::vec3(1.0f, 1.0f, 0.0f);
+	    transform->scale[1] = 0.70f;
+	    transform->position[1] += 0.35f / 2;
+	}
     }
 
     // update display
     snprintf(edit_ctx->display_data, edit_ctx->display_data_size, "Song Duration: %.2fs\nCurrent Player Time: %.2fs", edit_ctx->song.duration, current_player_time);
+
+    if (edit_ctx->notes_amt > 0)
+    {
+	const char *unformatted = "Note Info\n# %ld/%lu\nID: %ld\nKey: %u\nTimestamp: %.2fs\nDuration: %.2fs";
+
+	size_t buffer_size = strlen(unformatted) + 50;
+	char *buffer = (char*)app_info->frame_arena.alloc(buffer_size);
+
+	DBNote note = edit_ctx->notes[edit_ctx->currently_selected_note].note;
+
+	snprintf(buffer, buffer_size, unformatted, edit_ctx->currently_selected_note + 1, edit_ctx->notes_amt, note.id, note.key, note.timestamp, note.duration);
+
+	app_info->ecs.component<SyUIText>(edit_ctx->note_display)->text = buffer;
+    }
+    else
+    {
+	app_info->ecs.component<SyUIText>(edit_ctx->note_display)->text = "No Note Selected";
+    }
+	  
 
     if (app_info->input_info.escape == SyKeyState::released)
     {
@@ -403,6 +467,12 @@ void edit_stop(SyAppInfo *app_info)
 {
     EditCtx *edit_ctx = &g_state->edit_ctx;
 
+    db_update_song(g_state->db, edit_ctx->song);
+    for (size_t i = 0; i < edit_ctx->notes_amt; ++i)
+    {
+	db_update_note(g_state->db, edit_ctx->notes[i].note);
+    }
+
     for (size_t i = 0; i < edit_ctx->notes_amt; ++i)
     {
 	app_info->ecs.destroy_entity(edit_ctx->notes[i].entity);
@@ -410,6 +480,7 @@ void edit_stop(SyAppInfo *app_info)
 
     app_info->ecs.component<SyDrawInfo>(edit_ctx->title)->should_draw = false;
     app_info->ecs.component<SyDrawInfo>(edit_ctx->display)->should_draw = false;
+    app_info->ecs.component<SyDrawInfo>(edit_ctx->note_display)->should_draw = false;
     for (size_t i = 0; i < edit_ctx->keys_amt; ++i)
     {
 	app_info->ecs.component<SyDrawInfo>(edit_ctx->key_entities[i])->should_draw = false;

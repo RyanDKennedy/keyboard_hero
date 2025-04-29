@@ -82,6 +82,7 @@ struct EditCtx
 
     size_t currently_selected_note;
 
+    SyEntityHandle note_display;
 };
 
 struct CreateCtx
