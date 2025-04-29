@@ -4,6 +4,7 @@
 
 #include "global.hpp"
 #include "picker.hpp"
+#include "play.hpp"
 #include "util.hpp"
 
 #include "menu.hpp"
@@ -58,6 +59,7 @@ void app_init(SyAppInfo *app_info)
     edit_load(app_info);
     create_load(app_info);
     picker_load(app_info);
+    play_load(app_info);
 
     menu_start(app_info);
 }
@@ -72,9 +74,6 @@ void app_run(SyAppInfo *app_info)
 
     switch(g_state->game_mode)
     {
-	case GameMode::none: // this is debug scenario
-	    break;
-
 	case GameMode::menu:
 	    menu_run(app_info);
 	    break;
@@ -92,6 +91,7 @@ void app_run(SyAppInfo *app_info)
 	    break;
 
 	case GameMode::play:
+	    play_run(app_info);
 	    break;
     }
 }

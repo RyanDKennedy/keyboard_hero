@@ -17,14 +17,14 @@ void menu_load(SyAppInfo *app_info)
 	text_draw_info->should_draw = false;
 	text_draw_info->asset_metadata_id = g_state->font_asset_metadata_index;
 	SyUIText *ui_text = app_info->ecs.component<SyUIText>(menu_ctx->buttons[i]);
-	ui_text->alignment = SyTextAlignment::left;
+	ui_text->alignment = SyTextAlignment::center;
 	ui_text->color = glm::vec3(0.5f, 0.5f, 0.5f);
-	ui_text->pos = glm::vec2(-0.9f, -0.6f + i * 0.15f);
+	ui_text->pos = glm::vec2(0.0f, -0.15f + i * 0.15f);
 	ui_text->scale = glm::vec2(0.1f, 0.1f);
     }
-    app_info->ecs.component<SyUIText>(menu_ctx->buttons[0])->text = "Play";
-    app_info->ecs.component<SyUIText>(menu_ctx->buttons[1])->text = "Create";
-    app_info->ecs.component<SyUIText>(menu_ctx->buttons[2])->text = "Edit";
+    app_info->ecs.component<SyUIText>(menu_ctx->buttons[0])->text = "Play Song";
+    app_info->ecs.component<SyUIText>(menu_ctx->buttons[1])->text = "Create Song";
+    app_info->ecs.component<SyUIText>(menu_ctx->buttons[2])->text = "Edit Song";
 
     menu_ctx->menu_title = app_info->ecs.new_entity();
     app_info->ecs.entity_add_component<SyDrawInfo>(menu_ctx->menu_title);
@@ -35,7 +35,7 @@ void menu_load(SyAppInfo *app_info)
     SyUIText *ui_text = app_info->ecs.component<SyUIText>(menu_ctx->menu_title);
     ui_text->alignment = SyTextAlignment::center;
     ui_text->color = glm::vec3(1.f, 1.f, 1.f);
-    ui_text->pos = glm::vec2(0.f, -0.75f);
+    ui_text->pos = glm::vec2(0.f, -0.575f);
     ui_text->scale = glm::vec2(0.15f, 0.15f);
     ui_text->text = "Keyboard Hero";
     

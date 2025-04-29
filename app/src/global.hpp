@@ -23,7 +23,6 @@
 
 enum class GameMode
 {
-    none, // for testing
     menu,
     create,
     edit,
@@ -59,6 +58,17 @@ struct PickerCtx
     GameMode next_game_mode;
 };
 
+struct CreateCtx
+{
+    SyEntityHandle name_label;
+    char *name_label_data;
+    size_t name_label_data_len;
+
+    SyEntityHandle name;
+    char *name_data;
+    size_t name_data_len;
+};
+
 struct EditCtx
 {
     size_t persistent_arena_starting_alloc;
@@ -85,15 +95,19 @@ struct EditCtx
     SyEntityHandle note_display;
 };
 
-struct CreateCtx
+struct PlayCtx
 {
-    SyEntityHandle name_label;
-    char *name_label_data;
-    size_t name_label_data_len;
+    size_t persistent_arena_starting_alloc;
 
-    SyEntityHandle name;
-    char *name_data;
-    size_t name_data_len;
+    DBSong song;
+
+    SyEntityHandle title;
+    char *title_data;
+
+    static const size_t keys_amt = 4;
+    SyEntityHandle key_entities[keys_amt];
+
+    
 };
 
 struct Global
@@ -109,6 +123,7 @@ struct Global
     PickerCtx picker_ctx;
     EditCtx edit_ctx;
     CreateCtx create_ctx;
+    PlayCtx play_ctx;
 };
 
 inline Global *g_state;

@@ -4,6 +4,7 @@
 #include "edit.hpp"
 #include "global.hpp"
 #include "menu.hpp"
+#include "play.hpp"
 #include "render/types/sy_draw_info.hpp"
 
 void picker_load(SyAppInfo *app_info)
@@ -104,9 +105,15 @@ void picker_run(SyAppInfo *app_info)
 	switch (g_state->game_mode)
 	{
 	    case GameMode::play:
+		play_start(app_info, selected_song);
 		break;
 	    case GameMode::edit:
 		edit_start(app_info, selected_song);
+		break;
+
+	    default:
+		SY_ERROR("The only supported next modes that picker supports are: play & edit.");
+		break;
 	}
     }
 }
