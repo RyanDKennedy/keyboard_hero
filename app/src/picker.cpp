@@ -107,6 +107,7 @@ void picker_run(SyAppInfo *app_info)
 	    case GameMode::play:
 		play_start(app_info, selected_song);
 		break;
+
 	    case GameMode::edit:
 		edit_start(app_info, selected_song);
 		break;

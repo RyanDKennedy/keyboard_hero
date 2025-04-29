@@ -81,6 +81,15 @@ void play_start(SyAppInfo *app_info, DBSong song)
 	transform->position = glm::vec3(0.0f, 5.0f, 10.0f);
 	transform->rotation = glm::vec3(-1.0f, 180.0f, 0.0f);
 	transform->scale = glm::vec3(0.0f, 0.0f, 0.0f);
+
+	if (transform->position[2] > 10.0f)
+	    transform->position[2] = 10.0f;
+	
+	if (transform->position[2] / -10 + 1 > play_ctx->song.duration)
+	    transform->position[2] = (play_ctx->song.duration - 1) * -10.0f;
+
+	app_info->camera_settings.perspective_settings.aspect_ratio = (float)app_info->input_info.window_width / app_info->input_info.window_height;
+
     }
 
 }
