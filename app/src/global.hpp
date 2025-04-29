@@ -111,6 +111,10 @@ struct PlayCtx
     size_t notes_amt;
     EntityNote *notes;
 
+    SyEntityHandle cursor;
+
+    //size_t next
+
     float time_running;
 };
 

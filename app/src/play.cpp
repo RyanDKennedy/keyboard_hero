@@ -49,6 +49,28 @@ void play_load(SyAppInfo *app_info)
 	}
     }
 
+    {
+	play_ctx->cursor = app_info->ecs.new_entity();
+	app_info->ecs.entity_add_component<SyDrawInfo>(play_ctx->cursor);
+	app_info->ecs.entity_add_component<SyTransform>(play_ctx->cursor);
+	app_info->ecs.entity_add_component<SyMaterial>(play_ctx->cursor);
+	
+	SyDrawInfo *draw_info = app_info->ecs.component<SyDrawInfo>(play_ctx->cursor);
+	SyTransform *transform = app_info->ecs.component<SyTransform>(play_ctx->cursor);
+	SyMaterial *material = app_info->ecs.component<SyMaterial>(play_ctx->cursor);
+	
+	draw_info->should_draw = false;
+	draw_info->asset_metadata_id = SY_LOAD_ASSET_FROM_FILE(app_info->render_info, &app_info->ecs, "app/cube.obj", SyAssetType::mesh);
+	
+	transform->position = glm::vec3(0.0f, 0.4f, 0.0f);
+	transform->rotation = glm::vec3(0.0f, 0.0f, 0.0f);
+	transform->scale = glm::vec3(10.f, 0.3f, 0.3f);
+	
+	material->diffuse = glm::vec3(0.0f, 0.8f, 0.0f);
+
+    }
+
+    
 }
 
 void play_start(SyAppInfo *app_info, DBSong song)
@@ -94,7 +116,7 @@ void play_start(SyAppInfo *app_info, DBSong song)
 	draw_info->should_draw = true;
 	draw_info->asset_metadata_id = play_ctx->note_asset_metadata_id;
 	
-	material->diffuse = glm::vec3(1.0f, 0.5f, 1.0f);
+	material->diffuse = glm::vec3(1.0f, 1.0f, 1.0f);
 	
 	transform->scale = glm::vec3(0.35f, 0.35f, 10.0f * play_ctx->notes[i].note.duration);
 	transform->position = glm::vec3(0.0f, 0.7f, -10.0f * play_ctx->notes[i].note.timestamp);
@@ -107,6 +129,7 @@ void play_start(SyAppInfo *app_info, DBSong song)
 
     // make everything draw
     app_info->ecs.component<SyDrawInfo>(play_ctx->title)->should_draw = true;
+    app_info->ecs.component<SyDrawInfo>(play_ctx->cursor)->should_draw = true;
     for (size_t i = 0; i < play_ctx->keys_amt; ++i)
     {
 	app_info->ecs.component<SyDrawInfo>(play_ctx->key_entities[i])->should_draw = true;
@@ -118,11 +141,7 @@ void play_start(SyAppInfo *app_info, DBSong song)
 	transform->rotation = glm::vec3(-1.0f, 180.0f, 0.0f);
 	transform->scale = glm::vec3(0.0f, 0.0f, 0.0f);
 
-	if (transform->position[2] > 10.0f)
-	    transform->position[2] = 10.0f;
-	
-	if (transform->position[2] / -10 + 1 > play_ctx->song.duration)
-	    transform->position[2] = (play_ctx->song.duration - 1) * -10.0f;
+	transform->position[2] = (play_ctx->time_running - 1) * -10.0f;
 
 	app_info->camera_settings.perspective_settings.aspect_ratio = (float)app_info->input_info.window_width / app_info->input_info.window_height;
 
@@ -166,7 +185,9 @@ void play_run(SyAppInfo *app_info)
 		player_transform->rotation[0] = -0.5;
 	}    
 	
-	player_transform->position[2] = (play_ctx->time_running - 1) * -10.0f;
+
+	player_transform->position[2] = (play_ctx->time_running - 1.5f) * -10.0f;
+	app_info->ecs.component<SyTransform>(play_ctx->cursor)->position[2] = (play_ctx->time_running) * -10.0f;
 
 	if (play_ctx->time_running > play_ctx->song.duration)
 	{
@@ -176,10 +197,65 @@ void play_run(SyAppInfo *app_info)
 	    return;
 	}   
 
+
 	app_info->camera_settings.perspective_settings.aspect_ratio = (float)app_info->input_info.window_width / app_info->input_info.window_height;
     }
 
+    {
+	uint8_t key_input = 0;
+	key_input |= (app_info->input_info.one == SyKeyState::pressed) << 0;
+	key_input |= (app_info->input_info.two == SyKeyState::pressed) << 1;
+	key_input |= (app_info->input_info.three == SyKeyState::pressed) << 2;
+	key_input |= (app_info->input_info.four == SyKeyState::pressed) << 3;
+	
+	// color notes
+	bool key_status[4] = {};
+	for (size_t i = 0; i < play_ctx->notes_amt; ++i)
+	{
+	    EntityNote note = play_ctx->notes[i];
+
+	    if (play_ctx->time_running > note.note.timestamp &&
+		play_ctx->time_running < note.note.timestamp + note.note.duration)
+	    {
+		if (key_input & (1 << note.note.key))
+		{
+		    float contrib = 1.0f / note.note.duration;
+		    SyMaterial *material = app_info->ecs.component<SyMaterial>(note.entity);
+		    //material->diffuse[0] -= contrib * app_info->delta_time;
+		    //material->diffuse[1] -= contrib * app_info->delta_time;
+		    material->diffuse[2] -= contrib * app_info->delta_time;
+
+		    key_status[note.note.key] = true;
+		}
+	    }
+	}
+
+	// color keys
+	for (size_t i = 0; i < 4; ++i)
+	{
+	    SyMaterial *material = app_info->ecs.component<SyMaterial>(play_ctx->key_entities[i]);
+
+	    if (key_status[i] == (key_input & (1 << i)))
+	    {
+		material->diffuse = glm::vec3(0.5, 0.5, 0.5);
+	    }
+
+	    if (key_status[i] == false && key_input & (1 << i) && material->diffuse[0] < 1.0f)
+	    {
+		float contrib = 1.0f / 0.5f;
+		material->diffuse[0] += contrib * app_info->delta_time;
+		material->diffuse[1] -= contrib * app_info->delta_time;
+		material->diffuse[2] -= contrib * app_info->delta_time;
+
+		if (material->diffuse[0] > 1.0f)
+		    material->diffuse = glm::vec3(1.0f, 0.0f, 0.0f);
+	    }
+	}
+
+    }
+
 }
+
 void play_stop(SyAppInfo *app_info)
 {
     PlayCtx *play_ctx = &g_state->play_ctx;
@@ -192,6 +268,7 @@ void play_stop(SyAppInfo *app_info)
 
     // hide_everything
     app_info->ecs.component<SyDrawInfo>(play_ctx->title)->should_draw = false;
+    app_info->ecs.component<SyDrawInfo>(play_ctx->cursor)->should_draw = false;
     for (size_t i = 0; i < play_ctx->keys_amt; ++i)
     {
 	app_info->ecs.component<SyDrawInfo>(play_ctx->key_entities[i])->should_draw = false;
