@@ -11,6 +11,7 @@ set(APP_SOURCE_FILES
   ${CMAKE_CURRENT_SOURCE_DIR}/src/edit.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/src/create.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/src/play.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/FT232H_device.cpp
   ${CMAKE_SOURCE_DIR}/engine/src/sy_arena.cpp
 )
 
@@ -34,5 +35,6 @@ target_include_directories(${PROJECT_NAME}
 target_link_libraries(${PROJECT_NAME}
   PRIVATE
   SQLite::SQLite3
+  ftd2xx
   ${SY_EXTRA_APP_LIBRARIES}
 )

@@ -208,6 +208,9 @@ void play_run(SyAppInfo *app_info)
 	key_input |= (app_info->input_info.three == SyKeyState::pressed) << 2;
 	key_input |= (app_info->input_info.four == SyKeyState::pressed) << 3;
 	
+	key_input |= ~(ft232h_get_gpio_state(&g_state->piano_device) & 0xFF);
+
+
 	// color notes
 	bool key_status[4] = {};
 	for (size_t i = 0; i < play_ctx->notes_amt; ++i)

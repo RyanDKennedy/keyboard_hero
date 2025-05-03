@@ -28,6 +28,15 @@ void app_init(SyAppInfo *app_info)
     g_state = (Global*)app_info->global_mem;
     new (g_state) Global;
 
+    const char *err = NULL;
+    SY_ERROR_COND(ft232h_create_device(&g_state->piano_device, &err) != 0, "Failed to initialize piano device. %s", err)
+    ft232h_set_pin_state(&g_state->piano_device, 0, FT232H_PIN_DIRECTION_INPUT, FT232H_PIN_OUTPUT_LOW);
+    ft232h_set_pin_state(&g_state->piano_device, 1, FT232H_PIN_DIRECTION_INPUT, FT232H_PIN_OUTPUT_LOW);
+    ft232h_set_pin_state(&g_state->piano_device, 2, FT232H_PIN_DIRECTION_INPUT, FT232H_PIN_OUTPUT_LOW);
+    ft232h_set_pin_state(&g_state->piano_device, 3, FT232H_PIN_DIRECTION_INPUT, FT232H_PIN_OUTPUT_LOW);
+    ft232h_upload_gpio_state(&g_state->piano_device);
+
+
     // Init db
     db_init(&g_state->db);
 
@@ -103,6 +112,9 @@ void app_destroy(SyAppInfo *app_info)
     g_state->~Global();
 
     db_close(&g_state->db);
+
+    const char *err = NULL;
+    SY_ERROR_COND(ft232h_destroy_device(&g_state->piano_device, &err) != 0, "Failed to destroy piano device. %s", err)
 }
 
 

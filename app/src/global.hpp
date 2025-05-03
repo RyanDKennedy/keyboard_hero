@@ -12,6 +12,7 @@
 
 #include <sqlite3.h>
 
+#include "FT232H_device.hpp"
 #include "db.hpp"
 
 #ifndef NDEBUG
@@ -120,6 +121,8 @@ struct PlayCtx
 
 struct Global
 {
+    FT232HDevice piano_device;
+
     sqlite3 *db;
 
     GameMode game_mode;
