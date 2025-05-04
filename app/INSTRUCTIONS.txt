@@ -1,0 +1,1 @@
+to run this you must run as root and specify XDG_RUNTIME_DIR aswell as rmmod ftdi_sio

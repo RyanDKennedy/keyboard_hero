@@ -89,6 +89,38 @@ size_t sy_load_mesh_from_obj(SyRenderInfo *render_info, SyEcs *ecs, const char *
     return asset_metadata_index;
 }
 
+size_t sy_load_audio_from_file(SySoundInfo *sound_info, SyEcs *ecs, const char *audio_path)
+{
+    size_t audio_index;
+    {
+	audio_index = ecs->get_unused_component<SyAudio>();
+	SyAudio *audio = ecs->component_from_index<SyAudio>(audio_index);
+	alGenBuffers(1, &audio->buffer);
+	
+	ALsizei size;
+	ALsizei freq;
+	ALenum format;
+	ALvoid *data;
+	ALboolean loop = AL_FALSE;
+	alutLoadWAVFile((ALbyte*)audio_path, &format, &data, &size, &freq, &loop);
+	alBufferData(audio->buffer, format, data, size, freq);
+	alutUnloadWAV(format, data, size, freq);
+    }
+
+    size_t asset_metadata_index;
+    {
+	asset_metadata_index = ecs->get_unused_component<SyAssetMetadata>();
+	SyAssetMetadata *asset_metadata = ecs->component_from_index<SyAssetMetadata>(asset_metadata_index);
+
+	strncpy(asset_metadata->name, audio_path, SY_ASSET_METADATA_NAME_BUFFER_SIZE);
+	asset_metadata->asset_type = SyAssetType::audio;
+	asset_metadata->asset_component_index = audio_index;
+	asset_metadata->children_amt = 0;
+    }
+    
+    return asset_metadata_index;
+}
+
 void sy_destroy_mesh_from_index(SyRenderInfo *render_info, SyEcs *ecs, size_t mesh_index)
 {
     vkDeviceWaitIdle(render_info->logical_device);
@@ -104,4 +136,11 @@ void sy_destroy_font_from_index(SyRenderInfo *render_info, SyEcs *ecs, size_t fo
     SyFont *font = ecs->component_from_index<SyFont>(font_index);
     sy_render_destroy_font(render_info, ecs, font);
     ecs->release_component<SyFont>(font_index);
+}
+
+void sy_destroy_audio_from_index(SySoundInfo *sound_info, SyEcs *ecs, size_t audio_index)
+{
+    SyAudio *audio = ecs->component_from_index<SyAudio>(audio_index);
+    alDeleteBuffers(1, &audio->buffer);
+    ecs->release_component<SyAudio>(audio_index);
 }

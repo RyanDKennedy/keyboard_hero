@@ -20,7 +20,11 @@
 #include "render/types/sy_asset_metadata.hpp"
 #include "render/sy_fonts.hpp"
 
+#include "sound/sy_sound.hpp"
+#include "sound/types/sy_audio.hpp"
+
 #include "asset_system/sy_asset_system.hpp"
+
 
 #ifdef NDEBUG
 extern "C"
@@ -53,10 +57,14 @@ void engine_init(SyPlatformInfo *platform_info, SyAppInfo *app_info, SyEngineSta
     SY_ECS_REGISTER_TYPE(app_info->ecs, SyRenderImage);
     SY_ECS_REGISTER_TYPE(app_info->ecs, SyFont);
     SY_ECS_REGISTER_TYPE(app_info->ecs, SyUIText);
+    SY_ECS_REGISTER_TYPE(app_info->ecs, SyAudio);
 
     // Init renderer
     sy_render_info_init(&platform_info->render_info, platform_info->input_info.window_width, platform_info->input_info.window_height);
     app_info->render_info = &platform_info->render_info;
+
+    // Init sound system
+    sy_sound_info_init(&engine_state->sound_info);
 
     SY_OUTPUT_INFO("Starting App");
 #ifndef NDEBUG
@@ -159,6 +167,8 @@ void engine_destroy(SyPlatformInfo *platform_info, SyAppInfo *app_info, SyEngine
 	    sy_destroy_font_from_index(&platform_info->render_info, &app_info->ecs, i);
 	}
     }
+
+    sy_sound_info_deinit(&engine_state->sound_info);
 
     sy_render_info_deinit(&platform_info->render_info);
 

@@ -38,3 +38,8 @@ target_link_libraries(${PROJECT_NAME}
   ftd2xx
   ${SY_EXTRA_APP_LIBRARIES}
 )
+
+set_target_properties(${PROJECT_NAME}
+       PROPERTIES
+       LINK_FLAGS "-Wl,-rpath,/usr/local/lib"
+)

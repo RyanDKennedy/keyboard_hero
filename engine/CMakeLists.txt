@@ -18,6 +18,7 @@ set(SY_SOURCE_FILES
     ${CMAKE_CURRENT_SOURCE_DIR}/src/render/sy_descriptor_allocator.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/render/sy_fonts.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/render/sy_image.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/sound/sy_sound.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/asset_system/sy_obj_parser.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/asset_system/sy_asset_system.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/external/vma.cpp
@@ -27,6 +28,8 @@ set(SY_SOURCE_FILES
 set(SY_LINK_LIBRARIES
   Vulkan::Vulkan
   freetype
+  openal
+  alut
 )
 
 set(SY_INCLUDE_DIRECTORIES

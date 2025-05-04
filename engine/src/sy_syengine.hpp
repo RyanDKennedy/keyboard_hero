@@ -2,10 +2,11 @@
 
 #include "sy_platform_info.hpp"
 #include "sy_app_info.hpp"
+#include "sound/sy_sound.hpp"
 
 struct SyEngineState
 {
-
+    SySoundInfo sound_info;
     
 };
 
