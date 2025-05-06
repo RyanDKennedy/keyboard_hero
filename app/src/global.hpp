@@ -122,6 +122,7 @@ struct PlayCtx
 struct Global
 {
     FT232HDevice piano_device;
+    bool using_piano_device;
 
     sqlite3 *db;
 
