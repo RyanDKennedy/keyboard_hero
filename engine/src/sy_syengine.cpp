@@ -5,8 +5,7 @@
 #include <vulkan/vulkan_core.h>
 
 #include "components/sy_transform.hpp"
-#include "render/types/sy_material.hpp"
-#include "render/types/sy_ui_text.hpp"
+
 #include "sy_ecs.hpp"
 #include "sy_macros.hpp"
 
@@ -14,14 +13,15 @@
 #include "render/sy_drawing.hpp"
 #include "render/sy_render_info.hpp"
 #include "render/types/sy_mesh.hpp"
-
-
+#include "render/types/sy_material.hpp"
+#include "render/types/sy_ui_text.hpp"
 #include "render/types/sy_draw_info.hpp"
 #include "render/types/sy_asset_metadata.hpp"
 #include "render/sy_fonts.hpp"
 
 #include "sound/sy_sound.hpp"
 #include "sound/types/sy_audio.hpp"
+#include "sound/types/sy_audio_properties.hpp"
 
 #include "asset_system/sy_asset_system.hpp"
 
@@ -58,6 +58,8 @@ void engine_init(SyPlatformInfo *platform_info, SyAppInfo *app_info, SyEngineSta
     SY_ECS_REGISTER_TYPE(app_info->ecs, SyFont);
     SY_ECS_REGISTER_TYPE(app_info->ecs, SyUIText);
     SY_ECS_REGISTER_TYPE(app_info->ecs, SyAudio);
+    SY_ECS_REGISTER_TYPE(app_info->ecs, SyAudioSource); // FIXME: this doesn't work because the app isn't supposed to be revealed to SyAudioSource but it is needed to create a source
+    SY_ECS_REGISTER_TYPE(app_info->ecs, SyAudioProperties);
 
     // Init renderer
     sy_render_info_init(&platform_info->render_info, platform_info->input_info.window_width, platform_info->input_info.window_height);
