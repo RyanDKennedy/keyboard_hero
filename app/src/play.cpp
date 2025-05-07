@@ -2,6 +2,7 @@
 #include "db.hpp"
 #include "global.hpp"
 #include "menu.hpp"
+#include "sound/types/sy_audio_info.hpp"
 #include "text_display.hpp"
 #include "render/types/sy_ui_text.hpp"
 
@@ -26,6 +27,7 @@ void play_load(SyAppInfo *app_info)
 	ui_text->text = "Score: 0.0";
     }
 
+    size_t hum_asset_metadata_id = SY_LOAD_ASSET_FROM_FILE(&app_info->sound_info, &app_info->ecs, "app/hum.wav", SyAssetType::audio);
     { // create keys
 	size_t key_mesh_metadata_index = SY_LOAD_ASSET_FROM_FILE(app_info->render_info, &app_info->ecs, "app/key.obj", SyAssetType::mesh);
 
@@ -35,6 +37,15 @@ void play_load(SyAppInfo *app_info)
 	    app_info->ecs.entity_add_component<SyDrawInfo>(play_ctx->key_entities[i]);
 	    app_info->ecs.entity_add_component<SyTransform>(play_ctx->key_entities[i]);
 	    app_info->ecs.entity_add_component<SyMaterial>(play_ctx->key_entities[i]);
+	    SyAudioInfo *audio_info = app_info->ecs.entity_add_component<SyAudioInfo>(play_ctx->key_entities[i]);
+	    audio_info->audio_asset_metadata_id = hum_asset_metadata_id;
+	    audio_info->should_play = false;
+	    audio_info->should_stop = false;
+	    audio_info->gain = 0.5f;
+	    audio_info->pitch = 1.f  + 0.25f * (i + 1);
+	    audio_info->loop = true;
+	    audio_info->needs_audio_state_generated = true;
+	    
 
 	    SyDrawInfo *draw_info = app_info->ecs.component<SyDrawInfo>(play_ctx->key_entities[i]);
 	    SyTransform *transform = app_info->ecs.component<SyTransform>(play_ctx->key_entities[i]);
@@ -96,6 +107,10 @@ void play_start(SyAppInfo *app_info, DBSong song)
 
     play_ctx->time_running = 0.0f;
     play_ctx->score = 0.0f;
+    for (size_t i = 0; i < play_ctx->keys_amt; ++i)
+    {
+	play_ctx->keys_playing[i] = false;
+    }
 
     // get offset of arena before this game mode
     play_ctx->persistent_arena_starting_alloc = app_info->persistent_arena.m_current_offset;
@@ -225,9 +240,26 @@ void play_run(SyAppInfo *app_info)
 	key_input |= (app_info->input_info.two == SyKeyState::pressed) << 1;
 	key_input |= (app_info->input_info.three == SyKeyState::pressed) << 2;
 	key_input |= (app_info->input_info.four == SyKeyState::pressed) << 3;
-	
+
 	if (g_state->using_piano_device)
 	    key_input |= ~(ft232h_get_gpio_state(&g_state->piano_device) & 0xFF);
+
+	// play noise
+	for (size_t i = 0; i < play_ctx->keys_amt; ++i)
+	{
+	    if ( (key_input & (1 << i)) && play_ctx->keys_playing[i] == false)
+	    {
+		play_ctx->keys_playing[i] = true;
+		app_info->ecs.component<SyAudioInfo>(play_ctx->key_entities[i])->should_play = true;
+	    }
+
+	    if ( !(key_input & (1 << i)) && play_ctx->keys_playing[i] == true)
+	    {
+		play_ctx->keys_playing[i] = false;
+		app_info->ecs.component<SyAudioInfo>(play_ctx->key_entities[i])->should_stop = true;
+	    }
+	}
+
 
 	// color notes & apply score addition
 	bool key_status[4] = {};
@@ -293,6 +325,13 @@ void play_run(SyAppInfo *app_info)
 void play_stop(SyAppInfo *app_info)
 {
     PlayCtx *play_ctx = &g_state->play_ctx;
+
+    // Make notes shut up
+    for (size_t i = 0; i < play_ctx->keys_amt; ++i)
+    {
+	SyAudioInfo *audio_info = app_info->ecs.component<SyAudioInfo>(play_ctx->key_entities[i]);
+	audio_info->should_stop = true;
+    }
 
     // destroy notes
     for (size_t i = 0; i < play_ctx->notes_amt; ++i)

@@ -76,6 +76,7 @@ void app_init(SyAppInfo *app_info)
     g_state->font_asset_metadata_index = SY_LOAD_ASSET_FROM_FILE(app_info->render_info, &app_info->ecs, "fonts/UbuntuMono-R.ttf", SyAssetType::font);
 
 
+    if (0)
     {
 	size_t audio_component = SY_LOAD_ASSET_FROM_FILE(&app_info->sound_info, &app_info->ecs, "app/hum.wav", SyAssetType::audio);
 
@@ -84,8 +85,8 @@ void app_init(SyAppInfo *app_info)
 	audio_info->audio_asset_metadata_id = audio_component;
 	audio_info->should_play = true;
 	audio_info->should_stop = false;
-	audio_info->gain = 0.1f;
-	audio_info->pitch = 2.0f;
+	audio_info->gain = 0.5f;
+	audio_info->pitch = 1.5f;
 	audio_info->loop = true;
 	audio_info->needs_audio_state_generated = true;
     }

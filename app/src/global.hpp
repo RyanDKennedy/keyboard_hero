@@ -109,6 +109,7 @@ struct PlayCtx
 
     static const size_t keys_amt = 4;
     SyEntityHandle key_entities[keys_amt];
+    bool keys_playing[keys_amt];
 
     size_t note_asset_metadata_id;
     size_t notes_amt;
