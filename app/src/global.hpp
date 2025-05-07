@@ -30,6 +30,7 @@ enum class GameMode
     picker,
     play,
     deletion,
+    text_display,
 };
 
 struct EntityNote
@@ -115,7 +116,8 @@ struct PlayCtx
 
     SyEntityHandle cursor;
 
-    //size_t next
+    SyEntityHandle score_label;
+    float score;
 
     float time_running;
 };
@@ -128,6 +130,14 @@ struct DeletionCtx
     DBSong *songs;
     SyEntityHandle *song_labels;
     size_t selected_song;
+};
+
+struct TextDpyCtx
+{
+    size_t persistent_arena_starting_offset;
+    float total_time;
+    float time_elapsed;
+    SyEntityHandle text;
 };
 
 struct Global
@@ -148,6 +158,7 @@ struct Global
     CreateCtx create_ctx;
     PlayCtx play_ctx;
     DeletionCtx deletion_ctx;
+    TextDpyCtx text_dpy_ctx;
 };
 
 inline Global *g_state;

@@ -2,6 +2,8 @@
 #include "db.hpp"
 #include "global.hpp"
 #include "menu.hpp"
+#include "text_display.hpp"
+#include "render/types/sy_ui_text.hpp"
 
 void play_load(SyAppInfo *app_info)
 {
@@ -21,7 +23,7 @@ void play_load(SyAppInfo *app_info)
 	ui_text->color = glm::vec3(1.f, 1.f, 1.f);
 	ui_text->pos = glm::vec2(0.f, -0.93f);
 	ui_text->scale = glm::vec2(0.05f, 0.05f);
-	ui_text->text = "You shouldn't see this";
+	ui_text->text = "Score: 0.0";
     }
 
     { // create keys
@@ -70,7 +72,19 @@ void play_load(SyAppInfo *app_info)
 
     }
 
-    
+    {
+	play_ctx->score_label = app_info->ecs.new_entity();
+	SyDrawInfo *draw_info = app_info->ecs.entity_add_component<SyDrawInfo>(play_ctx->score_label);
+	draw_info->should_draw = false;
+	draw_info->asset_metadata_id = g_state->font_asset_metadata_index;
+
+	SyUIText *text = app_info->ecs.entity_add_component<SyUIText>(play_ctx->score_label);
+	text->text = "You should not see this";
+	text->alignment = SyTextAlignment::center;
+	text->color = glm::vec3(1.0f, 1.0f, 0.0f);
+	text->pos = glm::vec2(0.0f, -0.8);
+	text->scale = glm::vec2(0.05f, 0.05f);
+    }
 }
 
 void play_start(SyAppInfo *app_info, DBSong song)
@@ -81,6 +95,7 @@ void play_start(SyAppInfo *app_info, DBSong song)
     play_ctx->song = song;
 
     play_ctx->time_running = 0.0f;
+    play_ctx->score = 0.0f;
 
     // get offset of arena before this game mode
     play_ctx->persistent_arena_starting_alloc = app_info->persistent_arena.m_current_offset;
@@ -130,6 +145,7 @@ void play_start(SyAppInfo *app_info, DBSong song)
     // make everything draw
     app_info->ecs.component<SyDrawInfo>(play_ctx->title)->should_draw = true;
     app_info->ecs.component<SyDrawInfo>(play_ctx->cursor)->should_draw = true;
+    app_info->ecs.component<SyDrawInfo>(play_ctx->score_label)->should_draw = true;
     for (size_t i = 0; i < play_ctx->keys_amt; ++i)
     {
 	app_info->ecs.component<SyDrawInfo>(play_ctx->key_entities[i])->should_draw = true;
@@ -192,8 +208,10 @@ void play_run(SyAppInfo *app_info)
 	if (play_ctx->time_running > play_ctx->song.duration)
 	{
 	    play_stop(app_info);
-	    g_state->game_mode = GameMode::menu;
-	    menu_start(app_info);
+	    g_state->game_mode = GameMode::text_display;
+	    char *score_text = (char*)app_info->frame_arena.alloc(50 * sizeof(char));
+	    snprintf(score_text, 20, "Final Score: %.2f", play_ctx->score);
+	    text_dpy_start(app_info, score_text, 10.0f);
 	    return;
 	}   
 
@@ -211,7 +229,7 @@ void play_run(SyAppInfo *app_info)
 	if (g_state->using_piano_device)
 	    key_input |= ~(ft232h_get_gpio_state(&g_state->piano_device) & 0xFF);
 
-	// color notes
+	// color notes & apply score addition
 	bool key_status[4] = {};
 	for (size_t i = 0; i < play_ctx->notes_amt; ++i)
 	{
@@ -229,11 +247,13 @@ void play_run(SyAppInfo *app_info)
 		    material->diffuse[2] -= contrib * app_info->delta_time;
 
 		    key_status[note.note.key] = true;
+
+		    play_ctx->score += 100.0f * app_info->delta_time;
 		}
 	    }
 	}
 
-	// color keys
+	// color keys & apply score subtraction
 	for (size_t i = 0; i < 4; ++i)
 	{
 	    SyMaterial *material = app_info->ecs.component<SyMaterial>(play_ctx->key_entities[i]);
@@ -243,7 +263,7 @@ void play_run(SyAppInfo *app_info)
 		material->diffuse = glm::vec3(0.5, 0.5, 0.5);
 	    }
 
-	    if (key_status[i] == false && key_input & (1 << i) && material->diffuse[0] < 1.0f)
+	    if (key_status[i] == false && key_input & (1 << i))
 	    {
 		float contrib = 1.0f / 0.5f;
 		material->diffuse[0] += contrib * app_info->delta_time;
@@ -251,10 +271,21 @@ void play_run(SyAppInfo *app_info)
 		material->diffuse[2] -= contrib * app_info->delta_time;
 
 		if (material->diffuse[0] > 1.0f)
+		{
 		    material->diffuse = glm::vec3(1.0f, 0.0f, 0.0f);
+		    play_ctx->score -= 100.0f * app_info->delta_time;
+		}
+
 	    }
+
 	}
 
+    }
+
+    { // update score label
+	char *score_text = (char*)app_info->frame_arena.alloc(20 * sizeof(char));
+	snprintf(score_text, 20, "Score: %.1f", play_ctx->score);
+	app_info->ecs.component<SyUIText>(play_ctx->score_label)->text = score_text;
     }
 
 }
@@ -272,6 +303,7 @@ void play_stop(SyAppInfo *app_info)
     // hide_everything
     app_info->ecs.component<SyDrawInfo>(play_ctx->title)->should_draw = false;
     app_info->ecs.component<SyDrawInfo>(play_ctx->cursor)->should_draw = false;
+    app_info->ecs.component<SyDrawInfo>(play_ctx->score_label)->should_draw = false;
     for (size_t i = 0; i < play_ctx->keys_amt; ++i)
     {
 	app_info->ecs.component<SyDrawInfo>(play_ctx->key_entities[i])->should_draw = false;

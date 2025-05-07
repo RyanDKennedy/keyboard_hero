@@ -10,6 +10,7 @@
 #include "edit.hpp"
 #include "create.hpp"
 #include "deletion.hpp"
+#include "text_display.hpp"
 
 void register_ecs_components(SyEcs *ecs)
 {
@@ -78,6 +79,7 @@ void app_init(SyAppInfo *app_info)
     picker_load(app_info);
     play_load(app_info);
     deletion_load(app_info);
+    text_dpy_load(app_info);
 
     menu_start(app_info);
 }
@@ -114,6 +116,10 @@ void app_run(SyAppInfo *app_info)
 
 	case GameMode::deletion:
 	    deletion_run(app_info);
+	    break;
+
+	case GameMode::text_display:
+	    text_dpy_run(app_info);
 	    break;
     }
 }
