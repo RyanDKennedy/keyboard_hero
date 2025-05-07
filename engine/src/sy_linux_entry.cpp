@@ -78,7 +78,7 @@ int main(int argc, char *argv[])
     int status;
 
     // Linux Init
-    init_window(xcb_info, 600, 600, "Syengine");
+    init_window(xcb_info, 1000, 1000, "Syengine");
 
     { // Platform Info Init
 	// App Dyanamic function load
