@@ -16,10 +16,10 @@
 #include "db.hpp"
 
 #ifndef NDEBUG
-#define SY_LOAD_ASSET_FROM_FILE(render_info, ...) app_info->sy_load_asset_from_file((void*)(render_info), __VA_ARGS__);
+#define SY_LOAD_ASSET_FROM_FILE(info, ...) app_info->sy_load_asset_from_file((void*)(info), __VA_ARGS__);
 #else
 #include "asset_system/sy_asset_system.hpp"
-#define SY_LOAD_ASSET_FROM_FILE(render_info, ...) sy_load_asset_from_file((SyRenderInfo*)(render_info), __VA_ARGS__);
+#define SY_LOAD_ASSET_FROM_FILE(info, ...) sy_load_asset_from_file((void*)(info), __VA_ARGS__);
 #endif
 
 enum class GameMode
@@ -142,6 +142,8 @@ struct TextDpyCtx
 
 struct Global
 {
+    SyEntityHandle sound_entity;
+
     FT232HDevice piano_device;
     bool using_piano_device;
 

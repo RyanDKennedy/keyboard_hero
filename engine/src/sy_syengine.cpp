@@ -21,7 +21,8 @@
 
 #include "sound/sy_sound.hpp"
 #include "sound/types/sy_audio.hpp"
-#include "sound/types/sy_audio_properties.hpp"
+#include "sound/types/sy_audio_info.hpp"
+#include "sound/sy_play.hpp"
 
 #include "asset_system/sy_asset_system.hpp"
 
@@ -58,8 +59,26 @@ void engine_init(SyPlatformInfo *platform_info, SyAppInfo *app_info, SyEngineSta
     SY_ECS_REGISTER_TYPE(app_info->ecs, SyFont);
     SY_ECS_REGISTER_TYPE(app_info->ecs, SyUIText);
     SY_ECS_REGISTER_TYPE(app_info->ecs, SyAudio);
-    SY_ECS_REGISTER_TYPE(app_info->ecs, SyAudioSource); // FIXME: this doesn't work because the app isn't supposed to be revealed to SyAudioSource but it is needed to create a source
-    SY_ECS_REGISTER_TYPE(app_info->ecs, SyAudioProperties);
+    SY_ECS_REGISTER_TYPE(app_info->ecs, SyAudioInfo);
+    SY_ECS_REGISTER_TYPE(app_info->ecs, SyAudioState); // FIXME: this doesn't work because the app isn't supposed to be revealed to SyAudioSource but it is needed to create a source
+
+
+/* AUDIO SYSTEM DESIGN IDEA
+
+   NECESSITIES:
+   * toggle between if audio should be paused
+   * ability to have many sources
+   * source is seperate from buffer data
+
+   asset metadata
+   {
+    buffer - SyAudio
+   }
+
+   
+
+
+ */
 
     // Init renderer
     sy_render_info_init(&platform_info->render_info, platform_info->input_info.window_width, platform_info->input_info.window_height);
@@ -82,7 +101,6 @@ void engine_init(SyPlatformInfo *platform_info, SyAppInfo *app_info, SyEngineSta
     {
 	platform_info->end_engine = true;
     }
-
 }
 
 void engine_run(SyPlatformInfo *platform_info, SyAppInfo *app_info, SyEngineState *engine_state)
@@ -137,6 +155,8 @@ void engine_run(SyPlatformInfo *platform_info, SyAppInfo *app_info, SyEngineStat
     }
 
     sy_render_draw(&platform_info->render_info, &platform_info->input_info, &app_info->ecs, &app_info->camera_settings);
+    sy_sound_play(&engine_state->sound_info, &app_info->ecs, app_info->camera_settings.active_camera);
+
 }
 
 void engine_destroy(SyPlatformInfo *platform_info, SyAppInfo *app_info, SyEngineState *engine_state)

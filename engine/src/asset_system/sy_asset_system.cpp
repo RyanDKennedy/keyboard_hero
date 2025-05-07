@@ -6,19 +6,25 @@
 #include "render/types/sy_mesh.hpp"
 #include "render/types/sy_draw_info.hpp"
 #include "render/types/sy_asset_metadata.hpp"
+#include "sy_utils.hpp"
 
-size_t sy_load_asset_from_file(SyRenderInfo *render_info, SyEcs *ecs, const char *asset_path, SyAssetType type)
+size_t sy_load_asset_from_file(void *info, SyEcs *ecs, const char *asset_path, SyAssetType type)
 {
     switch (type)
     {
 	case SyAssetType::mesh:
 	{
-	    return sy_load_mesh_from_obj(render_info, ecs, asset_path);
+	    return sy_load_mesh_from_obj((SyRenderInfo*)info, ecs, asset_path);
 	}
 
 	case SyAssetType::font:
 	{
-	    return sy_load_font_from_file(render_info, ecs, asset_path);
+	    return sy_load_font_from_file((SyRenderInfo*)info, ecs, asset_path);
+	}
+
+	case SyAssetType::audio:
+	{
+	    return sy_load_audio_from_file((SySoundInfo*)info, ecs, asset_path);
 	}
 
 	default:
@@ -30,6 +36,8 @@ size_t sy_load_asset_from_file(SyRenderInfo *render_info, SyEcs *ecs, const char
 
 size_t sy_load_font_from_file(SyRenderInfo *render_info, SyEcs *ecs, const char *font_path)
 {
+    SY_OUTPUT_DEBUG("loading font from %s", font_path);
+
     size_t font_component_index;
     {
 	font_component_index = ecs->get_unused_component<SyFont>();
@@ -53,6 +61,8 @@ size_t sy_load_font_from_file(SyRenderInfo *render_info, SyEcs *ecs, const char 
 
 size_t sy_load_mesh_from_obj(SyRenderInfo *render_info, SyEcs *ecs, const char *obj_path)
 {
+    SY_OUTPUT_DEBUG("loading mesh from %s", obj_path);
+
     size_t mesh_component_index;
     {
 	// Create component
@@ -91,20 +101,29 @@ size_t sy_load_mesh_from_obj(SyRenderInfo *render_info, SyEcs *ecs, const char *
 
 size_t sy_load_audio_from_file(SySoundInfo *sound_info, SyEcs *ecs, const char *audio_path)
 {
+    SY_OUTPUT_DEBUG("loading audio from %s", audio_path);
+
     size_t audio_index;
     {
 	audio_index = ecs->get_unused_component<SyAudio>();
 	SyAudio *audio = ecs->component_from_index<SyAudio>(audio_index);
 	alGenBuffers(1, &audio->buffer);
 	
+	char file_name[255];
+	int written = snprintf(file_name, 255, "resources/%s", audio_path);
+	SY_ASSERT(written != 255);
+
 	ALsizei size;
 	ALsizei freq;
 	ALenum format;
-	ALvoid *data;
+	ALvoid *data = NULL;
 	ALboolean loop = AL_FALSE;
-	alutLoadWAVFile((ALbyte*)audio_path, &format, &data, &size, &freq, &loop);
+
+	alutLoadWAVFile((ALbyte*)file_name, &format, &data, &size, &freq, &loop);
+	SY_ASSERT(data != NULL);
 	alBufferData(audio->buffer, format, data, size, freq);
 	alutUnloadWAV(format, data, size, freq);
+
     }
 
     size_t asset_metadata_index;

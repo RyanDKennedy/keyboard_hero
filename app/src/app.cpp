@@ -5,6 +5,7 @@
 #include "global.hpp"
 #include "picker.hpp"
 #include "play.hpp"
+#include "sound/types/sy_audio_info.hpp"
 #include "util.hpp"
 #include "menu.hpp"
 #include "edit.hpp"
@@ -19,6 +20,7 @@ void register_ecs_components(SyEcs *ecs)
     SY_ECS_REGISTER_TYPE(*ecs, SyTransform);
     SY_ECS_REGISTER_TYPE(*ecs, SyMaterial);
     SY_ECS_REGISTER_TYPE(*ecs, SyUIText);
+    SY_ECS_REGISTER_TYPE(*ecs, SyAudioInfo);
 }
 
 extern "C"
@@ -73,6 +75,21 @@ void app_init(SyAppInfo *app_info)
 
     g_state->font_asset_metadata_index = SY_LOAD_ASSET_FROM_FILE(app_info->render_info, &app_info->ecs, "fonts/UbuntuMono-R.ttf", SyAssetType::font);
 
+
+    {
+	size_t audio_component = SY_LOAD_ASSET_FROM_FILE(&app_info->sound_info, &app_info->ecs, "app/hum.wav", SyAssetType::audio);
+
+	g_state->sound_entity = app_info->ecs.new_entity();
+	SyAudioInfo *audio_info = app_info->ecs.entity_add_component<SyAudioInfo>(g_state->sound_entity);
+	audio_info->audio_asset_metadata_id = audio_component;
+	audio_info->should_play = true;
+	audio_info->should_stop = false;
+	audio_info->gain = 0.1f;
+	audio_info->pitch = 2.0f;
+	audio_info->loop = true;
+	audio_info->needs_audio_state_generated = true;
+    }
+
     menu_load(app_info);
     edit_load(app_info);
     create_load(app_info);
@@ -91,6 +108,11 @@ void app_run(SyAppInfo *app_info)
 
     if (app_info->input_info.forward_slash == SyKeyState::pressed)
 	printf("FPS: %f\n", 1.0f / app_info->delta_time);
+
+    if (app_info->input_info.p == SyKeyState::released)
+    {
+	app_info->ecs.component<SyAudioInfo>(g_state->sound_entity)->should_stop = true;
+    }
 
     switch(g_state->game_mode)
     {

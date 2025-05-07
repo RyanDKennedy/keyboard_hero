@@ -12,6 +12,7 @@ struct SyAppInfo
 {
     // NOTE: this is only so that you can pass it to functions that load assets inside the app code you will never actually do anything with render info yourself
     void *render_info;
+    void *sound_info;
     
     SyArena persistent_arena;
     SyArena frame_arena;
@@ -28,6 +29,8 @@ struct SyAppInfo
 #ifndef NDEBUG
     // ASSET SYSTEM FUNCTION POINTERS:
     // These are only used for debug builds
-    size_t(*sy_load_asset_from_file)(void *render_info, SyEcs *ecs, const char *file_path, SyAssetType type);
+    size_t(*sy_load_asset_from_file)(void *info, SyEcs *ecs, const char *file_path, SyAssetType type);
+    size_t(*sy_sound_create_audio_state)(void *info, SyEcs *ecs);
+
 #endif
 };

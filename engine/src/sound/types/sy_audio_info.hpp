@@ -3,7 +3,7 @@
 #include "glm_include.hpp"
 
 // other properties like position, velocity, and rotation should be put in a SyTransform component
-struct SyAudioProperties
+struct SyAudioInfo
 {
     // action flags
     bool should_stop;
@@ -11,6 +11,11 @@ struct SyAudioProperties
 
     // properties
     bool loop;
-    float seconds_in;
     float gain;
+    float pitch;
+
+    bool needs_audio_state_generated;
+
+    size_t audio_asset_metadata_id;
+    size_t audio_state_id;
 };

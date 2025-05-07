@@ -8,8 +8,9 @@ struct SyAudio
     ALuint buffer;
 };
 
-struct SyAudioSource
+struct SyAudioState
 {
     ALuint source;
-    size_t audio_component_index;
 };
+
+
