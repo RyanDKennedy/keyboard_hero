@@ -2,7 +2,6 @@ cmake_minimum_required(VERSION 3.22.1)
 
 project(project)
 
-set(CMAKE_EXPORT_COMPILE_COMMANDS On)
 set(CMAKE_CXX_STANDARD_REQUIRED On)
 set(CMAKE_CXX_STANDARD 20)
 
@@ -12,10 +11,11 @@ set(SY_EXTRA_APP_LIBRARIES)
 find_package(Vulkan REQUIRED)
 
 if(NOT CMAKE_BUILD_TYPE)
-  set(CMAKE_BUILD_TYPE "Debug")
+  set(CMAKE_BUILD_TYPE "Release")
 endif()
 
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+  set(CMAKE_EXPORT_COMPILE_COMMANDS On)
   file(MAKE_DIRECTORY ${CMAKE_SOURCE_DIR}/bin/debug)
   set(EXECUTABLE_OUTPUT_PATH ${CMAKE_SOURCE_DIR}/bin/debug)
   set(LIBRARY_OUTPUT_PATH ${CMAKE_SOURCE_DIR}/bin/debug)

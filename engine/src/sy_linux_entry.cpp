@@ -99,8 +99,8 @@ int main(int argc, char *argv[])
 
 	// Input Init
 	clear_input_info(&platform_info->input_info);
-	platform_info->input_info.window_width = 600;
-	platform_info->input_info.window_height = 600;
+	platform_info->input_info.window_width = 1000;
+	platform_info->input_info.window_height = 1000;
 	poll_events(xcb_info, &platform_info->input_info);
 
 	// Init render system
