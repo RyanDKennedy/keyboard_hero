@@ -52,20 +52,24 @@ void deletion_start(SyAppInfo *app_info)
 	    ui_text->color = glm::vec3(1.0f, 1.0f, 0.0f);
 	}
     }
+
 }
 
 void deletion_run(SyAppInfo *app_info)
 {
     DeletionCtx *deletion_ctx = &g_state->deletion_ctx;
 
-    if (app_info->input_info.arrow_up == SyKeyState::released || app_info->input_info.arrow_down == SyKeyState::released)
+    if (app_info->input_info.arrow_up == SyKeyState::released ||
+	app_info->input_info.arrow_down == SyKeyState::released)
     {
-	if (app_info->input_info.arrow_up == SyKeyState::released && deletion_ctx->selected_song > 0)
+	if (app_info->input_info.arrow_up == SyKeyState::released &&
+	    deletion_ctx->selected_song > 0)
 	{
 	    --deletion_ctx->selected_song;
 	}
 
-	if (app_info->input_info.arrow_down == SyKeyState::released && deletion_ctx->selected_song < deletion_ctx->songs_amt - 1)
+	if (app_info->input_info.arrow_down == SyKeyState::released &&
+	    deletion_ctx->selected_song < deletion_ctx->songs_amt - 1)
 	{
 	    ++deletion_ctx->selected_song;
 	}

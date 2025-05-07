@@ -6,10 +6,10 @@
 #include "picker.hpp"
 #include "play.hpp"
 #include "util.hpp"
-
 #include "menu.hpp"
 #include "edit.hpp"
 #include "create.hpp"
+#include "deletion.hpp"
 
 void register_ecs_components(SyEcs *ecs)
 {
@@ -77,6 +77,7 @@ void app_init(SyAppInfo *app_info)
     create_load(app_info);
     picker_load(app_info);
     play_load(app_info);
+    deletion_load(app_info);
 
     menu_start(app_info);
 }
@@ -109,6 +110,10 @@ void app_run(SyAppInfo *app_info)
 
 	case GameMode::play:
 	    play_run(app_info);
+	    break;
+
+	case GameMode::deletion:
+	    deletion_run(app_info);
 	    break;
     }
 }
