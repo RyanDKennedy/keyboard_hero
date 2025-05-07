@@ -3,6 +3,7 @@
 #include "db.hpp"
 #include "global.hpp"
 #include "picker.hpp"
+#include "deletion.hpp"
 
 void menu_load(SyAppInfo *app_info)
 {
@@ -25,6 +26,7 @@ void menu_load(SyAppInfo *app_info)
     app_info->ecs.component<SyUIText>(menu_ctx->buttons[0])->text = "Play Song";
     app_info->ecs.component<SyUIText>(menu_ctx->buttons[1])->text = "Create Song";
     app_info->ecs.component<SyUIText>(menu_ctx->buttons[2])->text = "Edit Song";
+    app_info->ecs.component<SyUIText>(menu_ctx->buttons[3])->text = "Delete Song";
 
     menu_ctx->menu_title = app_info->ecs.new_entity();
     app_info->ecs.entity_add_component<SyDrawInfo>(menu_ctx->menu_title);
@@ -93,6 +95,7 @@ void menu_run(SyAppInfo *app_info)
 	{
 	    app_info->ecs.component<SyUIText>(menu_ctx->buttons[0])->color = glm::vec3(0.2, 0.1, 0.1);
 	    app_info->ecs.component<SyUIText>(menu_ctx->buttons[2])->color = glm::vec3(0.2, 0.1, 0.1);
+	    app_info->ecs.component<SyUIText>(menu_ctx->buttons[3])->color = glm::vec3(0.2, 0.1, 0.1);
 	}
 
 	app_info->ecs.component<SyUIText>(menu_ctx->buttons[menu_ctx->selected_btn])->color = glm::vec3(1.0f, 1.0f, 0.0f);
@@ -119,6 +122,11 @@ void menu_run(SyAppInfo *app_info)
 	    case 2:
 		g_state->game_mode = GameMode::picker;
 		picker_start(app_info, GameMode::edit);
+		break;
+
+	    case 3:
+		g_state->game_mode = GameMode::deletion;
+		deletion_start(app_info);
 		break;
 	}
 	return;

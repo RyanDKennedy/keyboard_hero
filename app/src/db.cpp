@@ -178,6 +178,30 @@ DBNote db_create_note(sqlite3 *db, ssize_t song_id, uint32_t key, float timestam
     return result;
 }
 
+void db_delete_song(sqlite3 *db, ssize_t id)
+{
+    {
+	const char *query = "DELETE FROM Notes WHERE song_id = %ld;";
+	
+	int formatted_query_mem_size = (strlen(query) + 20) * sizeof(char);
+	char *formatted_query = (char*)alloca(formatted_query_mem_size);
+	SY_ERROR_COND(snprintf(formatted_query, formatted_query_mem_size, query, id) == formatted_query_mem_size, "Failed to format query, you need to allocate more space, adjust number and recompile.");
+	
+	SY_ERROR_COND(sqlite3_exec(db, formatted_query, NULL, NULL, NULL) != SQLITE_OK, "Failed to delete Song.");
+    }
+    
+    {
+	const char *query = "DELETE FROM Songs WHERE id = %ld;";
+	
+	int formatted_query_mem_size = (strlen(query) + 20) * sizeof(char);
+	char *formatted_query = (char*)alloca(formatted_query_mem_size);
+	SY_ERROR_COND(snprintf(formatted_query, formatted_query_mem_size, query, id) == formatted_query_mem_size, "Failed to format query, you need to allocate more space, adjust number and recompile.");
+	
+	SY_ERROR_COND(sqlite3_exec(db, formatted_query, NULL, NULL, NULL) != SQLITE_OK, "Failed to delete Song.");
+    }
+
+}
+
 void db_delete_note(sqlite3 *db, ssize_t id)
 {
     const char *query = "DELETE FROM Notes WHERE id = %ld;";

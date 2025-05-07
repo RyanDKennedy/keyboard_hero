@@ -29,6 +29,7 @@ enum class GameMode
     edit,
     picker,
     play,
+    deletion,
 };
 
 struct EntityNote
@@ -39,7 +40,7 @@ struct EntityNote
 
 struct MenuCtx
 {
-    static const size_t buttons_amt = 3;
+    static const size_t buttons_amt = 4;
     SyEntityHandle buttons[buttons_amt];
     size_t selected_btn;
     SyEntityHandle menu_title;
@@ -119,6 +120,16 @@ struct PlayCtx
     float time_running;
 };
 
+struct DeletionCtx
+{
+    size_t persistent_arena_starting_alloc;
+
+    size_t songs_amt;
+    DBSong *songs;
+    SyEntityHandle *song_labels;
+    size_t selected_song;
+};
+
 struct Global
 {
     FT232HDevice piano_device;
@@ -136,6 +147,7 @@ struct Global
     EditCtx edit_ctx;
     CreateCtx create_ctx;
     PlayCtx play_ctx;
+    DeletionCtx deletion_ctx;
 };
 
 inline Global *g_state;
